@@ -20,17 +20,14 @@ RUN apt-get update \
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project
-COPY mooibanana_project/ /app/
+# Copy entire project
+COPY . /app/
 
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Copy .env file for build process
-COPY mooibanana_project/.env /app/
-
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Collect static files (only if .env exists)
+RUN if [ -f .env ]; then python manage.py collectstatic --noinput; fi
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
