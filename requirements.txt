@@ -4,3 +4,5 @@ django-crispy-forms
 crispy-bootstrap5
 python-decouple  # for environment variables
 stripe
+psycopg2-binary  # for PostgreSQL
+dj-database-url  # for database URL parsing

@@ -36,8 +36,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Create startup script
-RUN echo '#!/bin/bash\npython manage.py migrate\npython manage.py runserver 0.0.0.0:8000' > /app/start.sh && chmod +x /app/start.sh
-
 # Run the application
-CMD ["/app/start.sh"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
