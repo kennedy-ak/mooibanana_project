@@ -38,6 +38,35 @@
                         </p>
                     {% endif %}
                     
+                    <!-- Match Request Notification Alert -->
+                    {% if match_request_notification %}
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-heart text-danger"></i> Match Request</h6>
+                        <p class="mb-2">{{ profile.user.username }} wants to match with you!</p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" onclick="respondToMatchFromProfile({{ match_request_notification.id }}, 'accept')">
+                                <i class="fas fa-heart"></i> Accept Match
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="respondToMatchFromProfile({{ match_request_notification.id }}, 'decline')">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                        </div>
+                    </div>
+                    {% elif incoming_match_request %}
+                    <div class="alert alert-info mt-3">
+                        <h6><i class="fas fa-heart text-danger"></i> Match Request</h6>
+                        <p class="mb-2">{{ profile.user.username }} wants to match with you!</p>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm" onclick="respondToMatchFromProfile({{ incoming_match_request.id }}, 'accept')">
+                                <i class="fas fa-heart"></i> Accept Match
+                            </button>
+                            <button class="btn btn-secondary btn-sm" onclick="respondToMatchFromProfile({{ incoming_match_request.id }}, 'decline')">
+                                <i class="fas fa-times"></i> Decline
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Action Buttons -->
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="d-grid gap-2 mt-4">
@@ -50,20 +79,19 @@
                                 <button type="button" class="btn btn-warning w-100" disabled>
                                     <i class="fas fa-clock"></i> Match Request Sent
                                 </button>
+                            {% elif incoming_match_request or match_request_notification %}
+                                <!-- Show that there's a pending request from this user -->
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-clock"></i> Respond to match request above
+                                </div>
                             {% else %}
                                 <!-- Match Request Button -->
-                                {% if user.likes_balance > 0 %}
                                 <form method="post" action="{% url 'notifications:send_match_request' profile.user.id %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-primary w-100">
                                         <i class="fas fa-heart"></i> Send Match Request
                                     </button>
                                 </form>
-                                {% else %}
-                                <a href="{% url 'payments:packages' %}" class="btn btn-outline-primary w-100">
-                                    <i class="fas fa-heart"></i> Buy Likes to Send Match Request
-                                </a>
-                                {% endif %}
                             {% endif %}
 
                             <!-- Buy Likes Button -->
@@ -340,9 +368,53 @@
     function giftPackage(packageId) {
         const recipientId = {{ profile.user.id }};
         const recipientName = '{{ profile.user.first_name|default:profile.user.username }}';
-        
+
         // Redirect to gift purchase page
         window.location.href = `/payments/gift/${packageId}/${recipientId}/`;
+    }
+
+    // Handle match request response from profile page
+    function respondToMatchFromProfile(notificationId, action) {
+        const formData = new FormData();
+        formData.append('action', action);
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        fetch(`/notifications/respond/${notificationId}/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alertDiv.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+
+                // Insert after the match request alert
+                const matchRequestAlert = document.querySelector('.alert-info');
+                if (matchRequestAlert) {
+                    matchRequestAlert.style.display = 'none';
+                    matchRequestAlert.parentNode.insertBefore(alertDiv, matchRequestAlert.nextSibling);
+                }
+
+                // Redirect if it's a match
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 2000);
+                } else {
+                    // Reload page after 2 seconds to update the UI
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            }
+        })
+        .catch(error => console.error('Error responding to match:', error));
     }
 </script>
 {% endblock %}

@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'chat',
     'payments',
     'notifications',
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [
@@ -66,6 +67,14 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Performance settings
+if not DEBUG:
+    # Enable GZip compression
+    MIDDLEWARE.insert(1, 'django.middleware.gzip.GZipMiddleware')
+
+    # Enable conditional GET middleware
+    MIDDLEWARE.append('django.middleware.http.ConditionalGetMiddleware')
 
 ROOT_URLCONF = 'mooibanana_project.urls'
 
@@ -98,6 +107,38 @@ DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
+
+# Caching
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Session optimization
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_CACHE_ALIAS = 'default'
+
+# Database connection pooling and optimization
+CONN_MAX_AGE = 60  # Keep database connections alive for 60 seconds
+
+# File upload optimization
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+# Static files optimization
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
+# Performance monitoring (only in DEBUG mode)
+# if DEBUG:
+#     INSTALLED_APPS += ['debug_toolbar']
+#     MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+#     INTERNAL_IPS = ['127.0.0.1']
 
 
 # Password validation

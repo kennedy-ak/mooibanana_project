@@ -80,6 +80,13 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin_dashboard:dashboard' %}">
+                                <i class="fas fa-crown"></i> Admin
+                            </a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">Ontdekken</a>
                         </li>
@@ -199,11 +206,16 @@
                         notificationDiv.className = 'alert alert-warning alert-dismissible fade show';
                         notificationDiv.innerHTML = `
                             <div class="d-flex justify-content-between align-items-center">
-                                <div>
+                                <div class="flex-grow-1">
                                     <strong>Match Request!</strong> ${notification.message}
+                                    <br>
+                                    <small class="text-muted">Click to view ${notification.sender}'s profile</small>
                                 </div>
-                                <div>
-                                    <button class="btn btn-success btn-sm me-2" onclick="respondToMatch(${notification.id}, 'accept')">
+                                <div class="d-flex gap-2">
+                                    <a href="/profiles/profile/${notification.sender_id}/?notification_id=${notification.id}" class="btn btn-info btn-sm">
+                                        <i class="fas fa-eye"></i> View Profile
+                                    </a>
+                                    <button class="btn btn-success btn-sm" onclick="respondToMatch(${notification.id}, 'accept')">
                                         <i class="fas fa-heart"></i> Accept
                                     </button>
                                     <button class="btn btn-secondary btn-sm" onclick="respondToMatch(${notification.id}, 'decline')">

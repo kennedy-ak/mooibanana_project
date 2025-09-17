@@ -6,3 +6,10 @@ python-decouple  # for environment variables
 stripe
 psycopg2-binary  # for PostgreSQL
 dj-database-url  # for database URL parsing
+
+# Performance optimization packages
+django-debug-toolbar  # for development performance monitoring
+redis  # for production caching (optional)
+django-redis  # Redis cache backend (optional)
+gunicorn  # WSGI server for production
+whitenoise  # static file serving

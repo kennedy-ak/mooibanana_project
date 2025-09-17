@@ -10,6 +10,7 @@ class Notification(models.Model):
         ('match_accepted', 'Match Accepted'),
         ('match_declined', 'Match Declined'),
         ('new_message', 'New Message'),
+        ('gift_received', 'Gift Received'),
     ]
 
     STATUS_CHOICES = [
@@ -30,6 +31,12 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['receiver', 'is_read']),
+            models.Index(fields=['receiver', 'notification_type', 'status']),
+            models.Index(fields=['sender', 'receiver']),
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
         return f"{self.sender.username} -> {self.receiver.username}: {self.get_notification_type_display()}"

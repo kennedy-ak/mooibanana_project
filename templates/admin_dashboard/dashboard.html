@@ -1,0 +1,298 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}Admin Dashboard - Mooibanana{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Platform Overview & Statistics{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary-gradient me-3">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                    <small class="text-success">+{{ users_this_week }} this week</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success-gradient me-3">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_students }}</h3>
+                    <p class="text-muted mb-0">Students</p>
+                    <small class="text-info">{{ verified_users }} verified</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning-gradient me-3">
+                    <i class="fas fa-heart"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_matches }}</h3>
+                    <p class="text-muted mb-0">Total Matches</p>
+                    <small class="text-success">+{{ matches_this_week }} this week</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-info-gradient me-3">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ complete_profiles }}</h3>
+                    <p class="text-muted mb-0">Complete Profiles</p>
+                    <small class="text-muted">{{ incomplete_profiles }} incomplete</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Stats -->
+<div class="row mb-4">
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-danger-gradient mx-auto mb-2">
+                <i class="fas fa-thumbs-up"></i>
+            </div>
+            <h4>{{ total_likes }}</h4>
+            <p class="text-muted mb-0">Total Likes</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-primary-gradient mx-auto mb-2">
+                <i class="fas fa-bell"></i>
+            </div>
+            <h4>{{ pending_match_requests }}</h4>
+            <p class="text-muted mb-0">Pending Requests</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-success-gradient mx-auto mb-2">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <h4>{{ completed_purchases }}</h4>
+            <p class="text-muted mb-0">Purchases</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-warning-gradient mx-auto mb-2">
+                <i class="fas fa-camera"></i>
+            </div>
+            <h4>{{ profiles_with_photos }}</h4>
+            <p class="text-muted mb-0">With Photos</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-info-gradient mx-auto mb-2">
+                <i class="fas fa-heart-broken"></i>
+            </div>
+            <h4>{{ mutual_likes }}</h4>
+            <p class="text-muted mb-0">Mutual Likes</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-danger-gradient mx-auto mb-2">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <h4>{{ unread_notifications }}</h4>
+            <p class="text-muted mb-0">Unread Notifications</p>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Recent Activity -->
+<div class="row">
+    <!-- Study Field Distribution -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-chart-pie text-primary me-2"></i>
+                Popular Study Fields
+            </h5>
+            <canvas id="studyFieldChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-bolt text-warning me-2"></i>
+                Quick Actions
+            </h5>
+            <div class="d-grid gap-2">
+                <a href="{% url 'admin_dashboard:user_management' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-users me-2"></i>Manage Users
+                </a>
+                <a href="{% url 'admin_dashboard:analytics' %}" class="btn btn-outline-info">
+                    <i class="fas fa-chart-line me-2"></i>View Analytics
+                </a>
+                <a href="{% url 'admin_dashboard:export_data' %}?type=users" class="btn btn-outline-success">
+                    <i class="fas fa-download me-2"></i>Export Users
+                </a>
+                <a href="{% url 'admin_dashboard:export_data' %}?type=matches" class="btn btn-outline-warning">
+                    <i class="fas fa-download me-2"></i>Export Matches
+                </a>
+                <a href="{% url 'admin:index' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-cog me-2"></i>Django Admin
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <!-- Recent Users -->
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-user-plus text-success me-2"></i>
+                Recent Users
+            </h5>
+            {% for user in recent_users %}
+            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <div class="me-3">
+                    <i class="fas fa-user-circle fa-2x text-primary"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ user.username }}</strong>
+                    <br>
+                    <small class="text-muted">{{ user.date_joined|date:"M d, Y" }}</small>
+                </div>
+                <a href="{% url 'admin_dashboard:user_detail' user.id %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye"></i>
+                </a>
+            </div>
+            {% empty %}
+            <p class="text-muted">No recent users</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Matches -->
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-heart text-danger me-2"></i>
+                Recent Matches
+            </h5>
+            {% for match in recent_matches %}
+            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <div class="me-3">
+                    <i class="fas fa-heart fa-2x text-danger"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ match.user1.username }}</strong> ❤️ <strong>{{ match.user2.username }}</strong>
+                    <br>
+                    <small class="text-muted">{{ match.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No recent matches</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Purchases -->
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-shopping-cart text-warning me-2"></i>
+                Recent Purchases
+            </h5>
+            {% for purchase in recent_purchases %}
+            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <div class="me-3">
+                    <i class="fas fa-shopping-cart fa-2x text-warning"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ purchase.user.username }}</strong>
+                    <br>
+                    <small class="text-muted">{{ purchase.package.name }} - ${{ purchase.amount }}</small>
+                    <br>
+                    <small class="text-muted">{{ purchase.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No recent purchases</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Study Field Chart
+const ctx = document.getElementById('studyFieldChart').getContext('2d');
+const studyFieldData = {
+    labels: [
+        {% for field in study_field_stats %}
+        '{{ field.study_field|capfirst }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for field in study_field_stats %}
+            {{ field.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', 
+            '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2', '#fcb69f'
+        ],
+        borderWidth: 0
+    }]
+};
+
+new Chart(ctx, {
+    type: 'doughnut',
+    data: studyFieldData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

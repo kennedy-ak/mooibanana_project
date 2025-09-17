@@ -37,7 +37,16 @@ class Profile(models.Model):
     is_complete = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_complete']),
+            models.Index(fields=['study_field']),
+            models.Index(fields=['location']),
+            models.Index(fields=['birth_date']),
+            models.Index(fields=['created_at']),
+        ]
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
     

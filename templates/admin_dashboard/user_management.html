@@ -1,0 +1,260 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}User Management - Admin Dashboard{% endblock %}
+{% block page_title %}User Management{% endblock %}
+{% block page_subtitle %}Manage platform users and profiles{% endblock %}
+
+{% block content %}
+<!-- Search and Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Search Users</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="Username, email, name...">
+                </div>
+                <div class="col-md-3">
+                    <label for="user_type" class="form-label">Filter by Type</label>
+                    <select class="form-select" id="user_type" name="user_type">
+                        <option value="">All Users</option>
+                        <option value="students" {% if user_type == 'students' %}selected{% endif %}>Students Only</option>
+                        <option value="verified" {% if user_type == 'verified' %}selected{% endif %}>Verified Users</option>
+                        <option value="complete_profiles" {% if user_type == 'complete_profiles' %}selected{% endif %}>Complete Profiles</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                    <a href="{% url 'admin_dashboard:user_management' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times"></i> Clear
+                    </a>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <a href="{% url 'admin_dashboard:export_data' %}?type=users" class="btn btn-success">
+                        <i class="fas fa-download"></i> Export
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-users text-primary me-2"></i>
+                    Users ({{ page_obj.paginator.count }} total)
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAll()">
+                        Select All
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkAction('deactivate')">
+                        Bulk Deactivate
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th><input type="checkbox" id="selectAllCheckbox"></th>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Profile</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user_obj in users %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="user-checkbox" value="{{ user_obj.id }}">
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if user_obj.profile.profile_picture %}
+                                        <img src="{{ user_obj.profile.profile_picture.url }}" 
+                                             class="rounded-circle me-2" width="40" height="40" 
+                                             style="object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                             style="width: 40px; height: 40px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ user_obj.username }}</strong>
+                                        {% if user_obj.first_name or user_obj.last_name %}
+                                            <br><small class="text-muted">{{ user_obj.get_full_name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user_obj.email }}</td>
+                            <td>
+                                {% if user_obj.is_superuser %}
+                                    <span class="badge bg-danger">Superuser</span>
+                                {% elif user_obj.is_staff %}
+                                    <span class="badge bg-warning">Staff</span>
+                                {% elif user_obj.is_student %}
+                                    <span class="badge bg-primary">Student</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Regular</span>
+                                {% endif %}
+                                
+                                {% if user_obj.is_verified %}
+                                    <span class="badge bg-success">Verified</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user_obj.profile %}
+                                    {% if user_obj.profile.is_complete %}
+                                        <span class="badge bg-success">Complete</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Incomplete</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge bg-danger">No Profile</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ user_obj.date_joined|date:"M d, Y" }}
+                                <br><small class="text-muted">{{ user_obj.date_joined|timesince }} ago</small>
+                            </td>
+                            <td>
+                                {% if user_obj.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                                
+                                {% if user_obj.last_login %}
+                                    <br><small class="text-muted">Last: {{ user_obj.last_login|date:"M d" }}</small>
+                                {% else %}
+                                    <br><small class="text-muted">Never logged in</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'admin_dashboard:user_detail' user_obj.id %}" 
+                                       class="btn btn-outline-primary btn-sm" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if user_obj.profile %}
+                                        <a href="{% url 'profiles:profile_detail' user_obj.profile.id %}" 
+                                           class="btn btn-outline-info btn-sm" title="View Profile" target="_blank">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                    {% endif %}
+                                    <a href="{% url 'admin_dashboard:delete_user' user_obj.id %}" 
+                                       class="btn btn-outline-danger btn-sm" title="Delete User"
+                                       onclick="return confirmDelete('Are you sure you want to delete {{ user_obj.username }}?')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="fas fa-users fa-3x mb-3"></i>
+                                <br>No users found matching your criteria.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="User pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}">
+                                &laquo; First
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}">
+                                Previous
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}">
+                                Next
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if user_type %}&user_type={{ user_type }}{% endif %}">
+                                Last &raquo;
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Select all functionality
+function selectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const userCheckboxes = document.querySelectorAll('.user-checkbox');
+    
+    selectAllCheckbox.checked = !selectAllCheckbox.checked;
+    userCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+// Bulk actions
+function bulkAction(action) {
+    const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked'))
+                              .map(checkbox => checkbox.value);
+    
+    if (selectedUsers.length === 0) {
+        alert('Please select at least one user.');
+        return;
+    }
+    
+    if (action === 'deactivate') {
+        if (confirm(`Are you sure you want to deactivate ${selectedUsers.length} users?`)) {
+            // Here you would implement the bulk deactivation
+            console.log('Deactivating users:', selectedUsers);
+            alert('Bulk deactivation would be implemented here.');
+        }
+    }
+}
+
+// Auto-submit search form on filter change
+document.getElementById('user_type').addEventListener('change', function() {
+    this.form.submit();
+});
+</script>
+{% endblock %}

@@ -69,13 +69,7 @@
             </div>
         </div>
 
-        {% if user.likes_balance <= 0 %}
-        <div class="alert alert-warning text-center">
-            <h5>Je hebt geen likes meer!</h5>
-            <p>Koop een like-pakket om door te gaan met matchen.</p>
-            <a href="{% url 'payments:packages' %}" class="btn btn-accent">Koop Likes</a>
-        </div>
-        {% endif %}
+
 
         <!-- 2x2 Grid Layout for larger screens, single column for mobile -->
         <div class="row">
@@ -139,16 +133,12 @@
                                         </button>
                                     {% else %}
                                         <!-- Match request button -->
-                                        {% if user.likes_balance > 0 %}
                                         <form method="post" action="{% url 'notifications:send_match_request' profile.user.id %}" class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-primary btn-sm">
-                                                <i class="fas fa-heart"></i> Match ({{ user.likes_balance }} left)
+                                                <i class="fas fa-heart"></i> Send Match Request
                                             </button>
                                         </form>
-                                        {% else %}
-                                        <span class="text-muted small">No likes left - <a href="{% url 'payments:packages' %}">Buy more</a></span>
-                                        {% endif %}
                                     {% endif %}
 
                                     <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-outline-secondary btn-sm">

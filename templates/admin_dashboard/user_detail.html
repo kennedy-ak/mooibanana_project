@@ -1,0 +1,287 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}{{ user_obj.username }} - User Details{% endblock %}
+{% block page_title %}User Details{% endblock %}
+{% block page_subtitle %}{{ user_obj.username }} - Complete Profile Information{% endblock %}
+
+{% block content %}
+<!-- User Overview -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            {% if user_obj.profile.profile_picture %}
+                <img src="{{ user_obj.profile.profile_picture.url }}" 
+                     class="rounded-circle mb-3" width="120" height="120" 
+                     style="object-fit: cover;">
+            {% else %}
+                <div class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" 
+                     style="width: 120px; height: 120px;">
+                    <i class="fas fa-user fa-3x text-white"></i>
+                </div>
+            {% endif %}
+            
+            <h4>{{ user_obj.get_full_name|default:user_obj.username }}</h4>
+            <p class="text-muted">@{{ user_obj.username }}</p>
+            
+            <div class="d-flex justify-content-center gap-2 mb-3">
+                {% if user_obj.is_superuser %}
+                    <span class="badge bg-danger">Superuser</span>
+                {% elif user_obj.is_staff %}
+                    <span class="badge bg-warning">Staff</span>
+                {% elif user_obj.is_student %}
+                    <span class="badge bg-primary">Student</span>
+                {% endif %}
+                
+                {% if user_obj.is_verified %}
+                    <span class="badge bg-success">Verified</span>
+                {% endif %}
+                
+                {% if user_obj.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-danger">Inactive</span>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid gap-2">
+                {% if user_obj.profile %}
+                    <a href="{% url 'profiles:profile_detail' user_obj.profile.id %}" 
+                       class="btn btn-primary" target="_blank">
+                        <i class="fas fa-eye"></i> View Public Profile
+                    </a>
+                {% endif %}
+                <a href="{% url 'admin_dashboard:delete_user' user_obj.id %}" 
+                   class="btn btn-outline-danger"
+                   onclick="return confirmDelete('Are you sure you want to delete {{ user_obj.username }}?')">
+                    <i class="fas fa-trash"></i> Delete User
+                </a>
+                <a href="{% url 'admin_dashboard:user_management' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Users
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Basic Information -->
+        <div class="stat-card mb-3">
+            <h5 class="mb-3">
+                <i class="fas fa-info-circle text-primary me-2"></i>
+                Basic Information
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Email:</strong> {{ user_obj.email }}</p>
+                    <p><strong>Username:</strong> {{ user_obj.username }}</p>
+                    <p><strong>First Name:</strong> {{ user_obj.first_name|default:"Not provided" }}</p>
+                    <p><strong>Last Name:</strong> {{ user_obj.last_name|default:"Not provided" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Date Joined:</strong> {{ user_obj.date_joined|date:"F d, Y H:i" }}</p>
+                    <p><strong>Last Login:</strong> 
+                        {% if user_obj.last_login %}
+                            {{ user_obj.last_login|date:"F d, Y H:i" }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </p>
+                    <p><strong>University:</strong> {{ user_obj.university|default:"Not provided" }}</p>
+                    <p><strong>Student ID:</strong> {{ user_obj.student_id|default:"Not provided" }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Information -->
+        {% if user_obj.profile %}
+        <div class="stat-card mb-3">
+            <h5 class="mb-3">
+                <i class="fas fa-user text-success me-2"></i>
+                Profile Information
+            </h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Bio:</strong> {{ user_obj.profile.bio|default:"Not provided" }}</p>
+                    <p><strong>Birth Date:</strong> 
+                        {% if user_obj.profile.birth_date %}
+                            {{ user_obj.profile.birth_date|date:"F d, Y" }} ({{ user_obj.profile.age }} years old)
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </p>
+                    <p><strong>Study Field:</strong> {{ user_obj.profile.get_study_field_display|default:"Not provided" }}</p>
+                    <p><strong>Study Year:</strong> {{ user_obj.profile.get_study_year_display|default:"Not provided" }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Location:</strong> {{ user_obj.profile.location|default:"Not provided" }}</p>
+                    <p><strong>Interests:</strong> 
+                        {% if user_obj.profile.interests %}
+                            {% for interest in user_obj.profile.get_interests_list %}
+                                <span class="badge bg-primary me-1">{{ interest }}</span>
+                            {% endfor %}
+                        {% else %}
+                            Not provided
+                        {% endif %}
+                    </p>
+                    <p><strong>Profile Complete:</strong> 
+                        {% if user_obj.profile.is_complete %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-warning">No</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Profile Created:</strong> {{ user_obj.profile.created_at|date:"F d, Y H:i" }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="stat-card mb-3">
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-user-slash fa-3x mb-3"></i>
+                <h5>No Profile Created</h5>
+                <p>This user hasn't created a profile yet.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-primary-gradient mx-auto mb-2">
+                <i class="fas fa-thumbs-up"></i>
+            </div>
+            <h4>{{ likes_given }}</h4>
+            <p class="text-muted mb-0">Likes Given</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-success-gradient mx-auto mb-2">
+                <i class="fas fa-heart"></i>
+            </div>
+            <h4>{{ likes_received }}</h4>
+            <p class="text-muted mb-0">Likes Received</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-warning-gradient mx-auto mb-2">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <h4>{{ matches }}</h4>
+            <p class="text-muted mb-0">Matches</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-info-gradient mx-auto mb-2">
+                <i class="fas fa-paper-plane"></i>
+            </div>
+            <h4>{{ notifications_sent }}</h4>
+            <p class="text-muted mb-0">Notifications Sent</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-danger-gradient mx-auto mb-2">
+                <i class="fas fa-inbox"></i>
+            </div>
+            <h4>{{ notifications_received }}</h4>
+            <p class="text-muted mb-0">Notifications Received</p>
+        </div>
+    </div>
+    
+    <div class="col-md-2">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-success-gradient mx-auto mb-2">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <h4>{{ purchases }}</h4>
+            <p class="text-muted mb-0">Purchases</p>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <!-- Recent Likes -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-thumbs-up text-primary me-2"></i>
+                Recent Likes Given
+            </h5>
+            {% for like in recent_likes %}
+            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <div class="me-3">
+                    {% if like.to_user.profile.profile_picture %}
+                        <img src="{{ like.to_user.profile.profile_picture.url }}" 
+                             class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                    {% else %}
+                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center" 
+                             style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ like.to_user.username }}</strong>
+                    {% if like.like_type == 'super' %}
+                        <span class="badge bg-warning">Super Like</span>
+                    {% endif %}
+                    <br>
+                    <small class="text-muted">{{ like.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No recent likes</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Recent Notifications -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-bell text-warning me-2"></i>
+                Recent Notifications
+            </h5>
+            {% for notification in recent_notifications %}
+            <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <div class="me-3">
+                    {% if notification.notification_type == 'match_request' %}
+                        <i class="fas fa-heart fa-2x text-danger"></i>
+                    {% elif notification.notification_type == 'match_accepted' %}
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    {% elif notification.notification_type == 'new_message' %}
+                        <i class="fas fa-comment fa-2x text-primary"></i>
+                    {% else %}
+                        <i class="fas fa-bell fa-2x text-warning"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow-1">
+                    <strong>{{ notification.get_notification_type_display }}</strong>
+                    <br>
+                    <small>From: {{ notification.sender.username }}</small>
+                    <br>
+                    <small class="text-muted">{{ notification.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+                <div>
+                    <span class="badge bg-{{ notification.status == 'pending' and 'warning' or notification.status == 'accepted' and 'success' or 'secondary' }}">
+                        {{ notification.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">No recent notifications</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

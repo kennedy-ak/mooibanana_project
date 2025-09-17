@@ -17,11 +17,6 @@ def send_match_request(request, user_id):
     if request.method == 'POST':
         target_user = get_object_or_404(User, id=user_id)
 
-        # Check if user has enough likes
-        if request.user.likes_balance <= 0:
-            messages.error(request, 'You need more likes! Buy a like package.')
-            return redirect('payments:packages')
-
         # Check if notification already exists
         existing_notification = Notification.objects.filter(
             sender=request.user,
@@ -41,10 +36,6 @@ def send_match_request(request, user_id):
             notification_type='match_request',
             message=f"{request.user.username} wants to match with you!"
         )
-
-        # Deduct like from balance
-        request.user.likes_balance -= 1
-        request.user.save()
 
         messages.success(request, f'Match request sent to {target_user.username}!')
         return redirect('profiles:discover')
@@ -99,6 +90,7 @@ def get_notifications(request):
         notification_data.append({
             'id': notification.id,
             'sender': notification.sender.username,
+            'sender_id': notification.sender.id,
             'type': notification.notification_type,
             'message': notification.message,
             'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),

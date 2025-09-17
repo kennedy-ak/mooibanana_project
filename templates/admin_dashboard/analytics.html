@@ -1,0 +1,362 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}Analytics - Admin Dashboard{% endblock %}
+{% block page_title %}Platform Analytics{% endblock %}
+{% block page_subtitle %}Detailed insights and trends{% endblock %}
+
+{% block content %}
+<!-- Time Range Selector -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="days" class="form-label">Time Period</label>
+                    <select class="form-select" id="days" name="days" onchange="this.form.submit()">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 3 months</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_dashboard:export_data' %}?type=users" class="btn btn-success">
+                            <i class="fas fa-download"></i> Export Users
+                        </a>
+                        <a href="{% url 'admin_dashboard:export_data' %}?type=matches" class="btn btn-info">
+                            <i class="fas fa-download"></i> Export Matches
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-primary-gradient mx-auto mb-2">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3>{{ active_users }}</h3>
+            <p class="text-muted mb-0">Active Users</p>
+            <small class="text-muted">Last {{ days }} days</small>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-success-gradient mx-auto mb-2">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h3>{{ user_registrations|length }}</h3>
+            <p class="text-muted mb-0">New Registrations</p>
+            <small class="text-muted">Last {{ days }} days</small>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-warning-gradient mx-auto mb-2">
+                <i class="fas fa-heart"></i>
+            </div>
+            <h3>{{ matches_over_time|length }}</h3>
+            <p class="text-muted mb-0">New Matches</p>
+            <small class="text-muted">Last {{ days }} days</small>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-info-gradient mx-auto mb-2">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>
+                {% if user_registrations %}
+                    {{ user_registrations|length|floatformat:0 }}
+                {% else %}
+                    0
+                {% endif %}
+            </h3>
+            <p class="text-muted mb-0">Growth Rate</p>
+            <small class="text-muted">Daily average</small>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <!-- User Registrations Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-chart-line text-primary me-2"></i>
+                User Registrations Over Time
+            </h5>
+            <canvas id="registrationsChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+    
+    <!-- Matches Chart -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-heart text-danger me-2"></i>
+                Matches Over Time
+            </h5>
+            <canvas id="matchesChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Study Fields Distribution -->
+<div class="row mb-4">
+    <div class="col-md-8 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-graduation-cap text-success me-2"></i>
+                Most Popular Study Fields
+            </h5>
+            <canvas id="studyFieldsChart" width="600" height="300"></canvas>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-list text-info me-2"></i>
+                Study Fields Ranking
+            </h5>
+            <div class="list-group list-group-flush">
+                {% for field in popular_fields %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ field.study_field|capfirst }}</strong>
+                        <br>
+                        <small class="text-muted">{{ field.count }} students</small>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">{{ field.count }}</span>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-center text-muted">
+                    No data available
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Statistics Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-table text-warning me-2"></i>
+                Detailed Statistics
+            </h5>
+            
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Metric</th>
+                            <th>Last 7 Days</th>
+                            <th>Last 30 Days</th>
+                            <th>All Time</th>
+                            <th>Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>User Registrations</strong></td>
+                            <td>{{ user_registrations|length }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-arrow-up"></i> Growing
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>New Matches</strong></td>
+                            <td>{{ matches_over_time|length }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    <i class="fas fa-arrow-up"></i> Growing
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Active Users</strong></td>
+                            <td>{{ active_users }}</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <span class="badge bg-info">
+                                    <i class="fas fa-minus"></i> Stable
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Engagement Rate</strong></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-chart-line"></i> Calculating
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// User Registrations Chart
+const regCtx = document.getElementById('registrationsChart').getContext('2d');
+const registrationData = {
+    labels: [
+        {% for reg in user_registrations %}
+        '{{ reg.day }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'New Users',
+        data: [
+            {% for reg in user_registrations %}
+            {{ reg.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+    }]
+};
+
+new Chart(regCtx, {
+    type: 'line',
+    data: registrationData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Matches Chart
+const matchCtx = document.getElementById('matchesChart').getContext('2d');
+const matchData = {
+    labels: [
+        {% for match in matches_over_time %}
+        '{{ match.day }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        label: 'New Matches',
+        data: [
+            {% for match in matches_over_time %}
+            {{ match.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        borderColor: '#f5576c',
+        backgroundColor: 'rgba(245, 87, 108, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4
+    }]
+};
+
+new Chart(matchCtx, {
+    type: 'line',
+    data: matchData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Study Fields Chart
+const studyCtx = document.getElementById('studyFieldsChart').getContext('2d');
+const studyData = {
+    labels: [
+        {% for field in popular_fields %}
+        '{{ field.study_field|capfirst }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for field in popular_fields %}
+            {{ field.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', 
+            '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2', '#fcb69f'
+        ],
+        borderWidth: 0
+    }]
+};
+
+new Chart(studyCtx, {
+    type: 'bar',
+    data: studyData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

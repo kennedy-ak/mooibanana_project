@@ -5,6 +5,9 @@ from django.views.generic import CreateView, UpdateView, ListView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.db.models import Q, Exists, OuterRef
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 from datetime import date, timedelta
 from .models import Profile
 from .forms import ProfileForm, ProfileSearchForm
@@ -42,7 +45,7 @@ class DiscoverView(LoginRequiredMixin, ListView):
             is_complete=True
         ).exclude(
             user=self.request.user
-        )
+        ).select_related('user')
 
         # Get search parameters
         search_query = self.request.GET.get('search_query', '').strip()
@@ -116,33 +119,47 @@ class DiscoverView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Get count of likes given to each user
-        from django.db.models import Count
-        likes_given = Like.objects.filter(
-            from_user=self.request.user
-        ).values('to_user').annotate(
-            like_count=Count('id')
-        )
 
-        # Create a dictionary for easy lookup
-        likes_count_dict = {item['to_user']: item['like_count'] for item in likes_given}
+        # Cache user-specific data for 5 minutes
+        user_id = self.request.user.id
+        cache_key_likes = f'user_likes_{user_id}'
+        cache_key_matches = f'user_matches_{user_id}'
+        cache_key_requests = f'user_requests_{user_id}'
+
+        # Get cached data or compute it
+        likes_count_dict = cache.get(cache_key_likes)
+        if likes_count_dict is None:
+            from django.db.models import Count
+            likes_given = Like.objects.filter(
+                from_user=self.request.user
+            ).values('to_user').annotate(
+                like_count=Count('id')
+            )
+            likes_count_dict = {item['to_user']: item['like_count'] for item in likes_given}
+            cache.set(cache_key_likes, likes_count_dict, 300)  # 5 minutes
         context['likes_count_dict'] = likes_count_dict
 
-        # Check for mutual matches
-        matched_users = Like.objects.filter(
-            from_user=self.request.user,
-            is_mutual=True
-        ).values_list('to_user', flat=True)
-        context['matched_users'] = list(matched_users)
+        # Check for mutual matches (cached)
+        matched_users = cache.get(cache_key_matches)
+        if matched_users is None:
+            matched_users = list(Like.objects.filter(
+                from_user=self.request.user,
+                is_mutual=True
+            ).values_list('to_user', flat=True))
+            cache.set(cache_key_matches, matched_users, 300)  # 5 minutes
+        context['matched_users'] = matched_users
 
-        # Check for pending match requests
-        from notifications.models import Notification
-        pending_requests = Notification.objects.filter(
-            sender=self.request.user,
-            notification_type='match_request',
-            status='pending'
-        ).values_list('receiver', flat=True)
-        context['pending_requests'] = list(pending_requests)
+        # Check for pending match requests (cached)
+        pending_requests = cache.get(cache_key_requests)
+        if pending_requests is None:
+            from notifications.models import Notification
+            pending_requests = list(Notification.objects.filter(
+                sender=self.request.user,
+                notification_type='match_request',
+                status='pending'
+            ).values_list('receiver', flat=True))
+            cache.set(cache_key_requests, pending_requests, 300)  # 5 minutes
+        context['pending_requests'] = pending_requests
 
         # Add search form with current values
         search_form = ProfileSearchForm(self.request.GET or None)
@@ -168,6 +185,9 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
     template_name = 'profiles/profile_detail.html'
     context_object_name = 'profile'
 
+    def get_queryset(self):
+        return Profile.objects.select_related('user').prefetch_related('photos')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
@@ -178,7 +198,7 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         ).values_list('to_user', flat=True)
         context['matched_users'] = list(matched_users)
 
-        # Check for pending match requests
+        # Check for pending match requests sent by current user
         from notifications.models import Notification
         pending_requests = Notification.objects.filter(
             sender=self.request.user,
@@ -186,6 +206,30 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
             status='pending'
         ).values_list('receiver', flat=True)
         context['pending_requests'] = list(pending_requests)
+
+        # Check if viewing this profile from a match request notification
+        notification_id = self.request.GET.get('notification_id')
+        if notification_id:
+            try:
+                notification = Notification.objects.get(
+                    id=notification_id,
+                    receiver=self.request.user,
+                    sender=self.object.user,
+                    notification_type='match_request',
+                    status='pending'
+                )
+                context['match_request_notification'] = notification
+            except Notification.DoesNotExist:
+                pass
+
+        # Check if there's a pending match request from this profile's user to current user
+        incoming_request = Notification.objects.filter(
+            sender=self.object.user,
+            receiver=self.request.user,
+            notification_type='match_request',
+            status='pending'
+        ).first()
+        context['incoming_match_request'] = incoming_request
 
         return context
 
