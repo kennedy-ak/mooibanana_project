@@ -1,0 +1,341 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile.user.get_full_name|default:profile.user.username }} - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Profile Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.username }}" 
+                             class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto" 
+                             style="width: 150px; height: 150px;">
+                            <i class="fas fa-user fa-4x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <h4 class="card-title">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
+                    
+                    {% if profile.age %}
+                        <p class="text-muted">{{ profile.age }} jaar</p>
+                    {% endif %}
+                    
+                    {% if profile.study_program %}
+                        <p class="text-primary">
+                            <i class="fas fa-graduation-cap"></i> {{ profile.study_program }}
+                        </p>
+                    {% endif %}
+                    
+                    {% if profile.university %}
+                        <p class="text-muted">
+                            <i class="fas fa-university"></i> {{ profile.university }}
+                        </p>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    {% if user.is_authenticated and user != profile.user %}
+                        <div class="d-grid gap-2 mt-4">
+                            <!-- Like Button -->
+                            <form method="post" action="{% url 'likes:give_like' profile.user.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-heart"></i> Like Geven
+                                </button>
+                            </form>
+                            
+                            <!-- Super Like Button (if user has super likes) -->
+                            {% if user.super_likes_balance > 0 %}
+                                <form method="post" action="{% url 'likes:give_super_like' profile.user.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="fas fa-star"></i> Super Like
+                                    </button>
+                                </form>
+                            {% endif %}
+                            
+                            <!-- Buy Likes Button -->
+                            <a href="{% url 'payments:packages' %}" class="btn btn-accent w-100">
+                                <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}
+                            </a>
+                            
+                            <!-- Start Chat Button (if matched) -->
+                            {% if is_matched %}
+                                <a href="{% url 'chat:room' match.chat_room.id %}" class="btn btn-success w-100">
+                                    <i class="fas fa-comments"></i> Chat Starten
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Stats Card -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h6 class="card-title text-center mb-3">Statistieken</h6>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="p-2">
+                                <h6 class="mb-0">{{ profile.user.likes_received.count }}</h6>
+                                <small class="text-muted">Likes Ontvangen</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2">
+                                <h6 class="mb-0">{{ profile.user.chat_matches_as_user1.count|add:profile.user.chat_matches_as_user2.count }}</h6>
+                                <small class="text-muted">Matches</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Details -->
+        <div class="col-lg-8">
+            <!-- Bio Section -->
+            {% if profile.bio %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-info-circle text-primary"></i> Over Mij
+                        </h5>
+                        <p class="card-text">{{ profile.bio|linebreaks }}</p>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Interests Section -->
+            {% if profile.interests %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-heart text-primary"></i> Interesses
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for interest in profile.get_interests_list %}
+                                <span class="badge bg-primary">{{ interest }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Hobbies Section -->
+            {% if profile.hobbies %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-gamepad text-primary"></i> Hobby's
+                        </h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for hobby in profile.get_hobbies_list %}
+                                <span class="badge bg-secondary">{{ hobby }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Additional Info -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-user-circle text-primary"></i> Profielinformatie
+                    </h5>
+                    <div class="row">
+                        {% if profile.gender %}
+                            <div class="col-md-6 mb-3">
+                                <strong>Geslacht:</strong>
+                                <span class="text-muted">{{ profile.get_gender_display }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.location %}
+                            <div class="col-md-6 mb-3">
+                                <strong>Locatie:</strong>
+                                <span class="text-muted">{{ profile.location }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        {% if profile.study_year %}
+                            <div class="col-md-6 mb-3">
+                                <strong>Studiejaar:</strong>
+                                <span class="text-muted">{{ profile.study_year }}</span>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="col-md-6 mb-3">
+                            <strong>Lid sinds:</strong>
+                            <span class="text-muted">{{ profile.user.date_joined|date:"F Y" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Photos Section -->
+            {% if profile.photos.exists %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-images text-primary"></i> Foto's
+                        </h5>
+                        <div class="row">
+                            {% for photo in profile.photos.all %}
+                                <div class="col-md-4 mb-3">
+                                    <img src="{{ photo.image.url }}" alt="Foto" 
+                                         class="img-fluid rounded shadow-sm" 
+                                         style="height: 200px; width: 100%; object-fit: cover;">
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Warning for unverified users -->
+            {% if not profile.is_verified %}
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Dit profiel is nog niet geverifieerd. Wees voorzichtig bij het delen van persoonlijke informatie.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Gift Likes Modal -->
+{% if user.is_authenticated and user != profile.user %}
+<div class="modal fade" id="giftLikesModal" tabindex="-1" aria-labelledby="giftLikesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%); color: white;">
+                <h5 class="modal-title" id="giftLikesModalLabel">
+                    <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <p class="lead">Laat {{ profile.user.first_name|default:profile.user.username }} weten hoe speciaal je hem/haar vindt!</p>
+                    <p class="text-muted">Koop een like pakket en alle likes gaan direct naar {{ profile.user.first_name|default:profile.user.username }}'s account.</p>
+                </div>
+
+                <!-- Direct link to packages page -->
+                <div class="text-center mb-4">
+                    <a href="{% url 'payments:packages' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Ga naar Like Pakketten
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="text-center mb-3">
+                    <h6 class="text-muted">Of kies een pakket hieronder:</h6>
+                </div>
+
+                <div class="row" id="giftPackages">
+                    <!-- Packages will be loaded here -->
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Like Success Modal -->
+<div class="modal fade" id="likeSuccessModal" tabindex="-1" aria-labelledby="likeSuccessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="likeSuccessModalLabel">
+                    <i class="fas fa-heart"></i> Like Gegeven!
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p>Je hebt succesvol een like gegeven aan {{ profile.user.get_full_name|default:profile.user.username }}!</p>
+                <p class="text-muted">Als deze persoon jou ook een like geeft, krijgen jullie een match en kunnen jullie chatten.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Oké</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    // Show success modal if like was given (you can pass this from the view)
+    {% if messages %}
+        {% for message in messages %}
+            {% if 'like' in message.tags %}
+                var likeModal = new bootstrap.Modal(document.getElementById('likeSuccessModal'));
+                likeModal.show();
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    // Load gift packages when modal opens
+    document.getElementById('giftLikesModal').addEventListener('show.bs.modal', function () {
+        fetch('/payments/api/packages/')
+            .then(response => response.json())
+            .then(data => {
+                const packagesContainer = document.getElementById('giftPackages');
+                packagesContainer.innerHTML = '';
+                
+                data.packages.forEach(package => {
+                    const isPopular = package.name.toLowerCase().includes('populair') || package.name.toLowerCase().includes('popular');
+                    
+                    const packageHtml = `
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 ${isPopular ? 'border-warning' : ''}">
+                                <div class="card-header text-center ${isPopular ? 'bg-warning text-dark' : 'bg-primary text-white'}">
+                                    <h6 class="mb-0">${package.name}</h6>
+                                    ${isPopular ? '<small class="badge bg-dark">POPULAIR</small>' : ''}
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="h4 text-primary mb-2">€${package.price}</div>
+                                    <div class="mb-3">
+                                        <small class="text-muted d-block"><i class="fas fa-heart text-danger"></i> ${package.regular_likes} Regular Likes</small>
+                                        ${package.super_likes > 0 ? `<small class="text-muted d-block"><i class="fas fa-star text-warning"></i> ${package.super_likes} Super Likes</small>` : ''}
+                                        ${package.boosters > 0 ? `<small class="text-muted d-block"><i class="fas fa-rocket text-info"></i> ${package.boosters} Boosters</small>` : ''}
+                                    </div>
+                                    <button onclick="giftPackage(${package.id})" class="btn ${isPopular ? 'btn-warning' : 'btn-primary'} btn-sm w-100">
+                                        <i class="fas fa-gift"></i> Cadeau Geven
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    packagesContainer.innerHTML += packageHtml;
+                });
+            })
+            .catch(error => {
+                console.error('Error loading packages:', error);
+                document.getElementById('giftPackages').innerHTML = 
+                    '<div class="col-12 text-center"><div class="alert alert-danger">Error loading packages</div></div>';
+            });
+    });
+
+    // Handle gift package purchase
+    function giftPackage(packageId) {
+        const recipientId = {{ profile.user.id }};
+        const recipientName = '{{ profile.user.first_name|default:profile.user.username }}';
+        
+        // Redirect to gift purchase page
+        window.location.href = `/payments/gift/${packageId}/${recipientId}/`;
+    }
+</script>
+{% endblock %}

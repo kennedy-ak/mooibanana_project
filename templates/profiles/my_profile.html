@@ -1,0 +1,95 @@
+<!-- templates/profiles/my_profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mijn Profiel - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3>Mijn Profiel</h3>
+                <a href="{% url 'profiles:edit_profile' %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Bewerk Profiel
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px;">
+                                <i class="fas fa-user fa-4x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        {% if not profile.is_complete %}
+                        <div class="alert alert-warning">
+                            <small>
+                                <i class="fas fa-exclamation-triangle"></i>
+                                Je profiel is niet compleet. <a href="{% url 'profiles:edit_profile' %}">Voltooi je profiel</a> om zichtbaar te zijn voor anderen.
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h4>{{ user.username }}
+                            {% if profile.age %}
+                                <span class="text-muted">, {{ profile.age }}</span>
+                            {% endif %}
+                        </h4>
+                        
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        
+                        {% if profile.study_field %}
+                        <p><strong>Studie:</strong> {{ profile.get_study_field_display }}
+                            {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        {% if profile.location %}
+                        <p><strong>Locatie:</strong> {{ profile.location }}</p>
+                        {% endif %}
+                        
+                        {% if profile.bio %}
+                        <p><strong>Bio:</strong></p>
+                        <p class="text-muted">{{ profile.bio }}</p>
+                        {% endif %}
+                        
+                        {% if profile.get_interests_list %}
+                        <p><strong>Interesses:</strong></p>
+                        <div class="mb-3">
+                            {% for interest in profile.get_interests_list %}
+                                <span class="badge bg-secondary me-1">{{ interest }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mt-4">
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h5 class="mb-0">{{ user.likes_received.count }}</h5>
+                                    <small class="text-muted">Likes Ontvangen</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h5 class="mb-0">{{ user.likes_given.count }}</h5>
+                                    <small class="text-muted">Likes Gegeven</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h5 class="mb-0">{{ user.chat_matches_as_user1.count|add:user.chat_matches_as_user2.count }}</h5>
+                                    <small class="text-muted">Matches</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

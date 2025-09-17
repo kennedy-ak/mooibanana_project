@@ -1,0 +1,58 @@
+
+<!-- templates/rewards/list.html -->
+{% extends 'base.html' %}
+
+{% block title %}Beloningen - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-white">Beloningen Winkel</h2>
+            <div class="text-white">
+                <i class="fas fa-star"></i> Je hebt <strong>{{ user.points_balance }}</strong> punten
+            </div>
+        </div>
+        
+        <div class="row">
+            {% for reward in rewards %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100">
+                    {% if reward.image %}
+                    <img src="{{ reward.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-gift fa-3x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ reward.name }}</h5>
+                        <p class="card-text">{{ reward.description|truncatewords:20 }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-primary">{{ reward.points_cost }} punten</span>
+                            <small class="text-muted">{{ reward.stock_quantity }} beschikbaar</small>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        {% if user.points_balance >= reward.points_cost %}
+                            <a href="{% url 'rewards:claim' reward.id %}" class="btn btn-success w-100">
+                                Claim Nu
+                            </a>
+                        {% else %}
+                            <button class="btn btn-secondary w-100" disabled>
+                                Niet genoeg punten
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center text-white">
+                <h4>Geen beloningen beschikbaar</h4>
+                <p>Kom later terug voor nieuwe beloningen!</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

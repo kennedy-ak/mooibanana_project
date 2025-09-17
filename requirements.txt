@@ -1,0 +1,6 @@
+django
+pillow  # for image handling
+django-crispy-forms
+crispy-bootstrap5
+python-decouple  # for environment variables
+stripe

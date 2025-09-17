@@ -1,0 +1,76 @@
+<!-- templates/likes/matches.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mijn Matches - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="text-center mb-4 text-white">Mijn Matches</h2>
+        
+        {% for match in matches %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    {% with other_user=match.user1 %}
+                        {% if other_user == user %}
+                            {% with other_user=match.user2 %}
+                    <div class="col-md-2 text-center">
+                        {% if other_user.profile.profile_picture %}
+                            <img src="{{ other_user.profile.profile_picture.url }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ other_user.username }}</h5>
+                        <p class="text-muted mb-0">Match sinds {{ match.created_at|date:"d M Y" }}</p>
+                        {% if other_user.profile.bio %}
+                            <small class="text-muted">{{ other_user.profile.bio|truncatewords:15 }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="{% url 'chat:room' match.chat_room.id %}" class="btn btn-primary">
+                            <i class="fas fa-comments"></i> Chat
+                        </a>
+                    </div>
+                            {% endwith %}
+                        {% else %}
+                    <div class="col-md-2 text-center">
+                        {% if other_user.profile.profile_picture %}
+                            <img src="{{ other_user.profile.profile_picture.url }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ other_user.username }}</h5>
+                        <p class="text-muted mb-0">Match sinds {{ match.created_at|date:"d M Y" }}</p>
+                        {% if other_user.profile.bio %}
+                            <small class="text-muted">{{ other_user.profile.bio|truncatewords:15 }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="{% url 'chat:room' match.chat_room.id %}" class="btn btn-primary">
+                            <i class="fas fa-comments"></i> Chat
+                        </a>
+                    </div>
+                        {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center text-white">
+            <h4>Nog geen matches</h4>
+            <p>Ga naar de ontdek pagina om mensen te liken en matches te maken!</p>
+            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Ontdekken</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

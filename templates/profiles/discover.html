@@ -1,0 +1,147 @@
+<!-- templates/profiles/discover.html -->
+{% extends 'base.html' %}
+{% load profile_extras %}
+
+{% block title %}Ontdekken - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2 class="text-center mb-4 text-white">Ontdek nieuwe studenten</h2>
+        
+        {% if user.likes_balance <= 0 %}
+        <div class="alert alert-warning text-center">
+            <h5>Je hebt geen likes meer!</h5>
+            <p>Koop een like-pakket om door te gaan met liken.</p>
+            <a href="{% url 'payments:packages' %}" class="btn btn-accent">Koop Likes</a>
+        </div>
+        {% endif %}
+        
+        {% for profile in profiles %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        {% if profile.profile_picture %}
+                            <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle" style="width: 200px; height: 200px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 200px; height: 200px;">
+                                <i class="fas fa-user fa-4x text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h4>{{ profile.user.username }}
+                            {% if profile.age %}
+                                <span class="text-muted">, {{ profile.age }}</span>
+                            {% endif %}
+                        </h4>
+                        
+                        {% if profile.study_field %}
+                        <p><strong>Studie:</strong> {{ profile.get_study_field_display }}
+                            {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        {% if profile.location %}
+                        <p><strong>Locatie:</strong> {{ profile.location }}</p>
+                        {% endif %}
+                        
+                        {% if profile.bio %}
+                        <p class="text-muted">{{ profile.bio|truncatewords:30 }}</p>
+                        {% endif %}
+                        
+                        {% if profile.get_interests_list %}
+                        <div class="mb-3">
+                            <strong>Interesses:</strong>
+                            {% for interest in profile.get_interests_list %}
+                                <span class="badge bg-secondary me-1">{{ interest }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex gap-2 align-items-center">
+                            {% if profile.user.id in matched_users %}
+                                <!-- User has matched with this profile -->
+                                <button type="button" class="btn btn-success" disabled>
+                                    <i class="fas fa-heart"></i> Matched!
+                                </button>
+                                <small class="text-muted">You can chat with this person</small>
+                            {% else %}
+                                <!-- Show like count if any -->
+                                {% if profile.user.id in likes_count_dict %}
+                                    <span class="badge bg-info me-2">
+                                        {{ likes_count_dict|get_item:profile.user.id }} likes given
+                                    </span>
+                                {% endif %}
+
+                                <!-- Like buttons -->
+                                {% if user.likes_balance > 0 %}
+                                <form method="post" action="{% url 'likes:give_like' profile.user.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="like_type" value="regular">
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-heart"></i> Like ({{ user.likes_balance }} left)
+                                    </button>
+                                </form>
+
+                                {% if user.super_likes_balance > 0 %}
+                                <form method="post" action="{% url 'likes:give_like' profile.user.id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="like_type" value="super">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-star"></i> Super Like
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">No likes left - <a href="{% url 'payments:packages' %}">Buy more</a></span>
+                                {% endif %}
+                            {% endif %}
+
+                            <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-eye"></i> Bekijk Profiel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center text-white">
+            <h4>Geen profielen gevonden</h4>
+            <p>Er zijn geen nieuwe profielen om te ontdekken. Kom later terug!</p>
+        </div>
+        {% endfor %}
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; Eerste</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Vorige</a>
+                    </li>
+                {% endif %}
+                
+                <li class="page-item active">
+                    <span class="page-link">{{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Volgende</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Laatste &raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

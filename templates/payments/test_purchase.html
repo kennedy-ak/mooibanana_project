@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Test Purchase - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>Test Purchase Page</h2>
+            
+            <div class="alert alert-info">
+                <h5>Debug Information:</h5>
+                <p><strong>User:</strong> {{ request.user }}</p>
+                <p><strong>User Email:</strong> {{ request.user.email }}</p>
+                <p><strong>Is Authenticated:</strong> {{ request.user.is_authenticated }}</p>
+                <p><strong>Package ID:</strong> {{ package.id }}</p>
+                <p><strong>Package Name:</strong> {{ package.name }}</p>
+                <p><strong>Package Price:</strong> ₵{{ package.price }}</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5>{{ package.name }}</h5>
+                    <p>Price: ₵{{ package.price }}</p>
+                    <p>Likes: {{ package.regular_likes }}</p>
+                    
+                    <form method="post" action="{% url 'payments:purchase' package.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-primary">Test Purchase</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

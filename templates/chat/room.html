@@ -1,0 +1,94 @@
+<!-- templates/chat/room.html -->
+{% extends 'base.html' %}
+
+{% block title %}Chat - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    {% if other_user.profile.profile_picture %}
+                        <img src="{{ other_user.profile.profile_picture.url }}" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                            <i class="fas fa-user text-muted"></i>
+                        </div>
+                    {% endif %}
+                    <h5 class="mb-0">{{ other_user.username }}</h5>
+                </div>
+            </div>
+            <div class="card-body" style="height: 400px; overflow-y: auto;" id="messages-container">
+                {% for message in room.messages.all %}
+                <div class="d-flex {% if message.sender == user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3">
+                    <div class="message {% if message.sender == user %}bg-primary text-white{% else %}bg-light{% endif %} p-3 rounded" style="max-width: 70%;">
+                        <div class="message-content">{{ message.content }}</div>
+                        <small class="{% if message.sender == user %}text-white-50{% else %}text-muted{% endif %}">
+                            {{ message.timestamp|date:"H:i" }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <form id="message-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="room_id" value="{{ room.id }}">
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="content" placeholder="Type je bericht..." required>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('message-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "chat:send_message" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add message to chat
+            const messagesContainer = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'd-flex justify-content-end mb-3';
+            messageDiv.innerHTML = `
+                <div class="message bg-primary text-white p-3 rounded" style="max-width: 70%;">
+                    <div class="message-content">${data.message.content}</div>
+                    <small class="text-white-50">${data.message.timestamp}</small>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Clear input
+            document.querySelector('input[name="content"]').value = '';
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+// Auto-scroll to bottom on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.getElementById('messages-container');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+});
+</script>
+{% endblock %}

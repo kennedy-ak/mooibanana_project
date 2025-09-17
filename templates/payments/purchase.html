@@ -1,0 +1,139 @@
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if is_gift %}
+        Cadeau Betaling - Mooibanana
+    {% else %}
+        Betaling - Mooibanana
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header text-center" style="background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%); color: white;">
+                    {% if is_gift %}
+                        <h4><i class="fas fa-gift"></i> Cadeau voor {{ recipient.first_name|default:recipient.username }}</h4>
+                    {% else %}
+                        <h4><i class="fas fa-heart"></i> Betaling voor {{ package.name }}</h4>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    <!-- Gift Info -->
+                    {% if is_gift %}
+                        <div class="alert alert-info mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-3 text-center">
+                                    {% if recipient.profile.profile_picture %}
+                                        <img src="{{ recipient.profile.profile_picture.url }}" 
+                                             alt="{{ recipient.username }}" 
+                                             class="rounded-circle" 
+                                             style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" 
+                                             style="width: 60px; height: 60px;">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-9">
+                                    <h6 class="mb-1">Cadeau voor {{ recipient.first_name|default:recipient.username }}</h6>
+                                    <small class="text-muted">
+                                        <strong>{{ package.regular_likes }} regular likes</strong> gaan naar {{ recipient.first_name|default:recipient.username }}<br>
+                                        {% if package.super_likes > 0 %}
+                                        <strong>{{ package.super_likes }} super likes</strong> blijven bij jou
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Package Details -->
+                    <div class="text-center mb-4">
+                        <h3 class="text-primary mb-2">€{{ package.price }}</h3>
+                        <h5 class="mb-3">{{ package.name }}</h5>
+                        
+                        <div class="row">
+                            <div class="col-4">
+                                <div class="p-3 {% if is_gift %}bg-success{% else %}bg-light{% endif %} rounded">
+                                    <i class="fas fa-heart text-danger fa-2x mb-2"></i>
+                                    <h6>{{ package.regular_likes }}</h6>
+                                    <small class="{% if is_gift %}text-white{% else %}text-muted{% endif %}">
+                                        Regular Likes
+                                        {% if is_gift %}<br><small>→ Voor {{ recipient.first_name|default:recipient.username }}</small>{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% if package.super_likes > 0 %}
+                            <div class="col-4">
+                                <div class="p-3 {% if is_gift %}bg-primary{% else %}bg-light{% endif %} rounded">
+                                    <i class="fas fa-star text-warning fa-2x mb-2"></i>
+                                    <h6>{{ package.super_likes }}</h6>
+                                    <small class="{% if is_gift %}text-white{% else %}text-muted{% endif %}">
+                                        Super Likes
+                                        {% if is_gift %}<br><small>→ Voor jou</small>{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if package.boosters > 0 %}
+                            <div class="col-4">
+                                <div class="p-3 {% if is_gift %}bg-primary{% else %}bg-light{% endif %} rounded">
+                                    <i class="fas fa-rocket text-info fa-2x mb-2"></i>
+                                    <h6>{{ package.boosters }}</h6>
+                                    <small class="{% if is_gift %}text-white{% else %}text-muted{% endif %}">
+                                        Boosters
+                                        {% if is_gift %}<br><small>→ Voor jou</small>{% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if package.description %}
+                            <p class="text-muted mt-3">{{ package.description }}</p>
+                        {% endif %}
+                    </div>
+                    <!-- Processing Message -->
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mb-3">Betaling wordt verwerkt...</h5>
+                        <p class="text-muted">
+                            {% if is_gift %}
+                                Je wordt doorgestuurd naar Paystack om de betaling voor {{ recipient.first_name|default:recipient.username }} te voltooien.
+                            {% else %}
+                                Je wordt doorgestuurd naar Paystack om je betaling te voltooien.
+                            {% endif %}
+                        </p>
+                        
+                        <p class="text-muted">
+                            <small>
+                                <i class="fas fa-lock me-1"></i>
+                                Veilige betaling via Paystack. Je gegevens zijn beschermd.
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-redirect if needed (this template shouldn't normally be shown as we redirect immediately)
+    setTimeout(function() {
+        window.location.href = "{% url 'payments:packages' %}";
+    }, 5000);
+</script>
+{% endblock %}
+

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Betaling Geannuleerd - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-times-circle fa-5x text-warning"></i>
+                    </div>
+                    
+                    <h2 class="text-warning mb-4">Betaling Geannuleerd</h2>
+                    
+                    <p class="text-muted mb-4">
+                        Je betaling is geannuleerd. Geen zorgen, er zijn geen kosten in rekening gebracht.
+                    </p>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'payments:packages' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            Probeer Opnieuw
+                        </a>
+                        <a href="{% url 'profiles:discover' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Terug naar Ontdekken
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

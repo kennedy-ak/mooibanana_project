@@ -1,0 +1,51 @@
+
+<!-- templates/chat/list.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mijn Chats - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="text-center mb-4 text-white">Mijn Chats</h2>
+        
+        {% for chat_data in chat_rooms_with_other_user %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-2 text-center">
+                        {% if chat_data.other_user.profile.profile_picture %}
+                            <img src="{{ chat_data.other_user.profile.profile_picture.url }}" class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-muted"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ chat_data.other_user.username }}</h5>
+                        {% if chat_data.room.last_message %}
+                            <p class="text-muted mb-0">{{ chat_data.room.last_message.content|truncatewords:10 }}</p>
+                            <small class="text-muted">{{ chat_data.room.last_message.timestamp|date:"d M Y H:i" }}</small>
+                        {% else %}
+                            <p class="text-muted mb-0">Nog geen berichten</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <a href="{% url 'chat:room' chat_data.room.id %}" class="btn btn-primary">
+                            <i class="fas fa-comments"></i> Open Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="text-center text-white">
+            <h4>Nog geen chats</h4>
+            <p>Maak eerst een match om te kunnen chatten!</p>
+            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Ontdekken</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

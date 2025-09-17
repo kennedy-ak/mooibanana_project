@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mijn Claims - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-primary">Mijn Claims</h2>
+                <a href="{% url 'rewards:list' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-gift"></i> Bekijk Beloningen
+                </a>
+            </div>
+
+            {% if object_list %}
+                <div class="row">
+                    {% for claim in object_list %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100 shadow-sm">
+                                {% if claim.reward.image %}
+                                    <img src="{{ claim.reward.image.url }}" class="card-img-top" alt="{{ claim.reward.name }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                    <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height: 200px;">
+                                        <i class="fas fa-gift fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="card-title">{{ claim.reward.name }}</h5>
+                                    <p class="card-text flex-grow-1">{{ claim.reward.description|truncatewords:20 }}</p>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Punten gebruikt:</span>
+                                            <span class="badge bg-primary">{{ claim.points_spent }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted">Datum geclaimed:</span>
+                                            <span class="text-dark">{{ claim.claimed_at|date:"d M Y" }}</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted">Status:</span>
+                                            {% if claim.status == 'pending' %}
+                                                <span class="badge bg-warning">In behandeling</span>
+                                            {% elif claim.status == 'approved' %}
+                                                <span class="badge bg-info">Goedgekeurd</span>
+                                            {% elif claim.status == 'shipped' %}
+                                                <span class="badge bg-primary">Verstuurd</span>
+                                            {% elif claim.status == 'delivered' %}
+                                                <span class="badge bg-success">Bezorgd</span>
+                                            {% elif claim.status == 'cancelled' %}
+                                                <span class="badge bg-danger">Geannuleerd</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if claim.delivery_address and claim.status != 'cancelled' %}
+                                        <div class="border-top pt-3">
+                                            <small class="text-muted">
+                                                <i class="fas fa-map-marker-alt"></i> Bezorgadres:
+                                                <br>{{ claim.delivery_address|linebreaks }}
+                                            </small>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Pagination -->
+                {% if is_paginated %}
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">Eerste</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Vorige</a>
+                                    </li>
+                                {% endif %}
+
+                                <li class="page-item active">
+                                    <span class="page-link">
+                                        Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}
+                                    </span>
+                                </li>
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Volgende</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Laatste</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-gift fa-5x text-muted"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">Nog geen claims</h4>
+                    <p class="text-muted mb-4">Je hebt nog geen beloningen geclaimed. Begin met het verzamelen van punten door likes te geven en te ontvangen!</p>
+                    <a href="{% url 'rewards:list' %}" class="btn btn-primary">
+                        <i class="fas fa-gift"></i> Bekijk Beschikbare Beloningen
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

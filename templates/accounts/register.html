@@ -1,0 +1,29 @@
+<!-- templates/accounts/register.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Registreren - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <h3>Maak een account aan</h3>
+                <p class="text-muted">Gebruik je studentenemail om te registreren</p>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-accent w-100">Registreren</button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p>Heb je al een account? <a href="{% url 'accounts:login' %}">Log in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
