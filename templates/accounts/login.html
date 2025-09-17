@@ -16,7 +16,9 @@
             <div class="card-body">
                 {% if form.errors %}
                     <div class="alert alert-danger">
-                        {{ form.errors }}
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>Login Failed</strong><br>
+                        Please check your email and password and try again.
                     </div>
                 {% endif %}
                 <form method="post">
