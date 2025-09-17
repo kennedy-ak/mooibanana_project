@@ -27,9 +27,17 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='').split(',')
+ALLOWED_HOSTS = ["mooibanana-project-1.onrender.com","*"]
+#config('ALLOWED_HOSTS', default='').split(',')
 
-
+CSRF_TRUSTED_ORIGINS = [
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    "mooibanana-project-1.onrender.com"
+ 
+  # Replace with your actual domain
+    # Add any other domains you're using
+]
 # Application definition
 
 INSTALLED_APPS = [
