@@ -6,113 +6,167 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 mx-auto">
+    <div class="col-12">
         <h2 class="text-center mb-4 text-white">Ontdek nieuwe studenten</h2>
-        
+
+        <!-- Search Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="fas fa-search"></i> Search Profiles
+                    {% if is_searching %}
+                        <span class="badge bg-primary">Active</span>
+                    {% endif %}
+                </h5>
+                <form method="get" class="row g-3">
+                    <div class="col-md-4">
+                        {{ search_form.search_query.label_tag }}
+                        {{ search_form.search_query }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ search_form.study_field.label_tag }}
+                        {{ search_form.study_field }}
+                    </div>
+                    <div class="col-md-5">
+                        {{ search_form.interests.label_tag }}
+                        {{ search_form.interests }}
+                    </div>
+                    <div class="col-md-3">
+                        {{ search_form.location.label_tag }}
+                        {{ search_form.location }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ search_form.min_age.label_tag }}
+                        {{ search_form.min_age }}
+                    </div>
+                    <div class="col-md-2">
+                        {{ search_form.max_age.label_tag }}
+                        {{ search_form.max_age }}
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                        <a href="{% url 'profiles:discover' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times"></i> Clear
+                        </a>
+                    </div>
+                </form>
+
+                {% if is_searching %}
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <strong>Active filters:</strong>
+                        {% if search_params.search_query %}Name: "{{ search_params.search_query }}" {% endif %}
+                        {% if search_params.study_field %}Study: "{{ search_form.study_field.field.choices|lookup:search_params.study_field }}" {% endif %}
+                        {% if search_params.interests %}Interests: "{{ search_params.interests }}" {% endif %}
+                        {% if search_params.location %}Location: "{{ search_params.location }}" {% endif %}
+                        {% if search_params.min_age %}Min Age: {{ search_params.min_age }} {% endif %}
+                        {% if search_params.max_age %}Max Age: {{ search_params.max_age }} {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
         {% if user.likes_balance <= 0 %}
         <div class="alert alert-warning text-center">
             <h5>Je hebt geen likes meer!</h5>
-            <p>Koop een like-pakket om door te gaan met liken.</p>
+            <p>Koop een like-pakket om door te gaan met matchen.</p>
             <a href="{% url 'payments:packages' %}" class="btn btn-accent">Koop Likes</a>
         </div>
         {% endif %}
-        
-        {% for profile in profiles %}
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        {% if profile.profile_picture %}
-                            <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle" style="width: 200px; height: 200px; object-fit: cover;">
-                        {% else %}
-                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 200px; height: 200px;">
-                                <i class="fas fa-user fa-4x text-muted"></i>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-8">
-                        <h4>{{ profile.user.username }}
-                            {% if profile.age %}
-                                <span class="text-muted">, {{ profile.age }}</span>
-                            {% endif %}
-                        </h4>
-                        
-                        {% if profile.study_field %}
-                        <p><strong>Studie:</strong> {{ profile.get_study_field_display }}
-                            {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
-                        </p>
-                        {% endif %}
-                        
-                        {% if profile.location %}
-                        <p><strong>Locatie:</strong> {{ profile.location }}</p>
-                        {% endif %}
-                        
-                        {% if profile.bio %}
-                        <p class="text-muted">{{ profile.bio|truncatewords:30 }}</p>
-                        {% endif %}
-                        
-                        {% if profile.get_interests_list %}
-                        <div class="mb-3">
-                            <strong>Interesses:</strong>
-                            {% for interest in profile.get_interests_list %}
-                                <span class="badge bg-secondary me-1">{{ interest }}</span>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        
-                        <div class="d-flex gap-2 align-items-center">
-                            {% if profile.user.id in matched_users %}
-                                <!-- User has matched with this profile -->
-                                <button type="button" class="btn btn-success" disabled>
-                                    <i class="fas fa-heart"></i> Matched!
-                                </button>
-                                <small class="text-muted">You can chat with this person</small>
-                            {% else %}
-                                <!-- Show like count if any -->
-                                {% if profile.user.id in likes_count_dict %}
-                                    <span class="badge bg-info me-2">
-                                        {{ likes_count_dict|get_item:profile.user.id }} likes given
-                                    </span>
-                                {% endif %}
 
-                                <!-- Like buttons -->
-                                {% if user.likes_balance > 0 %}
-                                <form method="post" action="{% url 'likes:give_like' profile.user.id %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="like_type" value="regular">
-                                    <button type="submit" class="btn btn-outline-primary">
-                                        <i class="fas fa-heart"></i> Like ({{ user.likes_balance }} left)
-                                    </button>
-                                </form>
-
-                                {% if user.super_likes_balance > 0 %}
-                                <form method="post" action="{% url 'likes:give_like' profile.user.id %}" class="d-inline">
-                                    {% csrf_token %}
-                                    <input type="hidden" name="like_type" value="super">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-star"></i> Super Like
-                                    </button>
-                                </form>
-                                {% endif %}
+        <!-- 2x2 Grid Layout for larger screens, single column for mobile -->
+        <div class="row">
+            {% for profile in profiles %}
+            <div class="col-12 col-lg-6 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                {% if profile.profile_picture %}
+                                    <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;">
                                 {% else %}
-                                <span class="text-muted">No likes left - <a href="{% url 'payments:packages' %}">Buy more</a></span>
+                                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
+                                        <i class="fas fa-user fa-3x text-muted"></i>
+                                    </div>
                                 {% endif %}
-                            {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <h5>{{ profile.user.username }}
+                                    {% if profile.age %}
+                                        <span class="text-muted">, {{ profile.age }}</span>
+                                    {% endif %}
+                                </h5>
 
-                            <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-eye"></i> Bekijk Profiel
-                            </a>
+                                {% if profile.study_field %}
+                                <p class="small"><strong>Studie:</strong> {{ profile.get_study_field_display }}
+                                    {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
+                                </p>
+                                {% endif %}
+
+                                {% if profile.location %}
+                                <p class="small"><strong>Locatie:</strong> {{ profile.location }}</p>
+                                {% endif %}
+
+                                {% if profile.bio %}
+                                <p class="text-muted small">{{ profile.bio|truncatewords:20 }}</p>
+                                {% endif %}
+
+                                {% if profile.get_interests_list %}
+                                <div class="mb-2">
+                                    {% for interest in profile.get_interests_list|slice:":3" %}
+                                        <span class="badge bg-secondary me-1 small">{{ interest }}</span>
+                                    {% endfor %}
+                                    {% if profile.get_interests_list|length > 3 %}
+                                        <span class="text-muted small">+{{ profile.get_interests_list|length|add:"-3" }} more</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                    {% if profile.user.id in matched_users %}
+                                        <!-- User has matched with this profile -->
+                                        <button type="button" class="btn btn-success btn-sm" disabled>
+                                            <i class="fas fa-heart"></i> Matched!
+                                        </button>
+                                        <small class="text-muted">You can chat with this person</small>
+                                    {% elif profile.user.id in pending_requests %}
+                                        <!-- Match request already sent -->
+                                        <button type="button" class="btn btn-warning btn-sm" disabled>
+                                            <i class="fas fa-clock"></i> Request Sent
+                                        </button>
+                                    {% else %}
+                                        <!-- Match request button -->
+                                        {% if user.likes_balance > 0 %}
+                                        <form method="post" action="{% url 'notifications:send_match_request' profile.user.id %}" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i class="fas fa-heart"></i> Match ({{ user.likes_balance }} left)
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <span class="text-muted small">No likes left - <a href="{% url 'payments:packages' %}">Buy more</a></span>
+                                        {% endif %}
+                                    {% endif %}
+
+                                    <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12 text-center text-white">
+                <h4>Geen profielen gevonden</h4>
+                <p>Er zijn geen nieuwe profielen om te ontdekken. Kom later terug!</p>
+            </div>
+            {% endfor %}
         </div>
-        {% empty %}
-        <div class="text-center text-white">
-            <h4>Geen profielen gevonden</h4>
-            <p>Er zijn geen nieuwe profielen om te ontdekken. Kom later terug!</p>
-        </div>
-        {% endfor %}
         
         <!-- Pagination -->
         {% if is_paginated %}
@@ -120,23 +174,23 @@
             <ul class="pagination justify-content-center">
                 {% if page_obj.has_previous %}
                     <li class="page-item">
-                        <a class="page-link" href="?page=1">&laquo; Eerste</a>
+                        <a class="page-link" href="?{% url_replace request 'page' 1 %}">&laquo; Eerste</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Vorige</a>
+                        <a class="page-link" href="?{% url_replace request 'page' page_obj.previous_page_number %}">Vorige</a>
                     </li>
                 {% endif %}
-                
+
                 <li class="page-item active">
                     <span class="page-link">{{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
                 </li>
-                
+
                 {% if page_obj.has_next %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Volgende</a>
+                        <a class="page-link" href="?{% url_replace request 'page' page_obj.next_page_number %}">Volgende</a>
                     </li>
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Laatste &raquo;</a>
+                        <a class="page-link" href="?{% url_replace request 'page' page_obj.paginator.num_pages %}">Laatste &raquo;</a>
                     </li>
                 {% endif %}
             </ul>
@@ -144,4 +198,59 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-submit search form when study field changes
+document.addEventListener('DOMContentLoaded', function() {
+    const studyField = document.getElementById('id_study_field');
+    if (studyField) {
+        studyField.addEventListener('change', function() {
+            // Auto-submit form when study field changes
+            this.form.submit();
+        });
+    }
+
+    // Add search suggestions for interests
+    const interestsInput = document.getElementById('id_interests');
+    if (interestsInput) {
+        const commonInterests = [
+            'football', 'basketball', 'tennis', 'swimming', 'running',
+            'music', 'guitar', 'piano', 'singing', 'dancing',
+            'reading', 'writing', 'photography', 'art', 'painting',
+            'cooking', 'traveling', 'hiking', 'cycling', 'gaming',
+            'movies', 'series', 'anime', 'programming', 'technology',
+            'fitness', 'yoga', 'meditation', 'volunteering', 'languages'
+        ];
+
+        // Create datalist for autocomplete
+        const datalist = document.createElement('datalist');
+        datalist.id = 'interests-suggestions';
+        commonInterests.forEach(interest => {
+            const option = document.createElement('option');
+            option.value = interest;
+            datalist.appendChild(option);
+        });
+
+        interestsInput.setAttribute('list', 'interests-suggestions');
+        interestsInput.parentNode.appendChild(datalist);
+    }
+
+    // Clear form functionality
+    const clearBtn = document.querySelector('a[href*="discover"]');
+    if (clearBtn && clearBtn.textContent.includes('Clear')) {
+        clearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Clear all form fields
+            const form = document.querySelector('form[method="get"]');
+            if (form) {
+                form.reset();
+                // Redirect to discover page without parameters
+                window.location.href = '{% url "profiles:discover" %}';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

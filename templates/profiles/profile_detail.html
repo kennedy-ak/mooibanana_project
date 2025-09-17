@@ -41,24 +41,31 @@
                     <!-- Action Buttons -->
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="d-grid gap-2 mt-4">
-                            <!-- Like Button -->
-                            <form method="post" action="{% url 'likes:give_like' profile.user.id %}">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-heart"></i> Like Geven
+                            <!-- Check if already matched -->
+                            {% if profile.user.id in matched_users %}
+                                <button type="button" class="btn btn-success w-100" disabled>
+                                    <i class="fas fa-heart"></i> Matched!
                                 </button>
-                            </form>
-                            
-                            <!-- Super Like Button (if user has super likes) -->
-                            {% if user.super_likes_balance > 0 %}
-                                <form method="post" action="{% url 'likes:give_super_like' profile.user.id %}">
+                            {% elif profile.user.id in pending_requests %}
+                                <button type="button" class="btn btn-warning w-100" disabled>
+                                    <i class="fas fa-clock"></i> Match Request Sent
+                                </button>
+                            {% else %}
+                                <!-- Match Request Button -->
+                                {% if user.likes_balance > 0 %}
+                                <form method="post" action="{% url 'notifications:send_match_request' profile.user.id %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning w-100">
-                                        <i class="fas fa-star"></i> Super Like
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-heart"></i> Send Match Request
                                     </button>
                                 </form>
+                                {% else %}
+                                <a href="{% url 'payments:packages' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-heart"></i> Buy Likes to Send Match Request
+                                </a>
+                                {% endif %}
                             {% endif %}
-                            
+
                             <!-- Buy Likes Button -->
                             <a href="{% url 'payments:packages' %}" class="btn btn-accent w-100">
                                 <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}

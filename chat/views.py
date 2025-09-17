@@ -52,16 +52,29 @@ def send_message(request):
     if request.method == 'POST':
         room_id = request.POST.get('room_id')
         content = request.POST.get('content')
-        
+
         room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
-        
+
         if content.strip():
             message = Message.objects.create(
                 room=room,
                 sender=request.user,
                 content=content.strip()
             )
-            
+
+            # Create notification for other participants
+            from notifications.models import Notification
+            other_participants = room.participants.exclude(id=request.user.id)
+
+            for participant in other_participants:
+                Notification.objects.create(
+                    sender=request.user,
+                    receiver=participant,
+                    notification_type='new_message',
+                    message=f"New message from {request.user.username}: {content[:50]}{'...' if len(content) > 50 else ''}",
+                    status='read'  # Message notifications are auto-read
+                )
+
             return JsonResponse({
                 'success': True,
                 'message': {
@@ -70,5 +83,5 @@ def send_message(request):
                     'timestamp': message.timestamp.strftime('%H:%M')
                 }
             })
-    
+
     return JsonResponse({'success': False})

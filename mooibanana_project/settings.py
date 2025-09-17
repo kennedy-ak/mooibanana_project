@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'crispy_bootstrap5',
-    
+
     # Custom apps
     'accounts',
     'profiles',
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'rewards',
     'chat',
     'payments',
+    'notifications',
 ]
 
 MIDDLEWARE = [
