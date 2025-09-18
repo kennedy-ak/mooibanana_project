@@ -9,11 +9,14 @@
         <h2 class="text-center mb-4 text-white">Your Notifications</h2>
         
         {% for notification in notifications %}
-        <div class="card mb-3">
+        <div class="card mb-3 {% if not notification.is_read %}border-primary{% endif %}">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <h6 class="card-title">
+                            {% if not notification.is_read %}
+                                <span class="badge bg-primary me-2">NEW</span>
+                            {% endif %}
                             {% if notification.notification_type == 'match_request' %}
                                 <i class="fas fa-heart text-danger"></i> Match Request
                             {% elif notification.notification_type == 'match_accepted' %}
@@ -53,13 +56,20 @@
                             </button>
                         </div>
                         {% else %}
-                        <span class="badge
-                        {% if notification.status == 'accepted' %}bg-success
-                        {% elif notification.status == 'declined' %}bg-secondary
-                        {% else %}bg-warning
-                        {% endif %}">
-                            {{ notification.get_status_display }}
-                        </span>
+                        <div class="d-flex gap-2 align-items-center">
+                            <span class="badge
+                            {% if notification.status == 'accepted' %}bg-success
+                            {% elif notification.status == 'declined' %}bg-secondary
+                            {% else %}bg-warning
+                            {% endif %}">
+                                {{ notification.get_status_display }}
+                            </span>
+                            {% if not notification.is_read %}
+                                <button class="btn btn-outline-primary btn-sm" onclick="markAsRead({{ notification.id }})">
+                                    <i class="fas fa-check"></i> Mark as Read
+                                </button>
+                            {% endif %}
+                        </div>
                         {% endif %}
                     </div>
                 </div>
@@ -126,5 +136,52 @@ function respondToMatch(notificationId, action) {
     })
     .catch(error => console.error('Error responding to match:', error));
 }
+
+function markAsRead(notificationId) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch(`/notifications/api/mark-read/${notificationId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload the page to show updated status
+            location.reload();
+        }
+    })
+    .catch(error => console.error('Error marking notification as read:', error));
+}
+
+// Auto-mark notifications as read when they are visible for more than 3 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const unreadNotifications = document.querySelectorAll('.border-primary');
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const notificationCard = entry.target;
+                const notificationId = notificationCard.querySelector('[onclick*="markAsRead"]')?.getAttribute('onclick')?.match(/\d+/)?.[0];
+                
+                if (notificationId) {
+                    setTimeout(() => {
+                        // Check if still visible and unread
+                        if (entry.isIntersecting && notificationCard.classList.contains('border-primary')) {
+                            markAsRead(notificationId);
+                        }
+                    }, 3000); // 3 seconds
+                }
+            }
+        });
+    }, {
+        threshold: 0.5 // 50% of the notification must be visible
+    });
+    
+    unreadNotifications.forEach(notification => {
+        observer.observe(notification);
+    });
+});
 </script>
 {% endblock %}
