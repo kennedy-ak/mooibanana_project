@@ -67,13 +67,13 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-white shadow-sm mb-4">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm mb-4">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
                 <i class="fas fa-banana text-warning"></i> Mooibanana
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
@@ -183,64 +183,107 @@
 
     {% if user.is_authenticated %}
     <script>
-    // Notification system
-    function loadNotifications() {
-        fetch('/notifications/api/get/')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('match-requests-container');
-                const countBadge = document.getElementById('notification-count');
-                container.innerHTML = '';
+    // WebSocket connection for real-time notifications
+    let notificationSocket = null;
 
-                // Update notification count in navigation
-                if (data.count > 0) {
-                    countBadge.textContent = data.count;
-                    countBadge.style.display = 'inline';
-                } else {
-                    countBadge.style.display = 'none';
-                }
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
 
-                data.notifications.forEach(notification => {
-                    if (notification.type === 'match_request' && notification.status === 'pending') {
-                        const notificationDiv = document.createElement('div');
-                        notificationDiv.className = 'alert alert-warning alert-dismissible fade show';
-                        notificationDiv.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="flex-grow-1">
-                                    <strong>Match Request!</strong> ${notification.message}
-                                    <br>
-                                    <small class="text-muted">Click to view ${notification.sender}'s profile</small>
-                                </div>
-                                <div class="d-flex gap-2">
-                                    <a href="/profiles/profile/${notification.sender_id}/?notification_id=${notification.id}" class="btn btn-info btn-sm">
-                                        <i class="fas fa-eye"></i> View Profile
-                                    </a>
-                                    <button class="btn btn-success btn-sm" onclick="respondToMatch(${notification.id}, 'accept')">
-                                        <i class="fas fa-heart"></i> Accept
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm" onclick="respondToMatch(${notification.id}, 'decline')">
-                                        <i class="fas fa-times"></i> Decline
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        container.appendChild(notificationDiv);
-                    } else if (notification.type === 'gift_received' && !notification.is_read) {
-                        const notificationDiv = document.createElement('div');
-                        notificationDiv.className = 'alert alert-success alert-dismissible fade show';
-                        notificationDiv.innerHTML = `
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div class="flex-grow-1">
-                                    <strong><i class="fas fa-gift"></i> Gift Received!</strong> ${notification.message}
-                                </div>
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="markAsRead(${notification.id})"></button>
-                            </div>
-                        `;
-                        container.appendChild(notificationDiv);
-                    }
-                });
-            })
-            .catch(error => console.error('Error loading notifications:', error));
+        notificationSocket = new WebSocket(wsUrl);
+
+        notificationSocket.onopen = function(e) {
+            console.log('Notification WebSocket connected');
+            // Request current notifications
+            notificationSocket.send(JSON.stringify({
+                'type': 'get_notifications'
+            }));
+        };
+
+        notificationSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+
+            if (data.type === 'notification_count') {
+                updateNotificationCount(data.count);
+            } else if (data.type === 'notifications_list') {
+                displayNotifications(data.notifications);
+            } else if (data.type === 'notification_message') {
+                // New notification received
+                displaySingleNotification(data.notification);
+                updateNotificationCount(data.count);
+            }
+        };
+
+        notificationSocket.onclose = function(e) {
+            console.log('Notification WebSocket disconnected');
+            // Reconnect after 3 seconds
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        notificationSocket.onerror = function(e) {
+            console.error('WebSocket error:', e);
+        };
+    }
+
+    function updateNotificationCount(count) {
+        const countBadge = document.getElementById('notification-count');
+        if (count > 0) {
+            countBadge.textContent = count;
+            countBadge.style.display = 'inline';
+        } else {
+            countBadge.style.display = 'none';
+        }
+    }
+
+    function displayNotifications(notifications) {
+        const container = document.getElementById('match-requests-container');
+        container.innerHTML = '';
+
+        notifications.forEach(notification => {
+            displaySingleNotification(notification);
+        });
+    }
+
+    function displaySingleNotification(notification) {
+        const container = document.getElementById('match-requests-container');
+
+        if (notification.type === 'match_request' && notification.status === 'pending') {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'alert alert-warning alert-dismissible fade show';
+            notificationDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <strong>Match Request!</strong> ${notification.message}
+                        <br>
+                        <small class="text-muted">Click to view ${notification.sender}'s profile</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="/profiles/profile/${notification.sender_id}/?notification_id=${notification.id}" class="btn btn-info btn-sm">
+                            <i class="fas fa-eye"></i> View Profile
+                        </a>
+                        <button class="btn btn-success btn-sm" onclick="respondToMatch(${notification.id}, 'accept')">
+                            <i class="fas fa-heart"></i> Accept
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="respondToMatch(${notification.id}, 'decline')">
+                            <i class="fas fa-times"></i> Decline
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(notificationDiv);
+        } else if (notification.type === 'gift_received' && !notification.is_read) {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'alert alert-success alert-dismissible fade show';
+            notificationDiv.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="flex-grow-1">
+                        <strong><i class="fas fa-gift"></i> Gift Received!</strong> ${notification.message}
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="markAsRead(${notification.id})"></button>
+                </div>
+            `;
+            container.appendChild(notificationDiv);
+        }
     }
 
     function respondToMatch(notificationId, action) {
@@ -275,12 +318,27 @@
         .catch(error => console.error('Error responding to match:', error));
     }
 
-    // Load notifications on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        loadNotifications();
+    function markAsRead(notificationId) {
+        if (notificationSocket && notificationSocket.readyState === WebSocket.OPEN) {
+            notificationSocket.send(JSON.stringify({
+                'type': 'mark_read',
+                'notification_id': notificationId
+            }));
+        }
 
-        // Refresh notifications every 30 seconds
-        setInterval(loadNotifications, 30000);
+        // Also make HTTP request as fallback
+        fetch(`/notifications/api/mark-read/${notificationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            }
+        });
+    }
+
+    // Connect WebSocket on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        connectWebSocket();
     });
     </script>
     {% endif %}

@@ -18,11 +18,13 @@ import hmac
 
 User = get_user_model()
 
-# Import notification model
+# Import notification model and utils
 try:
     from notifications.models import Notification
+    from notifications.utils import broadcast_notification
 except ImportError:
     Notification = None
+    broadcast_notification = None
 
 class PackagesView(LoginRequiredMixin, ListView):
     model = LikePackage
@@ -254,12 +256,16 @@ def paystack_callback(request):
 
                                 # Create notification for recipient about the gift
                                 if Notification:
-                                    Notification.objects.create(
+                                    notification = Notification.objects.create(
                                         sender=purchase.user,
                                         receiver=recipient,
                                         notification_type='gift_received',
                                         message=f'You received a gift: {purchase.package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
                                     )
+
+                                    # Send real-time notification
+                                    if broadcast_notification:
+                                        broadcast_notification(notification)
 
                                 # Create success message showing correct distribution
                                 recipient_name = metadata.get("recipient_name", "onbekend")

@@ -8,6 +8,7 @@ from django.views.generic import ListView
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Notification
+from .utils import broadcast_notification
 
 User = get_user_model()
 
@@ -36,6 +37,9 @@ def send_match_request(request, user_id):
             notification_type='match_request',
             message=f"{request.user.username} wants to match with you!"
         )
+
+        # Send real-time notification
+        broadcast_notification(notification)
 
         messages.success(request, f'Match request sent to {target_user.username}!')
         return redirect('profiles:discover')

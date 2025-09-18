@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',  # WebSocket support
     'crispy_forms',
     'crispy_bootstrap5',
 
@@ -94,6 +95,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'mooibanana_project.wsgi.application'
+ASGI_APPLICATION = 'mooibanana_project.asgi.application'
+
+# Channel layers for WebSocket support
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 # Database
