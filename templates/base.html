@@ -225,6 +225,18 @@
                             </div>
                         `;
                         container.appendChild(notificationDiv);
+                    } else if (notification.type === 'gift_received' && !notification.is_read) {
+                        const notificationDiv = document.createElement('div');
+                        notificationDiv.className = 'alert alert-success alert-dismissible fade show';
+                        notificationDiv.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <strong><i class="fas fa-gift"></i> Gift Received!</strong> ${notification.message}
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="markAsRead(${notification.id})"></button>
+                            </div>
+                        `;
+                        container.appendChild(notificationDiv);
                     }
                 });
             })

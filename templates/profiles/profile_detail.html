@@ -95,9 +95,9 @@
                             {% endif %}
 
                             <!-- Buy Likes Button -->
-                            <a href="{% url 'payments:packages' %}" class="btn btn-accent w-100">
+                            <button class="btn btn-accent w-100" data-bs-toggle="modal" data-bs-target="#giftLikesModal">
                                 <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}
-                            </a>
+                            </button>
                             
                             <!-- Start Chat Button (if matched) -->
                             {% if is_matched %}

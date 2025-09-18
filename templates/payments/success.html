@@ -15,9 +15,17 @@
                     
                     <h2 class="text-success mb-4">Betaling Succesvol!</h2>
                     
-                    <p class="text-muted mb-4">
-                        Je betaling is succesvol verwerkt. Je likes zijn toegevoegd aan je account en je kunt nu beginnen met liken!
-                    </p>
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} mb-4">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-4">
+                            Je betaling is succesvol verwerkt. Je likes zijn toegevoegd aan je account en je kunt nu beginnen met liken!
+                        </p>
+                    {% endif %}
                     
                     <div class="d-grid gap-2">
                         <a href="{% url 'profiles:discover' %}" class="btn btn-primary btn-lg">

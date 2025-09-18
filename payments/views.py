@@ -231,57 +231,46 @@ def paystack_callback(request):
                         metadata = paystack_data['data']['metadata']
                         purchase_type = metadata.get('purchase_type', 'self')
                         
+                        print(f"DEBUG: Processing payment - purchase_type: {purchase_type}, metadata: {metadata}")  # Debug line
+                        
                         if purchase_type == 'gift' and 'recipient_id' in metadata:
-                            # Gift purchase - ALL likes go to recipient
+                            # Gift purchase - regular likes to recipient, super likes and boosters to purchaser
                             try:
                                 recipient = User.objects.get(id=metadata['recipient_id'])
 
-                                # Give ALL likes to recipient
+                                # Give regular likes to recipient
                                 recipient.likes_balance += purchase.package.regular_likes
-
-                                # Give super likes to recipient as well
-                                if purchase.package.super_likes > 0:
-                                    recipient.super_likes_balance = getattr(recipient, 'super_likes_balance', 0) + purchase.package.super_likes
-
-                                # Give boosters to recipient too
-                                if purchase.package.boosters > 0:
-                                    # Add boosters to recipient (implement boosters later if needed)
-                                    pass
-
                                 recipient.save()
+
+                                # Give super likes and boosters to purchaser
+                                if purchase.package.super_likes > 0:
+                                    purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
+                                
+                                if purchase.package.boosters > 0:
+                                    # Add boosters to purchaser (implement boosters later if needed)
+                                    pass
+                                
+                                purchase.user.save()
 
                                 # Create notification for recipient about the gift
                                 if Notification:
-                                    gift_items = []
-                                    if purchase.package.regular_likes > 0:
-                                        gift_items.append(f'{purchase.package.regular_likes} regular likes')
-                                    if purchase.package.super_likes > 0:
-                                        gift_items.append(f'{purchase.package.super_likes} super likes')
-                                    if purchase.package.boosters > 0:
-                                        gift_items.append(f'{purchase.package.boosters} boosters')
-
-                                    gift_text = ', '.join(gift_items)
-
                                     Notification.objects.create(
                                         sender=purchase.user,
                                         receiver=recipient,
                                         notification_type='gift_received',
-                                        message=f'You received a gift: {gift_text} from {purchase.user.first_name or purchase.user.username}!'
+                                        message=f'You received a gift: {purchase.package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
                                     )
 
-                                # Create success message showing all items went to recipient
-                                gift_items = []
-                                if purchase.package.regular_likes > 0:
-                                    gift_items.append(f'{purchase.package.regular_likes} regular likes')
-                                if purchase.package.super_likes > 0:
-                                    gift_items.append(f'{purchase.package.super_likes} super likes')
-                                if purchase.package.boosters > 0:
-                                    gift_items.append(f'{purchase.package.boosters} boosters')
-
-                                gift_text = ', '.join(gift_items)
+                                # Create success message showing correct distribution
                                 recipient_name = metadata.get("recipient_name", "onbekend")
+                                success_parts = [f'{purchase.package.regular_likes} regular likes naar {recipient_name}']
+                                
+                                if purchase.package.super_likes > 0:
+                                    success_parts.append(f'{purchase.package.super_likes} super likes voor jou')
+                                if purchase.package.boosters > 0:
+                                    success_parts.append(f'{purchase.package.boosters} boosters voor jou')
 
-                                messages.success(request, f'Cadeau succesvol verzonden! {gift_text} naar {recipient_name}!')
+                                messages.success(request, f'Cadeau succesvol verzonden! {", ".join(success_parts)}!')
                             except User.DoesNotExist:
                                 messages.error(request, 'Ontvanger niet gevonden')
                         else:
@@ -355,41 +344,31 @@ def paystack_webhook(request):
                     purchase_type = metadata.get('purchase_type', 'self')
                     
                     if purchase_type == 'gift' and 'recipient_id' in metadata:
-                        # Gift purchase - ALL likes go to recipient
+                        # Gift purchase - regular likes to recipient, super likes and boosters to purchaser
                         try:
                             recipient = User.objects.get(id=metadata['recipient_id'])
 
-                            # Give ALL likes to recipient
+                            # Give regular likes to recipient
                             recipient.likes_balance += purchase.package.regular_likes
-
-                            # Give super likes to recipient as well
-                            if purchase.package.super_likes > 0:
-                                recipient.super_likes_balance = getattr(recipient, 'super_likes_balance', 0) + purchase.package.super_likes
-
-                            # Give boosters to recipient too
-                            if purchase.package.boosters > 0:
-                                # Add boosters to recipient (implement boosters later if needed)
-                                pass
-
                             recipient.save()
+
+                            # Give super likes and boosters to purchaser
+                            if purchase.package.super_likes > 0:
+                                purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
+                            
+                            if purchase.package.boosters > 0:
+                                # Add boosters to purchaser (implement boosters later if needed)
+                                pass
+                            
+                            purchase.user.save()
 
                             # Create notification for recipient about the gift
                             if Notification:
-                                gift_items = []
-                                if purchase.package.regular_likes > 0:
-                                    gift_items.append(f'{purchase.package.regular_likes} regular likes')
-                                if purchase.package.super_likes > 0:
-                                    gift_items.append(f'{purchase.package.super_likes} super likes')
-                                if purchase.package.boosters > 0:
-                                    gift_items.append(f'{purchase.package.boosters} boosters')
-
-                                gift_text = ', '.join(gift_items)
-
                                 Notification.objects.create(
                                     sender=purchase.user,
                                     receiver=recipient,
                                     notification_type='gift_received',
-                                    message=f'You received a gift: {gift_text} from {purchase.user.first_name or purchase.user.username}!'
+                                    message=f'You received a gift: {purchase.package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
                                 )
                         except User.DoesNotExist:
                             pass

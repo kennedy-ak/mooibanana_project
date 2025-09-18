@@ -45,7 +45,10 @@
                                     <small class="text-muted">
                                         <strong>{{ package.regular_likes }} regular likes</strong> gaan naar {{ recipient.first_name|default:recipient.username }}<br>
                                         {% if package.super_likes > 0 %}
-                                        <strong>{{ package.super_likes }} super likes</strong> blijven bij jou
+                                        <strong>{{ package.super_likes }} super likes</strong> gaan naar jou
+                                        {% endif %}
+                                        {% if package.boosters > 0 %}
+                                        <br><strong>{{ package.boosters }} boosters</strong> gaan naar jou
                                         {% endif %}
                                     </small>
                                 </div>

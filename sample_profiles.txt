@@ -1,0 +1,355 @@
+20 SAMPLE PROFILES FOR MOOIBANANA DATING SYSTEM
+==============================================
+
+PROFILE 1:
+Username: emma_johnson23
+Email: emma.johnson23@student.uva.nl
+First Name: Emma
+Last Name: Johnson
+Password: testpass123
+University: University of Amsterdam
+Student ID: STU234567
+Birth Date: 2002-03-15 (Age: 22)
+Study Field: Psychology
+Study Year: 3rd Year
+Location: Amsterdam
+Bio: Passionate about Psychology and Photography. Looking for someone to share good times with ✨
+Interests: Photography, Reading, Coffee, Yoga, Traveling
+Likes Balance: 25
+Super Likes Balance: 5
+
+PROFILE 2:
+Username: liam_williams45
+Email: liam.williams45@student.tudelft.nl
+First Name: Liam
+Last Name: Williams
+Password: testpass123
+University: Delft University of Technology
+Student ID: STU345678
+Birth Date: 2001-07-22 (Age: 23)
+Study Field: Engineering
+Study Year: 4th Year
+Location: Delft
+Bio: Future Engineering professional with a love for Gaming. Let's grab coffee sometime! ☕
+Interests: Gaming, Technology, Sports, Music, Cycling
+Likes Balance: 18
+Super Likes Balance: 3
+
+PROFILE 3:
+Username: olivia_brown67
+Email: olivia.brown67@student.uu.nl
+First Name: Olivia
+Last Name: Brown
+Password: testpass123
+University: Utrecht University
+Student ID: STU456789
+Birth Date: 2003-01-10 (Age: 21)
+Study Field: Medicine
+Study Year: 2nd Year
+Location: Utrecht
+Bio: Love exploring new places and trying different cuisines. Always up for an adventure! 🌍
+Interests: Traveling, Cooking, Hiking, Swimming, Languages
+Likes Balance: 32
+Super Likes Balance: 7
+
+PROFILE 4:
+Username: noah_garcia89
+Email: noah.garcia89@student.wur.nl
+First Name: Noah
+Last Name: Garcia
+Password: testpass123
+University: Wageningen University
+Student ID: STU567890
+Birth Date: 2002-11-05 (Age: 22)
+Study Field: Computer Science
+Study Year: 3rd Year
+Location: Wageningen
+Bio: Studying Computer Science but my real passion is Music. Always down for good conversations 💬
+Interests: Music, Technology, Gaming, Coffee, Art
+Likes Balance: 14
+Super Likes Balance: 2
+
+PROFILE 5:
+Username: ava_miller12
+Email: ava.miller12@student.eur.nl
+First Name: Ava
+Last Name: Miller
+Password: testpass123
+University: Erasmus University Rotterdam
+Student ID: STU678901
+Birth Date: 2002-09-18 (Age: 22)
+Study Field: Business
+Study Year: 3rd Year
+Location: Rotterdam
+Bio: When I'm not studying, you can find me Dancing or Fitness. Love meeting new people! 😊
+Interests: Dancing, Fitness, Fashion, Wine, Volunteering
+Likes Balance: 41
+Super Likes Balance: 8
+
+PROFILE 6:
+Username: ethan_davis34
+Email: ethan.davis34@student.rug.nl
+First Name: Ethan
+Last Name: Davis
+Password: testpass123
+University: University of Groningen
+Student ID: STU789012
+Birth Date: 2001-04-30 (Age: 23)
+Study Field: Law
+Study Year: 4th Year
+Location: Groningen
+Bio: Big fan of Basketball and Movies. Let's explore the city together! 🏙️
+Interests: Basketball, Movies, Sports, Reading, Photography
+Likes Balance: 29
+Super Likes Balance: 6
+
+PROFILE 7:
+Username: sophia_rodriguez56
+Email: sophia.rodriguez56@student.leidenuniv.nl
+First Name: Sophia
+Last Name: Rodriguez
+Password: testpass123
+University: Leiden University
+Student ID: STU890123
+Birth Date: 2003-06-12 (Age: 21)
+Study Field: Arts
+Study Year: 2nd Year
+Location: Leiden
+Bio: Always learning something new. Currently obsessed with Art and Theatre 📚
+Interests: Art, Theatre, Music, Writing, Coffee
+Likes Balance: 36
+Super Likes Balance: 4
+
+PROFILE 8:
+Username: mason_martinez78
+Email: mason.martinez78@student.maastrichtuniversity.nl
+First Name: Mason
+Last Name: Martinez
+Password: testpass123
+University: Maastricht University
+Student ID: STU901234
+Birth Date: 2002-12-03 (Age: 21)
+Study Field: Psychology
+Study Year: 2nd Year
+Location: Maastricht
+Bio: Life's too short to be boring! Love Photography, Traveling, and making memories 📸
+Interests: Photography, Traveling, Music, Hiking, Tennis
+Likes Balance: 22
+Super Likes Balance: 5
+
+PROFILE 9:
+Username: isabella_hernandez90
+Email: isabella.hernandez90@student.vu.nl
+First Name: Isabella
+Last Name: Hernandez
+Password: testpass123
+University: VU Amsterdam
+Student ID: STU012345
+Birth Date: 2001-08-27 (Age: 23)
+Study Field: Medicine
+Study Year: 4th Year
+Location: Amsterdam
+Bio: Student life is busy but I always make time for Swimming. Coffee dates are my favorite ☕
+Interests: Swimming, Coffee, Reading, Yoga, Meditation
+Likes Balance: 33
+Super Likes Balance: 9
+
+PROFILE 10:
+Username: william_lopez13
+Email: william.lopez13@student.tue.nl
+First Name: William
+Last Name: Lopez
+Password: testpass123
+University: Eindhoven University of Technology
+Student ID: STU123456
+Birth Date: 2002-02-14 (Age: 22)
+Study Field: Engineering
+Study Year: 3rd Year
+Location: Eindhoven
+Bio: Believer in living life to the fullest. Passionate about Technology and Cycling 🌟
+Interests: Technology, Cycling, Gaming, Sports, Music
+Likes Balance: 27
+Super Likes Balance: 3
+
+PROFILE 11:
+Username: mia_gonzalez35
+Email: mia.gonzalez35@student.uva.nl
+First Name: Mia
+Last Name: Gonzalez
+Password: testpass123
+University: University of Amsterdam
+Student ID: STU234567
+Birth Date: 2003-05-08 (Age: 21)
+Study Field: Business
+Study Year: 1st Year
+Location: Amsterdam
+Bio: Passionate about Fashion and Wine. Looking for someone to share good times with ✨
+Interests: Fashion, Wine, Dancing, Shopping, Travel
+Likes Balance: 19
+Super Likes Balance: 4
+
+PROFILE 12:
+Username: james_wilson57
+Email: james.wilson57@student.tudelft.nl
+First Name: James
+Last Name: Wilson
+Password: testpass123
+University: Delft University of Technology
+Student ID: STU345678
+Birth Date: 2001-10-21 (Age: 23)
+Study Field: Computer Science
+Study Year: 4th Year
+Location: Delft
+Bio: Future Computer Science professional with a love for Rock climbing. Let's grab coffee sometime! ☕
+Interests: Rock climbing, Technology, Hiking, Photography, Music
+Likes Balance: 31
+Super Likes Balance: 7
+
+PROFILE 13:
+Username: charlotte_anderson79
+Email: charlotte.anderson79@student.uu.nl
+First Name: Charlotte
+Last Name: Anderson
+Password: testpass123
+University: Utrecht University
+Student ID: STU456789
+Birth Date: 2002-07-16 (Age: 22)
+Study Field: Arts
+Study Year: 3rd Year
+Location: Utrecht
+Bio: When I'm not studying, you can find me Singing or Writing. Love meeting new people! 😊
+Interests: Singing, Writing, Theatre, Art, Reading
+Likes Balance: 24
+Super Likes Balance: 6
+
+PROFILE 14:
+Username: benjamin_thomas91
+Email: benjamin.thomas91@student.wur.nl
+First Name: Benjamin
+Last Name: Thomas
+Password: testpass123
+University: Wageningen University
+Student ID: STU567890
+Birth Date: 2001-12-09 (Age: 22)
+Study Field: Other
+Study Year: 4th Year
+Location: Wageningen
+Bio: Big fan of Gardening and Coffee. Let's explore the city together! 🏙️
+Interests: Gardening, Coffee, Nature, Reading, Hiking
+Likes Balance: 16
+Super Likes Balance: 2
+
+PROFILE 15:
+Username: amelia_taylor24
+Email: amelia.taylor24@student.eur.nl
+First Name: Amelia
+Last Name: Taylor
+Password: testpass123
+University: Erasmus University Rotterdam
+Student ID: STU678901
+Birth Date: 2003-03-25 (Age: 21)
+Study Field: Law
+Study Year: 2nd Year
+Location: Rotterdam
+Bio: Always learning something new. Currently obsessed with Languages and Volunteering 📚
+Interests: Languages, Volunteering, Travel, Reading, Coffee
+Likes Balance: 38
+Super Likes Balance: 8
+
+PROFILE 16:
+Username: lucas_moore46
+Email: lucas.moore46@student.rug.nl
+First Name: Lucas
+Last Name: Moore
+Password: testpass123
+University: University of Groningen
+Student ID: STU789012
+Birth Date: 2002-08-11 (Age: 22)
+Study Field: Psychology
+Study Year: 3rd Year
+Location: Groningen
+Bio: Life's too short to be boring! Love Soccer, Gaming, and making memories 📸
+Interests: Soccer, Gaming, Sports, Music, Movies
+Likes Balance: 21
+Super Likes Balance: 5
+
+PROFILE 17:
+Username: harper_jackson68
+Email: harper.jackson68@student.leidenuniv.nl
+First Name: Harper
+Last Name: Jackson
+Password: testpass123
+University: Leiden University
+Student ID: STU890123
+Birth Date: 2001-06-02 (Age: 23)
+Study Field: Medicine
+Study Year: 4th Year
+Location: Leiden
+Bio: Student life is busy but I always make time for Yoga. Coffee dates are my favorite ☕
+Interests: Yoga, Coffee, Meditation, Reading, Health
+Likes Balance: 42
+Super Likes Balance: 9
+
+PROFILE 18:
+Username: henry_martin81
+Email: henry.martin81@student.maastrichtuniversity.nl
+First Name: Henry
+Last Name: Martin
+Password: testpass123
+University: Maastricht University
+Student ID: STU901234
+Birth Date: 2002-04-19 (Age: 22)
+Study Field: Engineering
+Study Year: 3rd Year
+Location: Maastricht
+Bio: Believer in living life to the fullest. Passionate about Tennis and Technology 🌟
+Interests: Tennis, Technology, Sports, Gaming, Music
+Likes Balance: 26
+Super Likes Balance: 4
+
+PROFILE 19:
+Username: evelyn_lee93
+Email: evelyn.lee93@student.vu.nl
+First Name: Evelyn
+Last Name: Lee
+Password: testpass123
+University: VU Amsterdam
+Student ID: STU012345
+Birth Date: 2003-09-07 (Age: 21)
+Study Field: Business
+Study Year: 1st Year
+Location: Amsterdam
+Bio: Love exploring new places and trying different cuisines. Always up for an adventure! 🌍
+Interests: Travel, Food, Photography, Languages, Culture
+Likes Balance: 35
+Super Likes Balance: 7
+
+PROFILE 20:
+Username: alexander_white15
+Email: alexander.white15@student.tue.nl
+First Name: Alexander
+Last Name: White
+Password: testpass123
+University: Eindhoven University of Technology
+Student ID: STU123456
+Birth Date: 2001-11-28 (Age: 22)
+Study Field: Computer Science
+Study Year: 4th Year
+Location: Eindhoven
+Bio: Future Computer Science professional with a love for Movies. Let's grab coffee sometime! ☕
+Interests: Movies, Technology, Gaming, Music, Photography
+Likes Balance: 20
+Super Likes Balance: 3
+
+==============================================
+INSTRUCTIONS FOR MANUAL INPUT:
+
+1. Create each user account first with the provided email and password
+2. Fill in the user details (first name, last name, university, student ID)
+3. Set is_student=True and is_verified=True for all users
+4. Create the profile with the provided bio, birth date, study field, etc.
+5. Set is_complete=True for all profiles
+6. Add the interests as comma-separated values
+7. Set the likes and super likes balances as specified
+
+Note: You'll need to add profile pictures separately or use placeholder images.

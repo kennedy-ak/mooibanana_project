@@ -38,7 +38,7 @@ class DiscoverView(LoginRequiredMixin, ListView):
     model = Profile
     template_name = 'profiles/discover.html'
     context_object_name = 'profiles'
-    paginate_by = 10
+    paginate_by = 6
 
     def get_queryset(self):
         queryset = Profile.objects.filter(
@@ -104,14 +104,17 @@ class DiscoverView(LoginRequiredMixin, ListView):
         else:
             # If searching, order by relevance (username match first, then others)
             if search_query:
-                queryset = queryset.extra(
-                    select={
-                        'username_match': f"CASE WHEN LOWER(auth_user.username) LIKE LOWER('%{search_query}%') THEN 1 ELSE 0 END"
-                    },
-                    tables=['auth_user'],
-                    where=['profiles_profile.user_id = auth_user.id'],
-                    order_by=['-username_match', 'user__username']
-                )
+                # Use Django ORM annotations instead of raw SQL
+                from django.db.models import Case, When, Value, IntegerField
+                from django.db.models.functions import Lower
+                
+                queryset = queryset.annotate(
+                    username_match=Case(
+                        When(user__username__icontains=search_query, then=Value(1)),
+                        default=Value(0),
+                        output_field=IntegerField()
+                    )
+                ).order_by('-username_match', 'user__username')
             else:
                 queryset = queryset.order_by('user__username')
 
