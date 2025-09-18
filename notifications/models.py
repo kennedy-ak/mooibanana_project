@@ -11,6 +11,8 @@ class Notification(models.Model):
         ('match_declined', 'Match Declined'),
         ('new_message', 'New Message'),
         ('gift_received', 'Gift Received'),
+        ('like_received', 'Like Received'),
+        ('unlike_received', 'Unlike Received'),
     ]
 
     STATUS_CHOICES = [

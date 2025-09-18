@@ -32,12 +32,25 @@ class PackagesView(LoginRequiredMixin, ListView):
     context_object_name = 'packages'
     
     def get_queryset(self):
-        return LikePackage.objects.filter(is_active=True)
+        queryset = LikePackage.objects.filter(is_active=True)
+        package_type = self.request.GET.get('type')
+        
+        if package_type == 'unlikes':
+            # Filter packages that have unlikes
+            queryset = queryset.filter(unlikes__gt=0)
+        
+        return queryset
 
 @login_required
 def packages_api(request):
     """API endpoint to return packages as JSON"""
     packages = LikePackage.objects.filter(is_active=True)
+    package_type = request.GET.get('type')
+    
+    if package_type == 'unlikes':
+        # Filter packages that have unlikes
+        packages = packages.filter(unlikes__gt=0)
+    
     data = {
         'packages': [{
             'id': package.id,
@@ -45,6 +58,7 @@ def packages_api(request):
             'price': float(package.price),
             'regular_likes': package.regular_likes,
             'super_likes': package.super_likes,
+            'unlikes': package.unlikes,
             'boosters': package.boosters,
             'description': package.description,
         } for package in packages]
@@ -242,16 +256,18 @@ def paystack_callback(request):
 
                                 # Give regular likes to recipient
                                 recipient.likes_balance += purchase.package.regular_likes
+                                if purchase.package.unlikes > 0:
+                                    recipient.unlikes_balance += purchase.package.unlikes
                                 recipient.save()
 
                                 # Give super likes and boosters to purchaser
                                 if purchase.package.super_likes > 0:
                                     purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
-                                
+
                                 if purchase.package.boosters > 0:
                                     # Add boosters to purchaser (implement boosters later if needed)
                                     pass
-                                
+
                                 purchase.user.save()
 
                                 # Create notification for recipient about the gift
@@ -277,19 +293,32 @@ def paystack_callback(request):
                                     success_parts.append(f'{purchase.package.boosters} boosters voor jou')
 
                                 messages.success(request, f'Cadeau succesvol verzonden! {", ".join(success_parts)}!')
+                                
+                                # Redirect back to the recipient's profile for gift purchases
+                                return redirect('profiles:profile_detail', pk=recipient.id)
                             except User.DoesNotExist:
                                 messages.error(request, 'Ontvanger niet gevonden')
+                                return redirect('payments:success')
                         else:
                             # Regular purchase - add likes to buyer
                             purchase.user.likes_balance += purchase.package.regular_likes
                             if purchase.package.super_likes > 0:
                                 purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
+                            if purchase.package.unlikes > 0:
+                                purchase.user.unlikes_balance += purchase.package.unlikes
                             purchase.user.save()
+
+                            # Create success message
+                            success_parts = [f'{purchase.package.regular_likes} likes']
+                            if purchase.package.super_likes > 0:
+                                success_parts.append(f'{purchase.package.super_likes} super likes')
+                            if purchase.package.unlikes > 0:
+                                success_parts.append(f'{purchase.package.unlikes} unlikes')
+
+                            messages.success(request, f'Betaling succesvol! Je hebt {", ".join(success_parts)} ontvangen.')
                             
-                            messages.success(request, f'Betaling succesvol! Je hebt {purchase.package.regular_likes} likes ontvangen.')
-                    
-                    return redirect('payments:success')
-                    
+                            # Redirect to success page for regular purchases
+                            return redirect('payments:success')
                 except Purchase.DoesNotExist:
                     messages.error(request, 'Purchase not found')
                     return redirect('payments:packages')

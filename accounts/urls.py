@@ -14,4 +14,6 @@ urlpatterns = [
         next_page='home'
     ), name='logout'),
     path('verify-email/', views.VerifyEmailView.as_view(), name='verify_email'),
+    path('referrals/', views.ReferralDashboardView.as_view(), name='referral_dashboard'),
+    path('generate-referral-link/', views.generate_referral_link, name='generate_referral_link'),
 ]

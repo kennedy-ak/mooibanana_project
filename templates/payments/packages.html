@@ -3,6 +3,12 @@
 
 {% block title %}Like Pakketten - Mooibanana{% endblock %}
 
+{% block breadcrumbs %}
+<li class="breadcrumb-item active" aria-current="page">
+    <i class="fas fa-shopping-cart"></i> Packages
+</li>
+{% endblock %}
+
 {% block content %}
 <style>
     body {
@@ -126,6 +132,11 @@
     .super-likes-icon {
         background: linear-gradient(135deg, #ffd700, #ffed4e);
         color: #333;
+    }
+
+    .unlikes-icon {
+        background: linear-gradient(135deg, #dc3545, #e74c3c);
+        color: white;
     }
     
     .boosters-icon {
@@ -357,6 +368,18 @@
                             <div>
                                 <strong>{{ package.super_likes }}</strong> Super Likes
                                 <br><small class="text-muted">Valt extra op bij anderen</small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if package.unlikes > 0 %}
+                        <div class="feature-item">
+                            <div class="feature-icon unlikes-icon">
+                                <i class="fas fa-times-circle"></i>
+                            </div>
+                            <div>
+                                <strong>{{ package.unlikes }}</strong> Unlikes
+                                <br><small class="text-muted">Verberg profielen permanent</small>
                             </div>
                         </div>
                         {% endif %}

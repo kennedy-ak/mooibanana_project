@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from PIL import Image
+import os
 
 User = get_user_model()
 
@@ -31,9 +32,13 @@ class Profile(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     study_field = models.CharField(max_length=20, choices=STUDY_CHOICES, blank=True)
     study_year = models.IntegerField(choices=YEAR_CHOICES, null=True, blank=True)
+    school_name = models.CharField(max_length=200, blank=True, help_text="Name of your school/university")
     interests = models.TextField(blank=True, help_text="Comma-separated interests")
     profile_picture = models.ImageField(upload_to='profile_pics/', blank=True)
-    location = models.CharField(max_length=100, blank=True)
+    city = models.CharField(max_length=100, blank=True, help_text="Your city")
+    location = models.CharField(max_length=100, blank=True, help_text="General location/region")
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude for location-based matching")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude for location-based matching")
     is_complete = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -42,6 +47,8 @@ class Profile(models.Model):
         indexes = [
             models.Index(fields=['is_complete']),
             models.Index(fields=['study_field']),
+            models.Index(fields=['school_name']),
+            models.Index(fields=['city']),
             models.Index(fields=['location']),
             models.Index(fields=['birth_date']),
             models.Index(fields=['created_at']),
@@ -71,6 +78,30 @@ class Profile(models.Model):
     
     def get_interests_list(self):
         return [interest.strip() for interest in self.interests.split(',') if interest.strip()]
+
+    def calculate_distance_to(self, other_profile):
+        """Calculate distance in kilometers to another profile using Haversine formula"""
+        if not all([self.latitude, self.longitude, other_profile.latitude, other_profile.longitude]):
+            return None
+
+        import math
+
+        # Convert latitude and longitude from degrees to radians
+        lat1, lon1, lat2, lon2 = map(math.radians, [
+            float(self.latitude), float(self.longitude),
+            float(other_profile.latitude), float(other_profile.longitude)
+        ])
+
+        # Haversine formula
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.asin(math.sqrt(a))
+
+        # Radius of earth in kilometers
+        r = 6371
+
+        return c * r
     
     @property
     def age(self):
@@ -80,17 +111,50 @@ class Profile(models.Model):
             return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
         return None
 
+    def get_primary_photo(self):
+        """Get the primary photo (profile_picture or first uploaded photo)"""
+        if self.profile_picture:
+            return self.profile_picture.url
+        first_photo = self.photos.first()
+        if first_photo:
+            return first_photo.image.url
+        return None
+
+    def get_all_photos(self):
+        """Get all photos including profile_picture and additional photos"""
+        photos = []
+        if self.profile_picture:
+            photos.append({'url': self.profile_picture.url, 'is_primary': True})
+        for photo in self.photos.all():
+            photos.append({'url': photo.image.url, 'is_primary': False})
+        return photos
+
 class ProfilePhoto(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='photos')
     image = models.ImageField(upload_to='profile_photos/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'uploaded_at']
+
+    def __str__(self):
+        return f"{self.profile.user.username} - Photo {self.id}"
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        
+
         # Resize image
-        img = Image.open(self.image.path)
-        if img.height > 800 or img.width > 800:
-            output_size = (800, 800)
-            img.thumbnail(output_size)
-            img.save(self.image.path)
+        if self.image:
+            img = Image.open(self.image.path)
+            if img.height > 800 or img.width > 800:
+                output_size = (800, 800)
+                img.thumbnail(output_size)
+                img.save(self.image.path)
+
+    def delete(self, *args, **kwargs):
+        # Delete the image file when the model instance is deleted
+        if self.image:
+            if os.path.isfile(self.image.path):
+                os.remove(self.image.path)
+        super().delete(*args, **kwargs)

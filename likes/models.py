@@ -53,6 +53,17 @@ def award_points_for_like(sender, instance, created, **kwargs):
         instance.from_user.save()
         instance.to_user.save()
 
+class Unlike(models.Model):
+    from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unlikes_given')
+    to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unlikes_received')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['from_user', 'to_user']
+
+    def __str__(self):
+        return f"{self.from_user.username} unliked {self.to_user.username}"
+
 class RewardClaim(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),

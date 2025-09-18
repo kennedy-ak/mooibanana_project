@@ -1,10 +1,11 @@
 <!-- templates/base.html -->
+{% load i18n %}
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="{% get_current_language as LANGUAGE_CODE %}{{ LANGUAGE_CODE }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Mooibanana - Verbindt Studenten{% endblock %}</title>
+    <title>{% block title %}Mooibanana - {% trans "Connect Students" %}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -64,6 +65,367 @@
             border-radius: 20px;
             font-weight: bold;
         }
+        
+        /* Bootstrap Override - Navigation improvements */
+        .breadcrumb {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0;
+            backdrop-filter: blur(10px);
+            border: none;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .nav-helper-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Bootstrap Button Enhancements */
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-back {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(78, 84, 200, 0.3);
+            color: var(--primary);
+            transition: all 0.2s ease;
+        }
+        
+        .btn-back:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(-3px);
+        }
+        
+        /* Bootstrap Card Enhancements */
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Bootstrap Form Enhancements */
+        .form-floating > .form-control,
+        .form-floating > .form-select {
+            border: 2px solid rgba(78, 84, 200, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+        
+        .form-floating > .form-control:focus,
+        .form-floating > .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 0.25rem rgba(78, 84, 200, 0.15);
+        }
+        
+        .form-floating > label {
+            color: var(--primary);
+            font-weight: 500;
+        }
+        
+        /* Bootstrap Alert Enhancements */
+        .alert {
+            border: none;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .alert-info {
+            background: rgba(78, 84, 200, 0.1);
+            color: var(--primary);
+        }
+        
+        /* Bootstrap Badge Enhancements */
+        .badge {
+            font-weight: 500;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .likes-balance.badge {
+            background-color: var(--accent) !important;
+            color: white;
+        }
+        
+        /* Bootstrap Pagination Enhancements */
+        .pagination .page-link {
+            border: none;
+            border-radius: 8px;
+            margin: 0 2px;
+            color: var(--primary);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+        }
+        
+        .pagination .page-link:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .pagination .page-item.active .page-link {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        /* Bootstrap Button Group Enhancements */
+        .btn-group .btn {
+            border-radius: 8px !important;
+            margin: 0 2px;
+        }
+        
+        /* Bootstrap Dropdown Enhancements */
+        .dropdown-menu {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.75rem 0;
+            margin-top: 0.5rem;
+        }
+        
+        .dropdown-item {
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            margin: 0 0.5rem;
+            transition: all 0.2s ease;
+            color: var(--primary);
+        }
+        
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background: rgba(78, 84, 200, 0.1);
+            color: var(--primary);
+            transform: translateX(5px);
+        }
+        
+        .dropdown-item.text-success:hover {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        
+        .dropdown-item.text-danger:hover {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        .dropdown-divider {
+            margin: 0.5rem 1rem;
+            border-color: rgba(78, 84, 200, 0.2);
+        }
+        
+        /* Hamburger button styling */
+        .dropdown-toggle::after {
+            display: none;
+        }
+        
+        .btn-outline-primary .fas.fa-bars {
+            font-size: 1.1rem;
+        }
+        
+        /* iPad and Tablet Responsive Design */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                max-width: 95%;
+            }
+            
+            /* Navigation adjustments for iPad */
+            .nav-helper-bar {
+                padding: 12px 20px;
+            }
+            
+            /* Mobile navigation improvements for tablet */
+            .d-lg-none .breadcrumb {
+                font-size: 0.9rem;
+                padding: 8px 16px;
+            }
+            
+            .d-lg-none .breadcrumb-item {
+                white-space: nowrap;
+            }
+            
+            /* Dropdown menu adjustments for tablet */
+            .dropdown-menu {
+                min-width: 250px;
+                max-width: 300px;
+            }
+            
+            .dropdown-item {
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            
+            /* Hamburger button larger for tablet */
+            .btn .fas.fa-bars {
+                font-size: 1.2rem;
+            }
+            
+            .btn-back {
+                min-width: 44px;
+                min-height: 44px;
+            }
+            
+            /* Breadcrumb improvements for tablet */
+            .breadcrumb {
+                font-size: 0.9rem;
+                padding: 10px 20px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .breadcrumb-item {
+                margin: 2px 0;
+            }
+            
+            /* Balance display improvements */
+            .likes-balance, .points-balance {
+                font-size: 0.85rem;
+                padding: 6px 12px;
+                margin: 2px 0;
+            }
+            
+            /* Navbar improvements for iPad */
+            .navbar-nav {
+                text-align: center;
+            }
+            
+            .navbar-nav .nav-link {
+                padding: 10px 15px;
+                font-size: 0.95rem;
+            }
+            
+            /* Profile cards in discover view */
+            .card {
+                margin-bottom: 20px;
+            }
+            
+            .card-body {
+                padding: 20px;
+            }
+            
+            /* Profile image carousel adjustments */
+            .profile-carousel {
+                width: 140px;
+                height: 140px;
+            }
+            
+            .carousel-inner {
+                width: 140px !important;
+                height: 140px !important;
+            }
+            
+            /* Button sizing for touch */
+            .btn {
+                min-height: 44px;
+                padding: 10px 16px;
+            }
+            
+            .btn-sm {
+                min-height: 36px;
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* iPad Portrait specific adjustments */
+        @media (min-width: 768px) and (max-width: 834px) and (orientation: portrait) {
+            .col-lg-6 {
+                flex: 0 0 100%;
+                max-width: 100%;
+                margin-bottom: 20px;
+            }
+            
+            .row .col-md-4 {
+                flex: 0 0 35%;
+                max-width: 35%;
+            }
+            
+            .row .col-md-8 {
+                flex: 0 0 65%;
+                max-width: 65%;
+            }
+        }
+        
+        /* iPad Landscape specific adjustments */
+        @media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+            .nav-helper-bar {
+                padding: 12px 20px;
+            }
+            
+            .quick-actions .btn {
+                margin: 0 4px;
+            }
+            
+            .col-lg-6 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+        }
+        
+        /* Touch-friendly improvements for all tablets */
+        @media (pointer: coarse) {
+            .btn, .nav-link, .dropdown-item {
+                min-height: 44px;
+                padding: 12px 16px;
+            }
+            
+            .carousel-control-prev,
+            .carousel-control-next {
+                width: 50px;
+                height: 50px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+            
+            .carousel-control-prev-icon,
+            .carousel-control-next-icon {
+                width: 20px;
+                height: 20px;
+            }
+            
+            /* Increase touch targets */
+            .badge {
+                min-width: 20px;
+                min-height: 20px;
+                font-size: 0.75rem;
+            }
+            
+            /* Form elements touch improvements */
+            .form-control, .form-select {
+                min-height: 44px;
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 12px 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -88,31 +450,72 @@
                         </li>
                         {% endif %}
                         <li class="nav-item">
-                            <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">Ontdekken</a>
+                            <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">{% trans "Discover" %}</a>
                         </li>
+                        {% comment "MATCHES REMOVED FROM SYSTEM" %}
                         <li class="nav-item">
-                            <a class="nav-link text-dark" href="{% url 'likes:matches' %}">Matches</a>
+                            <a class="nav-link text-dark" href="{% url 'likes:matches' %}">{% trans "Matches" %}</a>
                         </li>
+                        {% endcomment %}
+                        {% comment "TEMPORARILY DISABLED" %}
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'chat:list' %}">Chat</a>
                         </li>
+                        {% endcomment %}
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'notifications:list' %}">
-                                <i class="fas fa-bell"></i> Notifications
+                                <i class="fas fa-bell"></i> {% trans "Notifications" %}
                                 <span id="notification-count" class="badge bg-danger" style="display: none;"></span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" href="{% url 'rewards:list' %}">Beloningen</a>
+                            <a class="nav-link text-dark" href="{% url 'rewards:list' %}">{% trans "Rewards" %}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{% url 'accounts:referral_dashboard' %}">
+                                <i class="fas fa-users"></i> {% trans "Referrals" %}
+                            </a>
                         </li>
                     {% endif %}
                 </ul>
                 
                 <ul class="navbar-nav">
+                    <!-- Language Switcher -->
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-globe"></i>
+                            {% get_current_language as LANGUAGE_CODE %}
+                            {% if LANGUAGE_CODE == 'en' %}EN{% else %}NL{% endif %}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <form action="{% url 'set_language' %}" method="post" class="m-0">
+                                    {% csrf_token %}
+                                    <input name="next" type="hidden" value="{{ request.get_full_path }}" />
+                                    <input type="hidden" name="language" value="en">
+                                    <button type="submit" class="dropdown-item {% if LANGUAGE_CODE == 'en' %}active{% endif %}">
+                                        🇺🇸 English
+                                    </button>
+                                </form>
+                            </li>
+                            <li>
+                                <form action="{% url 'set_language' %}" method="post" class="m-0">
+                                    {% csrf_token %}
+                                    <input name="next" type="hidden" value="{{ request.get_full_path }}" />
+                                    <input type="hidden" name="language" value="nl">
+                                    <button type="submit" class="dropdown-item {% if LANGUAGE_CODE == 'nl' %}active{% endif %}">
+                                        🇳🇱 Nederlands
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+
                     {% if user.is_authenticated %}
                         <li class="nav-item me-3">
                             <span class="likes-balance">
                                 <i class="fas fa-heart"></i> {{ user.likes_balance }} likes
+                                <i class="fas fa-times-circle text-danger ms-2"></i> {{ user.unlikes_balance }} unlikes
                             </span>
                         </li>
                         <li class="nav-item me-4">
@@ -125,15 +528,19 @@
                                 {{ user.username }}
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'profiles:my_profile' %}">Mijn Profiel</a></li>
-                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}">Koop Likes</a></li>
-                                <li><a class="dropdown-item" href="{% url 'rewards:my_claims' %}">Mijn Claims</a></li>
+                                <li><a class="dropdown-item" href="{% url 'profiles:my_profile' %}">{% trans "My Profile" %}</a></li>
+                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}">{% trans "Buy Likes" %}</a></li>
+                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=unlikes">{% trans "Buy Dislikes" %}</a></li>
+                                <li><a class="dropdown-item" href="{% url 'rewards:my_claims' %}">{% trans "My Claims" %}</a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:referral_dashboard' %}">
+                                    <i class="fas fa-users"></i> {% trans "Referrals" %}
+                                </a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
                                         {% csrf_token %}
                                         <button type="submit" class="dropdown-item border-0 bg-transparent text-start w-100">
-                                            <i class="fas fa-sign-out-alt me-2"></i>Uitloggen
+                                            <i class="fas fa-sign-out-alt me-2"></i>{% trans "Logout" %}
                                         </button>
                                     </form>
                                 </li>
@@ -141,10 +548,10 @@
                         </li>
                     {% else %}
                         <li class="nav-item me-2">
-                            <a class="btn btn-outline-primary" href="{% url 'accounts:login' %}">Inloggen</a>
+                            <a class="btn btn-outline-primary" href="{% url 'accounts:login' %}">{% trans "Login" %}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="btn btn-accent" href="{% url 'accounts:register' %}">Registreren</a>
+                            <a class="btn btn-accent" href="{% url 'accounts:register' %}">{% trans "Register" %}</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -154,6 +561,125 @@
     
     <div class="container">
         {% if user.is_authenticated %}
+        <!-- Bootstrap Navigation Helper Bar -->
+        <div class="container-fluid">
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="nav-helper-bar">
+                        <!-- Mobile/Tablet Navigation -->
+                        <div class="d-flex justify-content-between align-items-center d-lg-none">
+                            <!-- Back Button -->
+                            <button onclick="goBack()" class="btn btn-back btn-sm" title="Go Back">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            
+                            <!-- Breadcrumb for Mobile -->
+                            <nav aria-label="breadcrumb" class="flex-grow-1 mx-3">
+                                <ol class="breadcrumb mb-0 justify-content-center">
+                                    <li class="breadcrumb-item">
+                                        <a href="{% url 'home' %}" class="text-decoration-none">
+                                            <i class="fas fa-home"></i>
+                                        </a>
+                                    </li>
+                                    <!-- Mobile breadcrumb content will be injected here -->
+                                </ol>
+                            </nav>
+                            
+                            <!-- Hamburger Menu for Tablet/Mobile -->
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="mobileMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-bars"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="mobileMenuDropdown">
+                                    <!-- Quick Actions in Dropdown -->
+                                    <li>
+                                        <a href="{% url 'profiles:discover' %}" class="dropdown-item">
+                                            <i class="fas fa-search me-2"></i>Discover Profiles
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'profiles:my_profile' %}" class="dropdown-item">
+                                            <i class="fas fa-user me-2"></i>My Profile
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'notifications:list' %}" class="dropdown-item position-relative">
+                                            <i class="fas fa-bell me-2"></i>Notifications
+                                            <span id="quick-notification-count-mobile" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;"></span>
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <!-- Additional Quick Actions -->
+                                    {% block quick_actions_mobile %}
+                                    {% if user.is_authenticated and profile and user != profile.user %}
+                                    <li>
+                                        <a href="{% url 'likes:give_like' profile.user.id %}" class="dropdown-item text-success">
+                                            <i class="fas fa-heart me-2"></i>Give Like
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'likes:give_unlike' profile.user.id %}" class="dropdown-item text-danger">
+                                            <i class="fas fa-times-circle me-2"></i>Give Dislike
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% endif %}
+                                    {% endblock %}
+                                    <li>
+                                        <a href="{% url 'payments:packages' %}" class="dropdown-item">
+                                            <i class="fas fa-shopping-cart me-2"></i>Buy Packages
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Desktop Navigation -->
+                        <div class="row align-items-center d-none d-lg-flex">
+                            <!-- Back Navigation -->
+                            <div class="col-lg-8">
+                                <div class="d-flex align-items-center">
+                                    <button onclick="goBack()" class="btn btn-back btn-sm me-3" title="Go Back">
+                                        <i class="fas fa-arrow-left"></i>
+                                    </button>
+                                    <!-- Bootstrap Breadcrumbs -->
+                                    <nav aria-label="breadcrumb" class="flex-grow-1">
+                                        <ol class="breadcrumb mb-0">
+                                            <li class="breadcrumb-item">
+                                                <a href="{% url 'home' %}" class="text-decoration-none">
+                                                    <i class="fas fa-home"></i> Home
+                                                </a>
+                                            </li>
+                                            {% block breadcrumbs %}
+                                            {% endblock %}
+                                        </ol>
+                                    </nav>
+                                </div>
+                            </div>
+                            
+                            <!-- Desktop Quick Actions -->
+                            <div class="col-lg-4">
+                                <div class="d-flex justify-content-end gap-2">
+                                    {% block quick_actions %}
+                                    <a href="{% url 'profiles:discover' %}" class="btn btn-primary btn-sm" title="Discover Profiles">
+                                        <i class="fas fa-search"></i>
+                                    </a>
+                                    <a href="{% url 'profiles:my_profile' %}" class="btn btn-outline-primary btn-sm" title="My Profile">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    <a href="{% url 'notifications:list' %}" class="btn btn-outline-secondary btn-sm position-relative" title="Notifications">
+                                        <i class="fas fa-bell"></i>
+                                        <span id="quick-notification-count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;"></span>
+                                    </a>
+                                    {% endblock %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Notification Bar -->
         <div id="notification-bar" class="mb-3" style="display: none;">
             <div class="alert alert-info alert-dismissible fade show" role="alert">
@@ -227,11 +753,30 @@
 
     function updateNotificationCount(count) {
         const countBadge = document.getElementById('notification-count');
+        const quickCountBadge = document.getElementById('quick-notification-count');
+        const quickCountBadgeMobile = document.getElementById('quick-notification-count-mobile');
+        
         if (count > 0) {
-            countBadge.textContent = count;
-            countBadge.style.display = 'inline';
+            // Main navbar badge
+            if (countBadge) {
+                countBadge.textContent = count;
+                countBadge.style.display = 'inline';
+            }
+            // Desktop quick actions badge
+            if (quickCountBadge) {
+                quickCountBadge.textContent = count;
+                quickCountBadge.style.display = 'inline';
+            }
+            // Mobile dropdown badge
+            if (quickCountBadgeMobile) {
+                quickCountBadgeMobile.textContent = count;
+                quickCountBadgeMobile.style.display = 'inline';
+            }
         } else {
-            countBadge.style.display = 'none';
+            // Hide all badges when count is 0
+            if (countBadge) countBadge.style.display = 'none';
+            if (quickCountBadge) quickCountBadge.style.display = 'none';
+            if (quickCountBadgeMobile) quickCountBadgeMobile.style.display = 'none';
         }
     }
 
@@ -339,9 +884,124 @@
     // Connect WebSocket on page load
     document.addEventListener('DOMContentLoaded', function() {
         connectWebSocket();
+        
+        // Sync breadcrumbs between desktop and mobile views
+        syncBreadcrumbs();
     });
     </script>
     {% endif %}
+
+    <!-- General Navigation JavaScript -->
+    <script>
+    // Back navigation function
+    function goBack() {
+        // Check if there's a previous page in history
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            // Fallback to home page if no history
+            window.location.href = "{% url 'home' %}";
+        }
+    }
+
+    // Keyboard shortcuts for navigation
+    document.addEventListener('keydown', function(e) {
+        // Alt + Left Arrow = Go Back
+        if (e.altKey && e.key === 'ArrowLeft') {
+            e.preventDefault();
+            goBack();
+        }
+        
+        // Alt + H = Home
+        if (e.altKey && e.key === 'h') {
+            e.preventDefault();
+            window.location.href = "{% url 'home' %}";
+        }
+        
+        {% if user.is_authenticated %}
+        // Alt + D = Discover
+        if (e.altKey && e.key === 'd') {
+            e.preventDefault();
+            window.location.href = "{% url 'profiles:discover' %}";
+        }
+        
+        // Alt + P = My Profile
+        if (e.altKey && e.key === 'p') {
+            e.preventDefault();
+            window.location.href = "{% url 'profiles:my_profile' %}";
+        }
+        
+        // Alt + N = Notifications
+        if (e.altKey && e.key === 'n') {
+            e.preventDefault();
+            window.location.href = "{% url 'notifications:list' %}";
+        }
+        {% endif %}
+    });
+
+    // Add loading states to navigation elements
+    document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('a[href], button[onclick*="location"]');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Add loading spinner for external navigation
+                if (this.href && !this.href.includes('#') && !this.hasAttribute('data-bs-toggle')) {
+                    const icon = this.querySelector('i');
+                    if (icon && !icon.classList.contains('fa-spinner')) {
+                        const originalClass = icon.className;
+                        icon.className = 'fas fa-spinner fa-spin';
+                        
+                        // Restore original icon after delay (in case navigation fails)
+                        setTimeout(() => {
+                            icon.className = originalClass;
+                        }, 3000);
+                    }
+                }
+            });
+        });
+        
+        // Sync breadcrumbs for non-authenticated users too
+        {% if not user.is_authenticated %}
+        syncBreadcrumbs();
+        {% endif %}
+    });
+    
+    // Breadcrumb sync function (also available for non-authenticated users)
+    function syncBreadcrumbs() {
+        const desktopBreadcrumb = document.querySelector('.d-none.d-lg-flex .breadcrumb');
+        const mobileBreadcrumb = document.querySelector('.d-lg-none .breadcrumb');
+        
+        if (desktopBreadcrumb && mobileBreadcrumb) {
+            // Copy breadcrumb items from desktop to mobile (except the home item)
+            const desktopItems = desktopBreadcrumb.querySelectorAll('.breadcrumb-item:not(:first-child)');
+            
+            desktopItems.forEach(item => {
+                const clonedItem = item.cloneNode(true);
+                mobileBreadcrumb.appendChild(clonedItem);
+            });
+        }
+    }
+
+    // Breadcrumb helper function
+    function addBreadcrumb(text, url = null) {
+        const breadcrumbContainer = document.querySelector('.breadcrumb');
+        if (breadcrumbContainer) {
+            const li = document.createElement('li');
+            li.className = 'breadcrumb-item';
+            
+            if (url) {
+                li.innerHTML = `<a href="${url}" class="text-decoration-none">${text}</a>`;
+            } else {
+                li.className += ' active';
+                li.setAttribute('aria-current', 'page');
+                li.textContent = text;
+            }
+            
+            breadcrumbContainer.appendChild(li);
+        }
+    }
+    </script>
 
     {% block scripts %}{% endblock %}
 </body>

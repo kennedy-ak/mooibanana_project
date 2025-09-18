@@ -11,6 +11,7 @@ class LikePackage(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     regular_likes = models.IntegerField()
     super_likes = models.IntegerField(default=0)
+    unlikes = models.IntegerField(default=0)
     boosters = models.IntegerField(default=0)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)

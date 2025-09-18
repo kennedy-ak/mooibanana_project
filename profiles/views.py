@@ -1,7 +1,7 @@
 
 # profiles/views.py
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import CreateView, UpdateView, ListView, DetailView
+from django.views.generic import CreateView, UpdateView, ListView, DetailView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.db.models import Q, Exists, OuterRef
@@ -9,9 +9,13 @@ from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from datetime import date, timedelta
-from .models import Profile
-from .forms import ProfileForm, ProfileSearchForm
-from likes.models import Like
+from .models import Profile, ProfilePhoto
+from .forms import ProfileForm, ProfileSearchForm, ProfilePhotoForm
+from likes.models import Like, Unlike
+from notifications.models import Notification
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
 class CreateProfileView(LoginRequiredMixin, CreateView):
     model = Profile
@@ -41,19 +45,29 @@ class DiscoverView(LoginRequiredMixin, ListView):
     paginate_by = 6
 
     def get_queryset(self):
+        # Get users that have been unliked by current user
+        unliked_user_ids = Unlike.objects.filter(
+            from_user=self.request.user
+        ).values_list('to_user_id', flat=True)
+
         queryset = Profile.objects.filter(
             is_complete=True
         ).exclude(
             user=self.request.user
+        ).exclude(
+            user_id__in=unliked_user_ids
         ).select_related('user')
 
         # Get search parameters
         search_query = self.request.GET.get('search_query', '').strip()
         study_field = self.request.GET.get('study_field', '').strip()
+        school_name = self.request.GET.get('school_name', '').strip()
+        city = self.request.GET.get('city', '').strip()
         interests = self.request.GET.get('interests', '').strip()
         min_age = self.request.GET.get('min_age', '').strip()
         max_age = self.request.GET.get('max_age', '').strip()
         location = self.request.GET.get('location', '').strip()
+        max_distance = self.request.GET.get('max_distance', '').strip()
 
         # Apply search filters
         if search_query:
@@ -65,6 +79,12 @@ class DiscoverView(LoginRequiredMixin, ListView):
 
         if study_field:
             queryset = queryset.filter(study_field=study_field)
+
+        if school_name:
+            queryset = queryset.filter(school_name__icontains=school_name)
+
+        if city:
+            queryset = queryset.filter(city__icontains=city)
 
         if interests:
             # Split interests by comma and search for any of them
@@ -97,6 +117,21 @@ class DiscoverView(LoginRequiredMixin, ListView):
                     queryset = queryset.filter(birth_date__gte=min_birth_date)
                 except (ValueError, TypeError):
                     pass
+
+        # Distance-based filtering
+        if max_distance and self.request.user.profile.latitude and self.request.user.profile.longitude:
+            try:
+                max_distance_int = int(max_distance)
+                # Filter profiles that have location data and calculate distances
+                profiles_with_distance = []
+                for profile in queryset.filter(latitude__isnull=False, longitude__isnull=False):
+                    distance = self.request.user.profile.calculate_distance_to(profile)
+                    if distance and distance <= max_distance_int:
+                        profiles_with_distance.append(profile.id)
+
+                queryset = queryset.filter(id__in=profiles_with_distance)
+            except (ValueError, TypeError):
+                pass
 
         # If no search parameters, randomize order
         if not any([search_query, study_field, interests, min_age, max_age, location]):
@@ -142,27 +177,28 @@ class DiscoverView(LoginRequiredMixin, ListView):
             cache.set(cache_key_likes, likes_count_dict, 300)  # 5 minutes
         context['likes_count_dict'] = likes_count_dict
 
+        # MATCHES REMOVED FROM SYSTEM
         # Check for mutual matches (cached)
-        matched_users = cache.get(cache_key_matches)
-        if matched_users is None:
-            matched_users = list(Like.objects.filter(
-                from_user=self.request.user,
-                is_mutual=True
-            ).values_list('to_user', flat=True))
-            cache.set(cache_key_matches, matched_users, 300)  # 5 minutes
-        context['matched_users'] = matched_users
+        # matched_users = cache.get(cache_key_matches)
+        # if matched_users is None:
+        #     matched_users = list(Like.objects.filter(
+        #         from_user=self.request.user,
+        #         is_mutual=True
+        #     ).values_list('to_user', flat=True))
+        #     cache.set(cache_key_matches, matched_users, 300)  # 5 minutes
+        # context['matched_users'] = matched_users
 
         # Check for pending match requests (cached)
-        pending_requests = cache.get(cache_key_requests)
-        if pending_requests is None:
-            from notifications.models import Notification
-            pending_requests = list(Notification.objects.filter(
-                sender=self.request.user,
-                notification_type='match_request',
-                status='pending'
-            ).values_list('receiver', flat=True))
-            cache.set(cache_key_requests, pending_requests, 300)  # 5 minutes
-        context['pending_requests'] = pending_requests
+        # pending_requests = cache.get(cache_key_requests)
+        # if pending_requests is None:
+        #     from notifications.models import Notification
+        #     pending_requests = list(Notification.objects.filter(
+        #         sender=self.request.user,
+        #         notification_type='match_request',
+        #         status='pending'
+        #     ).values_list('receiver', flat=True))
+        #     cache.set(cache_key_requests, pending_requests, 300)  # 5 minutes
+        # context['pending_requests'] = pending_requests
 
         # Add search form with current values
         search_form = ProfileSearchForm(self.request.GET or None)
@@ -172,14 +208,26 @@ class DiscoverView(LoginRequiredMixin, ListView):
         context['search_params'] = {
             'search_query': self.request.GET.get('search_query', ''),
             'study_field': self.request.GET.get('study_field', ''),
+            'school_name': self.request.GET.get('school_name', ''),
+            'city': self.request.GET.get('city', ''),
             'interests': self.request.GET.get('interests', ''),
             'min_age': self.request.GET.get('min_age', ''),
             'max_age': self.request.GET.get('max_age', ''),
             'location': self.request.GET.get('location', ''),
+            'max_distance': self.request.GET.get('max_distance', ''),
         }
 
         # Check if any search is active
         context['is_searching'] = any(context['search_params'].values())
+
+        # Add distance information for each profile if user has location
+        if self.request.user.profile.latitude and self.request.user.profile.longitude:
+            profile_distances = {}
+            for profile in context['profiles']:
+                distance = self.request.user.profile.calculate_distance_to(profile)
+                if distance:
+                    profile_distances[profile.id] = round(distance, 1)
+            context['profile_distances'] = profile_distances
 
         return context
 
@@ -194,21 +242,22 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
+        # MATCHES REMOVED FROM SYSTEM
         # Check for mutual matches
-        matched_users = Like.objects.filter(
-            from_user=self.request.user,
-            is_mutual=True
-        ).values_list('to_user', flat=True)
-        context['matched_users'] = list(matched_users)
+        # matched_users = Like.objects.filter(
+        #     from_user=self.request.user,
+        #     is_mutual=True
+        # ).values_list('to_user', flat=True)
+        # context['matched_users'] = list(matched_users)
 
         # Check for pending match requests sent by current user
-        from notifications.models import Notification
-        pending_requests = Notification.objects.filter(
-            sender=self.request.user,
-            notification_type='match_request',
-            status='pending'
-        ).values_list('receiver', flat=True)
-        context['pending_requests'] = list(pending_requests)
+        # from notifications.models import Notification
+        # pending_requests = Notification.objects.filter(
+        #     sender=self.request.user,
+        #     notification_type='match_request',
+        #     status='pending'
+        # ).values_list('receiver', flat=True)
+        # context['pending_requests'] = list(pending_requests)
 
         # Check if viewing this profile from a match request notification
         notification_id = self.request.GET.get('notification_id')
@@ -234,6 +283,16 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         ).first()
         context['incoming_match_request'] = incoming_request
 
+        # Add statistics for received likes and dislikes
+        context['received_likes_count'] = self.object.user.likes_received.count()
+        
+
+        context['received_dislikes_count'] = self.object.user.unlikes_received.count()
+        
+        # Add statistics for given likes and dislikes (what this user has given to others)
+        context['given_likes_count'] = self.object.user.likes_given.count()
+        context['given_dislikes_count'] = self.object.user.unlikes_given.count()
+
         return context
 
 class MyProfileView(LoginRequiredMixin, DetailView):
@@ -244,3 +303,78 @@ class MyProfileView(LoginRequiredMixin, DetailView):
     def get_object(self):
         profile, created = Profile.objects.get_or_create(user=self.request.user)
         return profile
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Add statistics for received likes and dislikes
+        context['received_likes_count'] = self.object.user.likes_received.count()
+        context['received_dislikes_count'] = self.object.user.unlikes_received.count()
+        
+        # Add statistics for given likes and dislikes (what user has given to others)
+        context['given_likes_count'] = self.object.user.likes_given.count()
+        context['given_dislikes_count'] = self.object.user.unlikes_given.count()
+        
+        return context
+
+class PhotoUploadView(LoginRequiredMixin, FormView):
+    form_class = ProfilePhotoForm
+    template_name = 'profiles/upload_photos.html'
+    success_url = '/profiles/my-profile/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        profile, created = Profile.objects.get_or_create(user=self.request.user)
+        context['profile'] = profile
+        context['existing_photos'] = profile.photos.all()
+        return context
+
+    def form_valid(self, form):
+        profile, created = Profile.objects.get_or_create(user=self.request.user)
+        photos = self.request.FILES.getlist('photos')
+
+        # Limit to 6 photos total
+        existing_count = profile.photos.count()
+        max_new_photos = 6 - existing_count
+
+        if len(photos) > max_new_photos:
+            messages.error(self.request, f'You can only upload {max_new_photos} more photos. Maximum is 6 photos total.')
+            return self.form_invalid(form)
+
+        # Save each photo
+        for i, photo in enumerate(photos):
+            ProfilePhoto.objects.create(
+                profile=profile,
+                image=photo,
+                order=existing_count + i
+            )
+
+        messages.success(self.request, f'{len(photos)} photo(s) uploaded successfully!')
+        return redirect(self.success_url)
+
+@login_required
+@require_POST
+def delete_photo(request, photo_id):
+    try:
+        profile = Profile.objects.get(user=request.user)
+        photo = ProfilePhoto.objects.get(id=photo_id, profile=profile)
+        photo.delete()
+        return JsonResponse({'success': True, 'message': 'Photo deleted successfully'})
+    except ProfilePhoto.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Photo not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+@login_required
+@require_POST
+def reorder_photos(request):
+    try:
+        profile = Profile.objects.get(user=request.user)
+        photo_ids = request.POST.getlist('photo_ids[]')
+
+        for i, photo_id in enumerate(photo_ids):
+            ProfilePhoto.objects.filter(id=photo_id, profile=profile).update(order=i)
+
+        return JsonResponse({'success': True, 'message': 'Photos reordered successfully'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})

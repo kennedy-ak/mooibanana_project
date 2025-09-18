@@ -9,20 +9,48 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h3>Mijn Profiel</h3>
-                <a href="{% url 'profiles:edit_profile' %}" class="btn btn-primary">
-                    <i class="fas fa-edit"></i> Bewerk Profiel
-                </a>
+                <div>
+                    <a href="{% url 'profiles:upload_photos' %}" class="btn btn-success me-2">
+                        <i class="fas fa-images"></i> Foto's Beheren
+                    </a>
+                    <a href="{% url 'profiles:edit_profile' %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Bewerk Profiel
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-4 text-center">
-                        {% if profile.profile_picture %}
-                            <img src="{{ profile.profile_picture.url }}" class="img-fluid rounded-circle mb-3" style="width: 200px; height: 200px; object-fit: cover;">
+                        <!-- Photo Slider -->
+                        {% with all_photos=profile.get_all_photos %}
+                        {% if all_photos %}
+                            <div id="myProfilePhotoCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+                                <div class="carousel-inner">
+                                    {% for photo in all_photos %}
+                                    <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                        <img src="{{ photo.url }}" alt="{{ profile.user.username }}"
+                                             class="d-block w-100 rounded" style="height: 250px; object-fit: cover;">
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% if all_photos|length > 1 %}
+                                <button class="carousel-control-prev" type="button" data-bs-target="#myProfilePhotoCarousel" data-bs-slide="prev">
+                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Previous</span>
+                                </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#myProfilePhotoCarousel" data-bs-slide="next">
+                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Next</span>
+                                </button>
+                                {% endif %}
+                            </div>
                         {% else %}
-                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 200px; height: 200px;">
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3 mx-auto"
+                                 style="height: 250px;">
                                 <i class="fas fa-user fa-4x text-muted"></i>
                             </div>
                         {% endif %}
+                        {% endwith %}
                         
                         {% if not profile.is_complete %}
                         <div class="alert alert-warning">
@@ -47,9 +75,17 @@
                             {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
                         </p>
                         {% endif %}
-                        
+
+                        {% if profile.school_name %}
+                        <p><strong>School:</strong> {{ profile.school_name }}</p>
+                        {% endif %}
+
+                        {% if profile.city %}
+                        <p><strong>Stad:</strong> {{ profile.city }}</p>
+                        {% endif %}
+
                         {% if profile.location %}
-                        <p><strong>Locatie:</strong> {{ profile.location }}</p>
+                        <p><strong>Regio:</strong> {{ profile.location }}</p>
                         {% endif %}
                         
                         {% if profile.bio %}
@@ -67,22 +103,32 @@
                         {% endif %}
                         
                         <div class="row mt-4">
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0">{{ user.likes_received.count }}</h5>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                                    <i class="fas fa-heart text-success fa-2x mb-2"></i>
+                                    <h5 class="mb-0 text-success">{{ received_likes_count }}</h5>
                                     <small class="text-muted">Likes Ontvangen</small>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0">{{ user.likes_given.count }}</h5>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                                    <i class="fas fa-heart text-primary fa-2x mb-2"></i>
+                                    <h5 class="mb-0 text-primary">{{ given_likes_count }}</h5>
                                     <small class="text-muted">Likes Gegeven</small>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h5 class="mb-0">{{ user.chat_matches_as_user1.count|add:user.chat_matches_as_user2.count }}</h5>
-                                    <small class="text-muted">Matches</small>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
+                                    <i class="fas fa-times-circle text-danger fa-2x mb-2"></i>
+                                    <h5 class="mb-0 text-danger">{{ received_dislikes_count }}</h5>
+                                    <small class="text-muted">Dislikes Ontvangen</small>
+                                </div>
+                            </div>
+                            <div class="col-lg-3 col-md-6 mb-3">
+                                <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                                    <i class="fas fa-times-circle text-warning fa-2x mb-2"></i>
+                                    <h5 class="mb-0 text-warning">{{ given_dislikes_count }}</h5>
+                                    <small class="text-muted">Dislikes Gegeven</small>
                                 </div>
                             </div>
                         </div>

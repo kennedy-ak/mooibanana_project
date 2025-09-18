@@ -12,4 +12,7 @@ urlpatterns = [
     path('search/', views.DiscoverView.as_view(), name='search'),  # Alias for search
     path('profile/<int:pk>/', views.ProfileDetailView.as_view(), name='profile_detail'),
     path('my-profile/', views.MyProfileView.as_view(), name='my_profile'),
+    path('upload-photos/', views.PhotoUploadView.as_view(), name='upload_photos'),
+    path('delete-photo/<int:photo_id>/', views.delete_photo, name='delete_photo'),
+    path('reorder-photos/', views.reorder_photos, name='reorder_photos'),
 ]

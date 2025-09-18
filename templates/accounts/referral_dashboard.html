@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Referral Dashboard - Mooibanana{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-users"></i> Referral Dashboard</h3>
+                    <p class="text-muted mb-0">Invite friends and earn points!</p>
+                </div>
+                <div class="card-body">
+                    <!-- Stats Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ referral_count }}</h4>
+                                    <p class="mb-0">Successful Referrals</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ referral_points }}</h4>
+                                    <p class="mb-0">Points from Referrals</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h4>{{ total_points }}</h4>
+                                    <p class="mb-0">Total Points</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h4>50</h4>
+                                    <p class="mb-0">Points per Referral</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Referral Code Section -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-code"></i> Your Referral Code</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" class="form-control" value="{{ referral_code }}" id="referralCode" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copyReferralCode()">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="generateReferralLink()">
+                                        <i class="fas fa-link"></i> Generate Shareable Link
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-share-alt"></i> Share Your Link</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-3" id="referralLinkContainer" style="display: none;">
+                                        <input type="text" class="form-control" id="referralLink" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copyReferralLink()">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button class="btn btn-success" onclick="shareWhatsApp()">
+                                            <i class="fab fa-whatsapp"></i> Share on WhatsApp
+                                        </button>
+                                        <button class="btn btn-info" onclick="shareTwitter()">
+                                            <i class="fab fa-twitter"></i> Share on Twitter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- How it Works -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-question-circle"></i> How Referrals Work</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    <i class="fas fa-share fa-3x text-primary mb-3"></i>
+                                    <h6>1. Share Your Code</h6>
+                                    <p class="small">Share your referral code or link with friends</p>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <i class="fas fa-user-plus fa-3x text-success mb-3"></i>
+                                    <h6>2. Friend Joins</h6>
+                                    <p class="small">Your friend signs up using your referral code</p>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <i class="fas fa-coins fa-3x text-warning mb-3"></i>
+                                    <h6>3. Earn Points</h6>
+                                    <p class="small">Get 50 points when they complete their profile</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Referral History -->
+                    {% if referrals %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-history"></i> Referral History</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Friend</th>
+                                            <th>Date Referred</th>
+                                            <th>Status</th>
+                                            <th>Points Earned</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for referral in referrals %}
+                                        <tr>
+                                            <td>{{ referral.referred_user.username }}</td>
+                                            <td>{{ referral.created_at|date:"M d, Y" }}</td>
+                                            <td>
+                                                {% if referral.status == 'completed' %}
+                                                    <span class="badge bg-success">Completed</span>
+                                                {% elif referral.status == 'pending' %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ referral.status|title }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ referral.points_awarded }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentReferralLink = '';
+
+function copyReferralCode() {
+    const codeInput = document.getElementById('referralCode');
+    codeInput.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function generateReferralLink() {
+    fetch('/accounts/generate-referral-link/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentReferralLink = data.referral_link;
+                document.getElementById('referralLink').value = currentReferralLink;
+                document.getElementById('referralLinkContainer').style.display = 'flex';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating referral link');
+        });
+}
+
+function copyReferralLink() {
+    const linkInput = document.getElementById('referralLink');
+    linkInput.select();
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
+
+function shareWhatsApp() {
+    if (!currentReferralLink) {
+        generateReferralLink();
+        setTimeout(() => shareWhatsApp(), 1000);
+        return;
+    }
+    
+    const message = `Hey! Join me on Mooibanana, the student dating platform! Use my referral code {{ referral_code }} or click this link: ${currentReferralLink}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
+function shareTwitter() {
+    if (!currentReferralLink) {
+        generateReferralLink();
+        setTimeout(() => shareTwitter(), 1000);
+        return;
+    }
+    
+    const message = `Join me on Mooibanana! Use my referral code {{ referral_code }} ${currentReferralLink}`;
+    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}`;
+    window.open(twitterUrl, '_blank');
+}
+</script>
+{% endblock %}

@@ -3,6 +3,12 @@
 
 {% block title %}Notifications - Mooibanana{% endblock %}
 
+{% block breadcrumbs %}
+<li class="breadcrumb-item active" aria-current="page">
+    <i class="fas fa-bell"></i> Notifications
+</li>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-md-8 mx-auto">
@@ -27,6 +33,10 @@
                                 <i class="fas fa-comment text-primary"></i> New Message
                             {% elif notification.notification_type == 'gift_received' %}
                                 <i class="fas fa-gift text-warning"></i> Gift Received
+                            {% elif notification.notification_type == 'like_received' %}
+                                <i class="fas fa-heart text-success"></i> Like Received
+                            {% elif notification.notification_type == 'unlike_received' %}
+                                <i class="fas fa-times-circle text-danger"></i> Dislike Received
                             {% endif %}
                         </h6>
                         <p class="card-text">{{ notification.message }}</p>

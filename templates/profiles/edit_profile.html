@@ -16,6 +16,20 @@
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {{ form|crispy }}
+
+                    <!-- Location Helper -->
+                    <div class="mb-3">
+                        <label class="form-label">Locatie Helper</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="getCurrentLocation()">
+                                <i class="fas fa-map-marker-alt"></i> Gebruik Huidige Locatie
+                            </button>
+                            <small class="text-muted align-self-center">
+                                Dit helpt andere gebruikers je te vinden op basis van afstand
+                            </small>
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Opslaan</button>
                         <a href="{% url 'profiles:my_profile' %}" class="btn btn-secondary">Annuleren</a>
@@ -25,4 +39,51 @@
         </div>
     </div>
 </div>
+
+<script>
+function getCurrentLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                // Set the latitude and longitude fields
+                const latField = document.getElementById('id_latitude');
+                const lonField = document.getElementById('id_longitude');
+
+                if (latField && lonField) {
+                    latField.value = position.coords.latitude.toFixed(6);
+                    lonField.value = position.coords.longitude.toFixed(6);
+
+                    // Show success message
+                    alert('Locatie succesvol ingesteld! Latitude: ' + position.coords.latitude.toFixed(6) + ', Longitude: ' + position.coords.longitude.toFixed(6));
+                }
+            },
+            function(error) {
+                let errorMessage = 'Kon locatie niet ophalen: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'Locatie toegang geweigerd door gebruiker.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Locatie informatie niet beschikbaar.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'Locatie verzoek time-out.';
+                        break;
+                    default:
+                        errorMessage += 'Onbekende fout.';
+                        break;
+                }
+                alert(errorMessage);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            }
+        );
+    } else {
+        alert('Geolocation wordt niet ondersteund door deze browser.');
+    }
+}
+</script>
 {% endblock %}

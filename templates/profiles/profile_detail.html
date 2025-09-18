@@ -1,7 +1,49 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}{{ profile.user.get_full_name|default:profile.user.username }} - Mooibanana{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item">
+    <a href="{% url 'profiles:discover' %}" class="text-decoration-none">
+        <i class="fas fa-search"></i> Discover
+    </a>
+</li>
+<li class="breadcrumb-item active" aria-current="page">
+    {{ profile.user.username }}'s Profile
+</li>
+{% endblock %}
+
+{% block quick_actions %}
+{{ block.super }}
+{% if user.is_authenticated and user != profile.user %}
+<div class="btn-group" role="group" aria-label="Profile actions">
+    <a href="{% url 'likes:give_like' profile.user.id %}" class="btn btn-success btn-sm" title="Give Like">
+        <i class="fas fa-heart"></i>
+    </a>
+    <a href="{% url 'likes:give_unlike' profile.user.id %}" class="btn btn-danger btn-sm" title="Give Dislike">
+        <i class="fas fa-times-circle"></i>
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block quick_actions_mobile %}
+{% if user.is_authenticated and user != profile.user %}
+<li>
+    <a href="{% url 'likes:give_like' profile.user.id %}" class="dropdown-item text-success">
+        <i class="fas fa-heart me-2"></i>Give Like
+    </a>
+</li>
+<li>
+    <a href="{% url 'likes:give_unlike' profile.user.id %}" class="dropdown-item text-danger">
+        <i class="fas fa-times-circle me-2"></i>Give Dislike
+    </a>
+</li>
+<li><hr class="dropdown-divider"></li>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -10,15 +52,43 @@
         <div class="col-lg-4 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body text-center">
-                    {% if profile.profile_picture %}
-                        <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.username }}" 
-                             class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                    <!-- Photo Slider -->
+                    {% with all_photos=profile.get_all_photos %}
+                    {% if all_photos %}
+                        <div id="profilePhotoCarousel" class="carousel slide mb-3" data-bs-ride="carousel">
+                            <div class="carousel-inner">
+                                {% for photo in all_photos %}
+                                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                                    <img src="{{ photo.url }}" alt="{{ profile.user.username }}"
+                                         class="d-block w-100 rounded" style="height: 300px; object-fit: cover;">
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% if all_photos|length > 1 %}
+                            <button class="carousel-control-prev" type="button" data-bs-target="#profilePhotoCarousel" data-bs-slide="prev">
+                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Previous</span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#profilePhotoCarousel" data-bs-slide="next">
+                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                <span class="visually-hidden">Next</span>
+                            </button>
+                            <!-- Indicators -->
+                            <div class="carousel-indicators">
+                                {% for photo in all_photos %}
+                                <button type="button" data-bs-target="#profilePhotoCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                                        {% if forloop.first %}class="active"{% endif %} aria-current="true" aria-label="Slide {{ forloop.counter }}"></button>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
                     {% else %}
-                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center mb-3 mx-auto" 
-                             style="width: 150px; height: 150px;">
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center mb-3 mx-auto"
+                             style="height: 300px;">
                             <i class="fas fa-user fa-4x text-muted"></i>
                         </div>
                     {% endif %}
+                    {% endwith %}
                     
                     <h4 class="card-title">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
                     
@@ -32,13 +102,14 @@
                         </p>
                     {% endif %}
                     
-                    {% if profile.university %}
+                    {% if profile.school_name %}
                         <p class="text-muted">
-                            <i class="fas fa-university"></i> {{ profile.university }}
+                            <i class="fas fa-university"></i> {{ profile.school_name }}
                         </p>
                     {% endif %}
                     
-                    <!-- Match Request Notification Alert -->
+                    <!-- TEMPORARILY DISABLED - Match Request Notification Alert -->
+                    {% comment %}
                     {% if match_request_notification %}
                     <div class="alert alert-info mt-3">
                         <h6><i class="fas fa-heart text-danger"></i> Match Request</h6>
@@ -66,65 +137,72 @@
                         </div>
                     </div>
                     {% endif %}
+                    {% endcomment %}
+
+                    <!-- Manage Photos Button (for profile owner) -->
+                    {% if user.is_authenticated and user == profile.user %}
+                        <div class="d-grid gap-2 mt-4">
+                            <a href="{% url 'profiles:upload_photos' %}" class="btn btn-primary w-100">
+                                <i class="fas fa-images"></i> {% trans "Manage Photos" %}
+                            </a>
+                        </div>
+                    {% endif %}
 
                     <!-- Action Buttons -->
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="d-grid gap-2 mt-4">
-                            <!-- Check if already matched -->
-                            {% if profile.user.id in matched_users %}
-                                <button type="button" class="btn btn-success w-100" disabled>
-                                    <i class="fas fa-heart"></i> Matched!
-                                </button>
-                            {% elif profile.user.id in pending_requests %}
-                                <button type="button" class="btn btn-warning w-100" disabled>
-                                    <i class="fas fa-clock"></i> Match Request Sent
-                                </button>
-                            {% elif incoming_match_request or match_request_notification %}
-                                <!-- Show that there's a pending request from this user -->
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-clock"></i> Respond to match request above
-                                </div>
-                            {% else %}
-                                <!-- Match Request Button -->
-                                <form method="post" action="{% url 'notifications:send_match_request' profile.user.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="fas fa-heart"></i> Send Match Request
-                                    </button>
-                                </form>
-                            {% endif %}
-
                             <!-- Buy Likes Button -->
-                            <button class="btn btn-accent w-100" data-bs-toggle="modal" data-bs-target="#giftLikesModal">
-                                <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}
+                            <button type="button" class="btn w-100" style="background-color: #ff8c00; color: white; border: none;" data-bs-toggle="modal" data-bs-target="#giftLikesModal">
+                                <i class="fas fa-gift"></i> {% trans "Buy Likes for" %} {{ profile.user.first_name|default:profile.user.username }}
                             </button>
                             
-                            <!-- Start Chat Button (if matched) -->
-                            {% if is_matched %}
-                                <a href="{% url 'chat:room' match.chat_room.id %}" class="btn btn-success w-100">
-                                    <i class="fas fa-comments"></i> Chat Starten
-                                </a>
-                            {% endif %}
+                            <!-- Buy Dislikes Button -->
+                            <button type="button" class="btn w-100" style="background-color: #dc3545; color: white; border: none;" data-bs-toggle="modal" data-bs-target="#giftDislikesModal">
+                                <i class="fas fa-times-circle"></i> {% trans "Buy Dislikes for" %} {{ profile.user.first_name|default:profile.user.username }}
+                            </button>
+                        </div>
+                    {% endif %}
+
+                    <!-- Bootstrap Statistics Section -->
+                    {% if user.is_authenticated and user != profile.user %}
+                        <div class="card mt-4 border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0 text-center">
+                                <h6 class="card-title mb-0">{% trans "Available Balances" %}</h6>
+                            </div>
+                            <div class="card-body text-center py-3">
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                                            <span class="badge likes-balance fs-6 px-3 py-2">
+                                                <i class="fas fa-heart me-1"></i> {{ profile.user.likes_balance }} likes
+                                            </span>
+                                            <span class="badge bg-danger fs-6 px-3 py-2">
+                                                <i class="fas fa-times-circle me-1"></i> {{ profile.user.unlikes_balance }} unlikes
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% endif %}
                 </div>
             </div>
             
-            <!-- Stats Card -->
-            <div class="card shadow-sm mt-4">
-                <div class="card-body">
-                    <h6 class="card-title text-center mb-3">Statistieken</h6>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <div class="p-2">
-                                <h6 class="mb-0">{{ profile.user.likes_received.count }}</h6>
-                                <small class="text-muted">Likes Ontvangen</small>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-2">
-                                <h6 class="mb-0">{{ profile.user.chat_matches_as_user1.count|add:profile.user.chat_matches_as_user2.count }}</h6>
-                                <small class="text-muted">Matches</small>
+            <!-- Bootstrap Stats Card -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="card-title text-center mb-0">Beschikbare Balansen</h6>
+                </div>
+                <div class="card-body text-center py-3">
+                    <div class="row justify-content-center">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
+                                <span class="badge likes-balance fs-6 px-3 py-2">
+                                    <i class="fas fa-heart me-1"></i> {{ profile.user.likes_balance }} likes
+                                </span>
+                                <span class="badge bg-danger fs-6 px-3 py-2">
+                                    <i class="fas fa-times-circle me-1"></i> {{ profile.user.unlikes_balance }} unlikes
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -134,24 +212,24 @@
         
         <!-- Profile Details -->
         <div class="col-lg-8">
-            <!-- Bio Section -->
+            <!-- About me Section -->
             {% if profile.bio %}
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-info-circle text-primary"></i> Over Mij
+                            <i class="fas fa-info-circle text-primary"></i> {% trans "About me" %}
                         </h5>
                         <p class="card-text">{{ profile.bio|linebreaks }}</p>
                     </div>
                 </div>
             {% endif %}
-            
+
             <!-- Interests Section -->
             {% if profile.interests %}
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-heart text-primary"></i> Interesses
+                            <i class="fas fa-heart text-primary"></i> {% trans "Interests" %}
                         </h5>
                         <div class="d-flex flex-wrap gap-2">
                             {% for interest in profile.get_interests_list %}
@@ -159,6 +237,52 @@
                             {% endfor %}
                         </div>
                     </div>
+                </div>
+            {% endif %}
+
+            <!-- Profile Information Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-user text-primary"></i> {% trans "Profile Information" %}
+                    </h5>
+                    <div class="row">
+                        {% if profile.location %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "Location" %}:</strong> {{ profile.location }}
+                        </div>
+                        {% endif %}
+                        {% if profile.study_year %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "Academic year" %}:</strong> {{ profile.study_year }}
+                        </div>
+                        {% endif %}
+                        {% if profile.city %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "City" %}:</strong> {{ profile.city }}
+                        </div>
+                        {% endif %}
+                        {% if profile.school_name %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "School" %}:</strong> {{ profile.school_name }}
+                        </div>
+                        {% endif %}
+                        {% if profile.study_field %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "Study field" %}:</strong> {{ profile.study_field }}
+                        </div>
+                        {% endif %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{% trans "Member since" %}:</strong> {{ profile.user.date_joined|date:"F Y" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verification Warning -->
+            {% if user.is_authenticated and user != profile.user %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> {% trans "This profile has not yet been verified. Please be careful when sharing personal information." %}
                 </div>
             {% endif %}
             
@@ -192,9 +316,16 @@
                             </div>
                         {% endif %}
                         
+                        {% if profile.city %}
+                            <div class="col-md-6 mb-3">
+                                <strong>Stad:</strong>
+                                <span class="text-muted">{{ profile.city }}</span>
+                            </div>
+                        {% endif %}
+
                         {% if profile.location %}
                             <div class="col-md-6 mb-3">
-                                <strong>Locatie:</strong>
+                                <strong>Regio:</strong>
                                 <span class="text-muted">{{ profile.location }}</span>
                             </div>
                         {% endif %}
@@ -289,6 +420,49 @@
     </div>
 </div>
 
+<!-- Gift Dislikes Modal -->
+<div class="modal fade" id="giftDislikesModal" tabindex="-1" aria-labelledby="giftDislikesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white;">
+                <h5 class="modal-title" id="giftDislikesModalLabel">
+                    <i class="fas fa-times-circle"></i> {% trans "Buy Dislikes for" %} {{ profile.user.first_name|default:profile.user.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <p class="lead">{% trans "Purchase dislike packages" %}</p>
+                    <p class="text-muted">{% trans "Choose from packages with unlikes/dislikes to use on profiles." %}</p>
+                </div>
+
+                <!-- Direct link to packages page with unlikes filter -->
+                <div class="text-center mb-4">
+                    <a href="{% url 'payments:packages' %}?type=unlikes" class="btn btn-danger btn-lg">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        {% trans "Go to Dislike Packages" %}
+                    </a>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="text-center mb-3">
+                    <h6 class="text-muted">{% trans "Or choose a package below:" %}</h6>
+                </div>
+
+                <div class="row" id="giftDislikePackages">
+                    <!-- Packages will be loaded here -->
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Like Success Modal -->
 <div class="modal fade" id="likeSuccessModal" tabindex="-1" aria-labelledby="likeSuccessModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -364,6 +538,57 @@
             });
     });
 
+    // Load gift dislike packages when modal opens
+    document.getElementById('giftDislikesModal').addEventListener('show.bs.modal', function () {
+        fetch('/payments/api/packages/')
+            .then(response => response.json())
+            .then(data => {
+                const packagesContainer = document.getElementById('giftDislikePackages');
+                packagesContainer.innerHTML = '';
+                
+                // Filter packages that have unlikes
+                const dislikePackages = data.packages.filter(package => package.unlikes > 0);
+                
+                if (dislikePackages.length === 0) {
+                    packagesContainer.innerHTML = '<div class="col-12 text-center"><div class="alert alert-info">No dislike packages available</div></div>';
+                    return;
+                }
+                
+                dislikePackages.forEach(package => {
+                    const isPopular = package.name.toLowerCase().includes('populair') || package.name.toLowerCase().includes('popular');
+                    
+                    const packageHtml = `
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 ${isPopular ? 'border-danger' : ''}">
+                                <div class="card-header text-center ${isPopular ? 'bg-danger text-white' : 'bg-dark text-white'}">
+                                    <h6 class="mb-0">${package.name}</h6>
+                                    ${isPopular ? '<small class="badge bg-light text-dark">POPULAIR</small>' : ''}
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="h4 text-danger mb-2">€${package.price}</div>
+                                    <div class="mb-3">
+                                        ${package.unlikes > 0 ? `<small class="text-muted d-block"><i class="fas fa-times-circle text-danger"></i> ${package.unlikes} Dislikes</small>` : ''}
+                                        ${package.regular_likes > 0 ? `<small class="text-muted d-block"><i class="fas fa-heart text-danger"></i> ${package.regular_likes} Regular Likes</small>` : ''}
+                                        ${package.super_likes > 0 ? `<small class="text-muted d-block"><i class="fas fa-star text-warning"></i> ${package.super_likes} Super Likes</small>` : ''}
+                                        ${package.boosters > 0 ? `<small class="text-muted d-block"><i class="fas fa-rocket text-info"></i> ${package.boosters} Boosters</small>` : ''}
+                                    </div>
+                                    <button onclick="giftPackage(${package.id})" class="btn ${isPopular ? 'btn-danger' : 'btn-dark'} btn-sm w-100">
+                                        <i class="fas fa-gift"></i> Cadeau Geven
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    packagesContainer.innerHTML += packageHtml;
+                });
+            })
+            .catch(error => {
+                console.error('Error loading dislike packages:', error);
+                document.getElementById('giftDislikePackages').innerHTML = 
+                    '<div class="col-12 text-center"><div class="alert alert-danger">Error loading packages</div></div>';
+            });
+    });
+
     // Handle gift package purchase
     function giftPackage(packageId) {
         const recipientId = {{ profile.user.id }};
@@ -417,4 +642,134 @@
         .catch(error => console.error('Error responding to match:', error));
     }
 </script>
+
+<style>
+/* iPad specific improvements for profile detail */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container {
+        padding: 0 20px;
+    }
+    
+    /* Profile layout adjustments */
+    .col-lg-4, .col-lg-8 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 30px;
+    }
+    
+    /* Profile card improvements */
+    .card-body {
+        padding: 25px;
+    }
+    
+    /* Carousel sizing for iPad */
+    #profilePhotoCarousel {
+        width: 200px !important;
+        height: 200px !important;
+        margin: 0 auto 20px;
+    }
+    
+    .carousel-inner img {
+        width: 200px !important;
+        height: 200px !important;
+    }
+    
+    /* Button improvements */
+    .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 1rem;
+    }
+    
+    .btn-sm {
+        min-height: 40px;
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    /* Modal improvements for iPad */
+    .modal-dialog {
+        margin: 40px auto;
+        max-width: 90%;
+    }
+    
+    .modal-content {
+        border-radius: 15px;
+    }
+    
+    /* Profile info layout */
+    .card-title {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+    
+    /* Statistics section */
+    .nav-item .likes-balance {
+        font-size: 1rem;
+        padding: 8px 16px;
+        display: block;
+        text-align: center;
+        margin: 10px 0;
+    }
+    
+    /* Action buttons spacing */
+    .d-grid .btn {
+        margin-bottom: 12px;
+    }
+    
+    /* Photo grid improvements */
+    .row .col-md-4 {
+        flex: 0 0 50%;
+        max-width: 50%;
+        margin-bottom: 20px;
+    }
+}
+
+/* iPad Portrait specific */
+@media (min-width: 768px) and (max-width: 834px) and (orientation: portrait) {
+    .row .col-md-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    /* Single column layout for better readability */
+    .col-lg-4 {
+        order: 1;
+    }
+    
+    .col-lg-8 {
+        order: 2;
+    }
+}
+
+/* Touch-friendly improvements */
+@media (pointer: coarse) {
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.6);
+    }
+    
+    .carousel-control-prev-icon,
+    .carousel-control-next-icon {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .carousel-indicators button {
+        width: 12px;
+        height: 12px;
+        margin: 0 4px;
+    }
+    
+    /* Form elements */
+    input, select, textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+}
+</style>
 {% endblock %}
