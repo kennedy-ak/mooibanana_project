@@ -20,15 +20,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from django.conf.urls.i18n import i18n_patterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('admin-dashboard/', include('admin_dashboard.urls')),
-    path('i18n/', include('django.conf.urls.i18n')),
-]
-
-urlpatterns += i18n_patterns(
     path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('accounts/', include('accounts.urls')),
     path('profiles/', include('profiles.urls')),
@@ -37,8 +32,9 @@ urlpatterns += i18n_patterns(
     # path('chat/', include('chat.urls')),  # TEMPORARILY DISABLED
     path('payments/', include('payments.urls')),
     path('notifications/', include('notifications.urls')),
-    prefix_default_language=False,
-)
+    path('updates/', include('updates.urls')),
+    path('advertisements/', include('advertisements.urls')),
+]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

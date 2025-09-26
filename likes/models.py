@@ -15,6 +15,7 @@ class Like(models.Model):
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes_given')
     to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes_received')
     like_type = models.CharField(max_length=10, choices=LIKE_TYPES, default='regular')
+    amount = models.PositiveIntegerField(default=1, help_text="Number of likes given")
     created_at = models.DateTimeField(auto_now_add=True)
     is_mutual = models.BooleanField(default=False)
     
@@ -23,7 +24,7 @@ class Like(models.Model):
         pass
 
     def __str__(self):
-        return f"{self.from_user.username} liked {self.to_user.username} ({self.like_type})"
+        return f"{self.from_user.username} gave {self.amount} {self.like_type} like(s) to {self.to_user.username}"
 
     def save(self, *args, **kwargs):
         # Check if this creates a mutual like (if both users have liked each other)
@@ -37,15 +38,18 @@ class Like(models.Model):
 @receiver(post_save, sender=Like)
 def award_points_for_like(sender, instance, created, **kwargs):
     if created:
-        # Award points to both users
+        # Award points based on like amount - points per like * amount given
         if instance.like_type == 'regular':
-            instance.from_user.points_balance += 5
-            instance.to_user.points_balance += 10
+            sender_points = 5 * instance.amount
+            receiver_points = 10 * instance.amount
         else:  # super like
-            instance.from_user.points_balance += 10
-            instance.to_user.points_balance += 20
+            sender_points = 10 * instance.amount
+            receiver_points = 20 * instance.amount
         
-        # Bonus for mutual likes
+        instance.from_user.points_balance += sender_points
+        instance.to_user.points_balance += receiver_points
+        
+        # Bonus for mutual likes (fixed bonus regardless of amount)
         if instance.is_mutual:
             instance.from_user.points_balance += 25
             instance.to_user.points_balance += 25
@@ -56,13 +60,14 @@ def award_points_for_like(sender, instance, created, **kwargs):
 class Unlike(models.Model):
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unlikes_given')
     to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='unlikes_received')
+    amount = models.PositiveIntegerField(default=1, help_text="Number of unlikes given")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ['from_user', 'to_user']
 
     def __str__(self):
-        return f"{self.from_user.username} unliked {self.to_user.username}"
+        return f"{self.from_user.username} gave {self.amount} unlike(s) to {self.to_user.username}"
 
 class RewardClaim(models.Model):
     STATUS_CHOICES = [

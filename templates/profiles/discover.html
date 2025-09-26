@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load profile_extras %}
 
-{% block title %}Ontdekken - Mooibanana{% endblock %}
+{% block title %}Discover - Mooibanana{% endblock %}
 
 {% block breadcrumbs %}
 <li class="breadcrumb-item active" aria-current="page">
@@ -14,96 +14,105 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h2 class="text-center mb-4 text-white">Ontdek nieuwe studenten</h2>
+            <h2 class="text-center mb-4 text-white">Discover New Students</h2>
 
-            <!-- Bootstrap Search Form -->
+            <!-- Bootstrap Search Form with Collapsible Interface -->
             <div class="card border-0 shadow-lg mb-4">
-                <div class="card-header bg-transparent border-0">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0 d-flex align-items-center">
                         <i class="fas fa-search me-2"></i> Search Profiles
                         {% if is_searching %}
                             <span class="badge bg-primary ms-2">Active</span>
                         {% endif %}
                     </h5>
+                    <!-- Hamburger Button -->
+                    <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#searchFilters" aria-expanded="false" aria-controls="searchFilters" id="searchToggleBtn">
+                        <i class="fas fa-bars" id="searchToggleIcon"></i>
+                        <span class="ms-1 d-none d-md-inline" id="searchToggleText">Filters</span>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <form method="get">
-                        <!-- First Row -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.search_query }}
-                                    <label for="{{ search_form.search_query.id_for_label }}">{{ search_form.search_query.label }}</label>
+                
+                <!-- Collapsible Search Form -->
+                <div class="collapse {% if is_searching %}show{% endif %}" id="searchFilters">
+                    <div class="card-body">
+                        <form method="get" id="searchForm">
+                            <!-- First Row -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.search_query }}
+                                        <label for="{{ search_form.search_query.id_for_label }}">{{ search_form.search_query.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.study_field }}
+                                        <label for="{{ search_form.study_field.id_for_label }}">{{ search_form.study_field.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.school_name }}
+                                        <label for="{{ search_form.school_name.id_for_label }}">{{ search_form.school_name.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.interests }}
+                                        <label for="{{ search_form.interests.id_for_label }}">{{ search_form.interests.label }}</label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.study_field }}
-                                    <label for="{{ search_form.study_field.id_for_label }}">{{ search_form.study_field.label }}</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.school_name }}
-                                    <label for="{{ search_form.school_name.id_for_label }}">{{ search_form.school_name.label }}</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.interests }}
-                                    <label for="{{ search_form.interests.id_for_label }}">{{ search_form.interests.label }}</label>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Second Row -->
-                        <div class="row g-3 mb-3">
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.city }}
-                                    <label for="{{ search_form.city.id_for_label }}">{{ search_form.city.label }}</label>
+                            <!-- Second Row -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.city }}
+                                        <label for="{{ search_form.city.id_for_label }}">{{ search_form.city.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.location }}
+                                        <label for="{{ search_form.location.id_for_label }}">{{ search_form.location.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="form-floating">
+                                        {{ search_form.max_distance }}
+                                        <label for="{{ search_form.max_distance.id_for_label }}">{{ search_form.max_distance.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-3 col-md-6 d-flex align-items-end">
+                                    <div class="btn-group w-100" role="group">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-search me-1"></i> Search
+                                        </button>
+                                        <a href="{% url 'profiles:discover' %}" class="btn btn-outline-secondary" id="clearFiltersBtn">
+                                            <i class="fas fa-times me-1"></i> Clear
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.location }}
-                                    <label for="{{ search_form.location.id_for_label }}">{{ search_form.location.label }}</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="form-floating">
-                                    {{ search_form.max_distance }}
-                                    <label for="{{ search_form.max_distance.id_for_label }}">{{ search_form.max_distance.label }}</label>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6 d-flex align-items-end">
-                                <div class="btn-group w-100" role="group">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search me-1"></i> Search
-                                    </button>
-                                    <a href="{% url 'profiles:discover' %}" class="btn btn-outline-secondary">
-                                        <i class="fas fa-times me-1"></i> Clear
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
 
-                    <!-- Active Filters Alert -->
-                    {% if is_searching %}
-                    <div class="alert alert-info border-0 mt-3">
-                        <small class="mb-0">
-                            <strong><i class="fas fa-filter me-1"></i>Active filters:</strong>
-                            {% if search_params.search_query %}<span class="badge bg-secondary me-1">Name: "{{ search_params.search_query }}"</span>{% endif %}
-                            {% if search_params.study_field %}<span class="badge bg-secondary me-1">Study: "{{ search_form.study_field.field.choices|lookup:search_params.study_field }}"</span>{% endif %}
-                            {% if search_params.school_name %}<span class="badge bg-secondary me-1">School: "{{ search_params.school_name }}"</span>{% endif %}
-                            {% if search_params.interests %}<span class="badge bg-secondary me-1">Interests: "{{ search_params.interests }}"</span>{% endif %}
-                            {% if search_params.city %}<span class="badge bg-secondary me-1">City: "{{ search_params.city }}"</span>{% endif %}
-                            {% if search_params.location %}<span class="badge bg-secondary me-1">Region: "{{ search_params.location }}"</span>{% endif %}
-                            {% if search_params.max_distance %}<span class="badge bg-secondary me-1">Max Distance: {{ search_params.max_distance }}km</span>{% endif %}
-                        </small>
+                        <!-- Active Filters Alert -->
+                        {% if is_searching %}
+                        <div class="alert alert-info border-0 mt-3">
+                            <small class="mb-0">
+                                <strong><i class="fas fa-filter me-1"></i>Active filters:</strong>
+                                {% if search_params.search_query %}<span class="badge bg-secondary me-1">Name: "{{ search_params.search_query }}"</span>{% endif %}
+                                {% if search_params.study_field %}<span class="badge bg-secondary me-1">Study: "{{ search_form.study_field.field.choices|lookup:search_params.study_field }}"</span>{% endif %}
+                                {% if search_params.school_name %}<span class="badge bg-secondary me-1">School: "{{ search_params.school_name }}"</span>{% endif %}
+                                {% if search_params.interests %}<span class="badge bg-secondary me-1">Interests: "{{ search_params.interests }}"</span>{% endif %}
+                                {% if search_params.city %}<span class="badge bg-secondary me-1">City: "{{ search_params.city }}"</span>{% endif %}
+                                {% if search_params.location %}<span class="badge bg-secondary me-1">Region: "{{ search_params.location }}"</span>{% endif %}
+                                {% if search_params.max_distance %}<span class="badge bg-secondary me-1">Max Distance: {{ search_params.max_distance }}km</span>{% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
             </div>
 
@@ -113,93 +122,100 @@
         <div class="row">
             {% for profile in profiles %}
             <div class="col-12 col-lg-6 mb-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4 text-center">
-                                {% with all_photos=profile.get_all_photos %}
-                                {% if all_photos %}
-                                    <div id="carousel-{{ profile.id }}" class="carousel slide" data-bs-ride="false" data-photo-count="1/{{ all_photos|length }}" style="width: 150px; height: 150px; margin: 0 auto; position: relative;">
-                                        <div class="carousel-inner" style="border-radius: 50%; overflow: hidden;">
-                                            {% for photo in all_photos %}
-                                            <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                                                <img src="{{ photo.url }}" class="d-block w-100" style="width: 150px; height: 150px; object-fit: cover;" alt="{{ profile.user.username }}">
-                                            </div>
-                                            {% endfor %}
+                <div class="card h-100 overflow-hidden profile-card">
+                    <div class="row g-0 h-100">
+                        <!-- Image Half - Left Side -->
+                        <div class="col-6 profile-image-container">
+                            {% with all_photos=profile.get_all_photos %}
+                            {% if all_photos %}
+                                <div id="carousel-{{ profile.id }}" class="carousel slide h-100" data-bs-ride="false" data-photo-count="1/{{ all_photos|length }}">
+                                    <div class="carousel-inner h-100">
+                                        {% for photo in all_photos %}
+                                        <div class="carousel-item h-100 {% if forloop.first %}active{% endif %}">
+                                            <img src="{{ photo.url }}" class="d-block w-100 h-100 profile-image" alt="{{ profile.user.username }}">
                                         </div>
-                                        {% if all_photos|length > 1 %}
-                                        <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide="prev" style="width: 15%; left: -10px;">
-                                            <span class="carousel-control-prev-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%; width: 20px; height: 20px;"></span>
-                                            <span class="visually-hidden">Previous</span>
-                                        </button>
-                                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide="next" style="width: 15%; right: -10px;">
-                                            <span class="carousel-control-next-icon" aria-hidden="true" style="background-color: rgba(0,0,0,0.5); border-radius: 50%; width: 20px; height: 20px;"></span>
-                                            <span class="visually-hidden">Next</span>
-                                        </button>
-                                        {% endif %}
-                                        {% if all_photos|length > 1 %}
-                                        <div class="carousel-indicators" style="bottom: -20px; margin-bottom: 0;">
-                                            {% for photo in all_photos %}
-                                            <button type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ forloop.counter }}" style="width: 6px; height: 6px; border-radius: 50%; margin: 0 2px;"></button>
-                                            {% endfor %}
-                                        </div>
-                                        {% endif %}
+                                        {% endfor %}
                                     </div>
-                                {% else %}
-                                    <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
-                                        <i class="fas fa-user fa-3x text-muted"></i>
+                                    {% if all_photos|length > 1 %}
+                                    <button class="carousel-control-prev" type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide="prev">
+                                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Previous</span>
+                                    </button>
+                                    <button class="carousel-control-next" type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide="next">
+                                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                        <span class="visually-hidden">Next</span>
+                                    </button>
+                                    <div class="carousel-indicators">
+                                        {% for photo in all_photos %}
+                                        <button type="button" data-bs-target="#carousel-{{ profile.id }}" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active" aria-current="true"{% endif %} aria-label="Slide {{ forloop.counter }}"></button>
+                                        {% endfor %}
                                     </div>
-                                {% endif %}
-                                {% endwith %}
-                            </div>
-                            <div class="col-md-8">
-                                <h5>{{ profile.user.username }}
-                                    {% if profile.age %}
-                                        <span class="text-muted">, {{ profile.age }}</span>
-                                    {% endif %}
-                                </h5>
-
-                                {% if profile.study_field %}
-                                <p class="small"><strong>Studie:</strong> {{ profile.get_study_field_display }}
-                                    {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
-                                </p>
-                                {% endif %}
-
-                                {% if profile.school_name %}
-                                <p class="small"><strong>School:</strong> {{ profile.school_name }}</p>
-                                {% endif %}
-
-                                {% if profile.city %}
-                                <p class="small"><strong>Stad:</strong> {{ profile.city }}</p>
-                                {% endif %}
-
-                                {% if profile.location %}
-                                <p class="small"><strong>Regio:</strong> {{ profile.location }}</p>
-                                {% endif %}
-
-                                {% if profile_distances and profile.id in profile_distances %}
-                                <p class="small text-primary"><strong>Afstand:</strong> {{ profile_distances|lookup:profile.id }}km</p>
-                                {% endif %}
-
-                                {% if profile.bio %}
-                                <p class="text-muted small">{{ profile.bio|truncatewords:20 }}</p>
-                                {% endif %}
-
-                                {% if profile.get_interests_list %}
-                                <div class="mb-2">
-                                    {% for interest in profile.get_interests_list|slice:":3" %}
-                                        <span class="badge bg-secondary me-1 small">{{ interest }}</span>
-                                    {% endfor %}
-                                    {% if profile.get_interests_list|length > 3 %}
-                                        <span class="text-muted small">+{{ profile.get_interests_list|length|add:"-3" }} more</span>
                                     {% endif %}
                                 </div>
-                                {% endif %}
+                            {% else %}
+                                <div class="bg-light h-100 d-flex align-items-center justify-content-center profile-placeholder">
+                                    <i class="fas fa-user fa-4x text-muted"></i>
+                                </div>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                        
+                        <!-- Content Half - Right Side -->
+                        <div class="col-6">
+                            <div class="card-body h-100 d-flex flex-column p-3">
+                                <div class="profile-header mb-2">
+                                    <h6 class="mb-1 fw-bold">{{ profile.user.username }}
+                                        {% if profile.age %}
+                                            <span class="text-muted fw-normal">, {{ profile.age }}</span>
+                                        {% endif %}
+                                    </h6>
+                                </div>
 
-                                <!-- Bootstrap Action Buttons -->
-                                <div class="d-grid">
-                                    <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-eye me-1"></i> View Profile
+                                <div class="profile-details flex-grow-1">
+                                    {% if profile.study_field %}
+                                    <p class="small mb-1 text-truncate">
+                                        <i class="fas fa-graduation-cap me-1"></i>{{ profile.get_study_field_display }}
+                                        {% if profile.study_year %} - Y{{ profile.study_year }}{% endif %}
+                                    </p>
+                                    {% endif %}
+
+                                    {% if profile.school_name %}
+                                    <p class="small mb-1 text-truncate">
+                                        <i class="fas fa-university me-1"></i>{{ profile.school_name }}
+                                    </p>
+                                    {% endif %}
+
+                                    {% if profile.city %}
+                                    <p class="small mb-1 text-truncate">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ profile.city }}
+                                        {% if profile_distances and profile.id in profile_distances %}
+                                            <span class="text-primary">({{ profile_distances|lookup:profile.id }}km)</span>
+                                        {% endif %}
+                                    </p>
+                                    {% endif %}
+
+                                    {% if profile.bio %}
+                                    <p class="text-muted small mb-2" style="font-size: 0.75rem; line-height: 1.3;">
+                                        {{ profile.bio|truncatewords:12 }}
+                                    </p>
+                                    {% endif %}
+
+                                    {% if profile.get_interests_list %}
+                                    <div class="interests-tags mb-2">
+                                        {% for interest in profile.get_interests_list|slice:":2" %}
+                                            <span class="badge bg-secondary me-1" style="font-size: 0.65rem;">{{ interest }}</span>
+                                        {% endfor %}
+                                        {% if profile.get_interests_list|length > 2 %}
+                                            <span class="text-muted" style="font-size: 0.65rem;">+{{ profile.get_interests_list|length|add:"-2" }}</span>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Action Button -->
+                                <div class="mt-auto">
+                                    <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-primary btn-sm w-100">
+                                        <i class="fas fa-eye me-1"></i> View
                                     </a>
                                 </div>
                             </div>
@@ -209,8 +225,8 @@
             </div>
             {% empty %}
             <div class="col-12 text-center text-white">
-                <h4>Geen profielen gevonden</h4>
-                <p>Er zijn geen nieuwe profielen om te ontdekken. Kom later terug!</p>
+                <h4>No Profiles Found</h4>
+                <p>There are no new profiles to discover. Come back later!</p>
             </div>
             {% endfor %}
         </div>
@@ -224,31 +240,31 @@
                         {% if page_obj.has_previous %}
                             <li class="page-item">
                                 <a class="page-link" href="?{% url_replace request 'page' 1 %}">
-                                    <i class="fas fa-angle-double-left me-1"></i>Eerste
+                                    <i class="fas fa-angle-double-left me-1"></i>First
                                 </a>
                             </li>
                             <li class="page-item">
                                 <a class="page-link" href="?{% url_replace request 'page' page_obj.previous_page_number %}">
-                                    <i class="fas fa-angle-left me-1"></i>Vorige
+                                    <i class="fas fa-angle-left me-1"></i>Previous
                                 </a>
                             </li>
                         {% endif %}
 
                         <li class="page-item active">
                             <span class="page-link">
-                                {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}
+                                {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                             </span>
                         </li>
 
                         {% if page_obj.has_next %}
                             <li class="page-item">
                                 <a class="page-link" href="?{% url_replace request 'page' page_obj.next_page_number %}">
-                                    Volgende<i class="fas fa-angle-right ms-1"></i>
+                                    Next<i class="fas fa-angle-right ms-1"></i>
                                 </a>
                             </li>
                             <li class="page-item">
                                 <a class="page-link" href="?{% url_replace request 'page' page_obj.paginator.num_pages %}">
-                                    Laatste<i class="fas fa-angle-double-right ms-1"></i>
+                                    Last<i class="fas fa-angle-double-right ms-1"></i>
                                 </a>
                             </li>
                         {% endif %}
@@ -271,6 +287,37 @@ document.addEventListener('DOMContentLoaded', function() {
             // Auto-submit form when study field changes
             this.form.submit();
         });
+    }
+
+    // Handle hamburger button toggle animation
+    const searchToggleBtn = document.getElementById('searchToggleBtn');
+    const searchToggleIcon = document.getElementById('searchToggleIcon');
+    const searchToggleText = document.getElementById('searchToggleText');
+    const searchFilters = document.getElementById('searchFilters');
+
+    if (searchToggleBtn && searchFilters) {
+        // Add event listener for collapse toggle
+        searchFilters.addEventListener('show.bs.collapse', function () {
+            searchToggleIcon.classList.remove('fa-bars');
+            searchToggleIcon.classList.add('fa-times');
+            searchToggleText.textContent = 'Hide';
+            searchToggleBtn.setAttribute('aria-expanded', 'true');
+        });
+
+        searchFilters.addEventListener('hide.bs.collapse', function () {
+            searchToggleIcon.classList.remove('fa-times');
+            searchToggleIcon.classList.add('fa-bars');
+            searchToggleText.textContent = 'Filters';
+            searchToggleBtn.setAttribute('aria-expanded', 'false');
+        });
+
+        // Set initial state if filters are already shown
+        if (searchFilters.classList.contains('show')) {
+            searchToggleIcon.classList.remove('fa-bars');
+            searchToggleIcon.classList.add('fa-times');
+            searchToggleText.textContent = 'Hide';
+            searchToggleBtn.setAttribute('aria-expanded', 'true');
+        }
     }
 
     // Add search suggestions for interests
@@ -299,16 +346,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Clear form functionality
-    const clearBtn = document.querySelector('a[href*="discover"]');
-    if (clearBtn && clearBtn.textContent.includes('Clear')) {
+    const clearBtn = document.getElementById('clearFiltersBtn');
+    if (clearBtn) {
         clearBtn.addEventListener('click', function(e) {
             e.preventDefault();
             // Clear all form fields
-            const form = document.querySelector('form[method="get"]');
+            const form = document.getElementById('searchForm');
             if (form) {
                 form.reset();
+                // Collapse the search filters after clearing
+                const searchCollapse = new bootstrap.Collapse(searchFilters, {
+                    hide: true
+                });
                 // Redirect to discover page without parameters
-                window.location.href = '{% url "profiles:discover" %}';
+                setTimeout(() => {
+                    window.location.href = '{% url "profiles:discover" %}';
+                }, 300);
             }
         });
     }
@@ -351,6 +404,199 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Search Toggle Button Styles */
+#searchToggleBtn {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#searchToggleBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+#searchToggleIcon {
+    transition: transform 0.3s ease;
+}
+
+#searchToggleBtn[aria-expanded="true"] #searchToggleIcon {
+    transform: rotate(90deg);
+}
+
+/* Mobile responsiveness for search header */
+@media (max-width: 768px) {
+    #searchToggleText {
+        display: none !important;
+    }
+    
+    #searchToggleBtn {
+        padding: 10px 12px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+    
+    .card-header .card-title {
+        font-size: 1.1rem;
+    }
+}
+
+/* Search filters animation */
+#searchFilters {
+    transition: all 0.3s ease;
+}
+
+#searchFilters.collapsing {
+    opacity: 0.7;
+}
+
+#searchFilters.show {
+    opacity: 1;
+}
+
+/* Active filters styling */
+.alert-info .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+    margin: 0.1rem;
+}
+
+/* Profile Card Styles - Half Image Layout */
+.profile-card {
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    min-height: 280px;
+}
+
+.profile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+
+.profile-image-container {
+    position: relative;
+    height: 280px;
+}
+
+.profile-image {
+    object-fit: cover;
+    border-radius: 12px 0 0 12px;
+}
+
+.profile-placeholder {
+    border-radius: 12px 0 0 12px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+/* Carousel controls for half-image layout */
+.profile-image-container .carousel-control-prev,
+.profile-image-container .carousel-control-next {
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 50%;
+}
+
+.profile-image-container:hover .carousel-control-prev,
+.profile-image-container:hover .carousel-control-next {
+    opacity: 0.8;
+}
+
+.profile-image-container .carousel-control-prev {
+    left: 10px;
+}
+
+.profile-image-container .carousel-control-next {
+    right: 10px;
+}
+
+.profile-image-container .carousel-control-prev-icon,
+.profile-image-container .carousel-control-next-icon {
+    width: 12px;
+    height: 12px;
+}
+
+.profile-image-container .carousel-indicators {
+    bottom: 10px;
+    margin-bottom: 0;
+}
+
+.profile-image-container .carousel-indicators button {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin: 0 2px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.profile-image-container .carousel-indicators button.active {
+    background: #fff;
+}
+
+/* Profile content styling */
+.profile-header h6 {
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.profile-details p {
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+}
+
+.profile-details i {
+    color: #007bff;
+    width: 12px;
+}
+
+.interests-tags .badge {
+    background-color: #6c757d !important;
+    border-radius: 10px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .profile-card {
+        min-height: 200px;
+    }
+    
+    .profile-image-container {
+        height: 200px;
+    }
+    
+    .profile-header h6 {
+        font-size: 0.9rem;
+    }
+    
+    .profile-details p,
+    .profile-details .small {
+        font-size: 0.75rem !important;
+    }
+    
+    .interests-tags .badge {
+        font-size: 0.6rem !important;
+    }
+}
+
+/* iPad specific adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .profile-card {
+        min-height: 240px;
+    }
+    
+    .profile-image-container {
+        height: 240px;
+    }
+}
+
 /* Custom styles for profile image carousel */
 .carousel-control-prev:hover,
 .carousel-control-next:hover {
@@ -459,6 +705,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* Make carousel touch-friendly on mobile */
 @media (max-width: 767px) {
+    /* Ensure 50/50 layout is maintained on mobile */
+    .row.g-0 .col-6 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+    
+    .profile-image-container {
+        height: 180px !important;
+    }
+    
     .carousel-control-prev,
     .carousel-control-next {
         width: 20% !important;
@@ -471,6 +727,25 @@ document.addEventListener('DOMContentLoaded', function() {
     
     .carousel-control-next {
         right: -15px !important;
+    }
+    
+    /* Adjust profile content for mobile */
+    .profile-content {
+        padding: 0.75rem !important;
+    }
+    
+    .profile-header h6 {
+        font-size: 0.85rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .text-muted.small {
+        font-size: 0.7rem !important;
+    }
+    
+    .badge {
+        font-size: 0.6rem !important;
+        padding: 0.2rem 0.4rem !important;
     }
 }
 

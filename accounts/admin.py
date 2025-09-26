@@ -9,9 +9,10 @@ class CustomUserAdmin(UserAdmin):
     model = CustomUser
     list_display = ['username', 'email', 'is_student', 'university', 'likes_balance', 'points_balance', 'likes_given_count', 'likes_received_count', 'unlikes_given_count', 'unlikes_received_count', 'referral_code', 'is_verified']
     list_filter = ['is_student', 'is_verified', 'university']
+    readonly_fields = ['date_joined', 'last_login']
     fieldsets = UserAdmin.fieldsets + (
         ('Student Info', {'fields': ('is_student', 'university', 'student_id', 'is_verified')}),
-        ('Balances', {'fields': ('likes_balance', 'super_likes_balance', 'points_balance')}),
+        ('Balances', {'fields': ('likes_balance', 'super_likes_balance', 'points_balance', 'unlikes_balance')}),
         ('Referral Info', {'fields': ('referral_code', 'referred_by', 'referral_points_earned')}),
     )
     

@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load i18n %}
 
 {% block title %}{{ profile.user.get_full_name|default:profile.user.username }} - Mooibanana{% endblock %}
 
@@ -93,7 +92,7 @@
                     <h4 class="card-title">{{ profile.user.get_full_name|default:profile.user.username }}</h4>
                     
                     {% if profile.age %}
-                        <p class="text-muted">{{ profile.age }} jaar</p>
+                        <p class="text-muted">{{ profile.age }} years old</p>
                     {% endif %}
                     
                     {% if profile.study_program %}
@@ -143,7 +142,7 @@
                     {% if user.is_authenticated and user == profile.user %}
                         <div class="d-grid gap-2 mt-4">
                             <a href="{% url 'profiles:upload_photos' %}" class="btn btn-primary w-100">
-                                <i class="fas fa-images"></i> {% trans "Manage Photos" %}
+                                <i class="fas fa-images"></i> Manage Photos
                             </a>
                         </div>
                     {% endif %}
@@ -151,33 +150,37 @@
                     <!-- Action Buttons -->
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="d-grid gap-2 mt-4">
-                            <!-- Buy Likes Button -->
-                            <button type="button" class="btn w-100" style="background-color: #ff8c00; color: white; border: none;" data-bs-toggle="modal" data-bs-target="#giftLikesModal">
-                                <i class="fas fa-gift"></i> {% trans "Buy Likes for" %} {{ profile.user.first_name|default:profile.user.username }}
+                            <!-- Give Likes Button -->
+                            <button type="button" class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#giveLikesModal">
+                                <i class="fas fa-heart"></i> Give Likes
                             </button>
                             
-                            <!-- Buy Dislikes Button -->
-                            <button type="button" class="btn w-100" style="background-color: #dc3545; color: white; border: none;" data-bs-toggle="modal" data-bs-target="#giftDislikesModal">
-                                <i class="fas fa-times-circle"></i> {% trans "Buy Dislikes for" %} {{ profile.user.first_name|default:profile.user.username }}
+                            <!-- Give Dislikes Button -->
+                            <button type="button" class="btn btn-danger w-100" data-bs-toggle="modal" data-bs-target="#giveDislikesModal">
+                                <i class="fas fa-times-circle"></i> Give Dislikes
                             </button>
+                            
                         </div>
                     {% endif %}
 
-                    <!-- Bootstrap Statistics Section -->
+                    <!-- Bootstrap Statistics Section - Show Current User's Balances -->
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="card mt-4 border-0 shadow-sm">
                             <div class="card-header bg-transparent border-0 text-center">
-                                <h6 class="card-title mb-0">{% trans "Available Balances" %}</h6>
+                                <h6 class="card-title mb-0">Your Available Balances</h6>
                             </div>
                             <div class="card-body text-center py-3">
                                 <div class="row g-2">
                                     <div class="col-12">
                                         <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
-                                            <span class="badge likes-balance fs-6 px-3 py-2">
-                                                <i class="fas fa-heart me-1"></i> {{ profile.user.likes_balance }} likes
+                                            <span class="badge bg-success fs-6 px-3 py-2">
+                                                <i class="fas fa-heart me-1"></i> {{ user.likes_balance }} likes
+                                            </span>
+                                            <span class="badge bg-warning fs-6 px-3 py-2">
+                                                <i class="fas fa-star me-1"></i> {{ user.super_likes_balance }} super likes
                                             </span>
                                             <span class="badge bg-danger fs-6 px-3 py-2">
-                                                <i class="fas fa-times-circle me-1"></i> {{ profile.user.unlikes_balance }} unlikes
+                                                <i class="fas fa-times-circle me-1"></i> {{ user.unlikes_balance }} unlikes
                                             </span>
                                         </div>
                                     </div>
@@ -191,7 +194,7 @@
             <!-- Bootstrap Stats Card -->
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-header bg-transparent border-0">
-                    <h6 class="card-title text-center mb-0">Beschikbare Balansen</h6>
+                    <h6 class="card-title text-center mb-0">Available Balances</h6>
                 </div>
                 <div class="card-body text-center py-3">
                     <div class="row justify-content-center">
@@ -217,7 +220,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-info-circle text-primary"></i> {% trans "About me" %}
+                            <i class="fas fa-info-circle text-primary"></i> About me
                         </h5>
                         <p class="card-text">{{ profile.bio|linebreaks }}</p>
                     </div>
@@ -229,7 +232,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-heart text-primary"></i> {% trans "Interests" %}
+                            <i class="fas fa-heart text-primary"></i> Interests
                         </h5>
                         <div class="d-flex flex-wrap gap-2">
                             {% for interest in profile.get_interests_list %}
@@ -244,36 +247,67 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <i class="fas fa-user text-primary"></i> {% trans "Profile Information" %}
+                        <i class="fas fa-user text-primary"></i> Profile Information
                     </h5>
                     <div class="row">
                         {% if profile.location %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "Location" %}:</strong> {{ profile.location }}
+                            <strong>Location:</strong> {{ profile.location }}
                         </div>
                         {% endif %}
                         {% if profile.study_year %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "Academic year" %}:</strong> {{ profile.study_year }}
+                            <strong>Academic year:</strong> {{ profile.study_year }}
                         </div>
                         {% endif %}
                         {% if profile.city %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "City" %}:</strong> {{ profile.city }}
+                            <strong>City:</strong> {{ profile.city }}
                         </div>
                         {% endif %}
                         {% if profile.school_name %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "School" %}:</strong> {{ profile.school_name }}
+                            <strong>School:</strong> {{ profile.school_name }}
                         </div>
                         {% endif %}
                         {% if profile.study_field %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "Study field" %}:</strong> {{ profile.study_field }}
+                            <strong>Study field:</strong> {{ profile.study_field }}
                         </div>
                         {% endif %}
                         <div class="col-md-6 mb-2">
-                            <strong>{% trans "Member since" %}:</strong> {{ profile.user.date_joined|date:"F Y" }}
+                            <strong>Member since:</strong> {{ profile.user.date_joined|date:"F Y" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Advertisements Section -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-bullhorn text-primary"></i> Featured Brands
+                    </h5>
+                    <div id="advertisementCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="4000">
+                        <div class="carousel-inner" id="advertisementSlides">
+                            <!-- Advertisements will be loaded here -->
+                            <div class="carousel-item active">
+                                <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading ads...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#advertisementCarousel" data-bs-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#advertisementCarousel" data-bs-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                        <div class="carousel-indicators" id="advertisementIndicators">
                         </div>
                     </div>
                 </div>
@@ -282,7 +316,7 @@
             <!-- Verification Warning -->
             {% if user.is_authenticated and user != profile.user %}
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i> {% trans "This profile has not yet been verified. Please be careful when sharing personal information." %}
+                    <i class="fas fa-exclamation-triangle"></i> This profile has not yet been verified. Please be careful when sharing personal information.
                 </div>
             {% endif %}
             
@@ -291,7 +325,7 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-gamepad text-primary"></i> Hobby's
+                            <i class="fas fa-gamepad text-primary"></i> Hobbies
                         </h5>
                         <div class="d-flex flex-wrap gap-2">
                             {% for hobby in profile.get_hobbies_list %}
@@ -306,39 +340,39 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <i class="fas fa-user-circle text-primary"></i> Profielinformatie
+                        <i class="fas fa-user-circle text-primary"></i> Profile Information
                     </h5>
                     <div class="row">
                         {% if profile.gender %}
                             <div class="col-md-6 mb-3">
-                                <strong>Geslacht:</strong>
+                                <strong>Gender:</strong>
                                 <span class="text-muted">{{ profile.get_gender_display }}</span>
                             </div>
                         {% endif %}
                         
                         {% if profile.city %}
                             <div class="col-md-6 mb-3">
-                                <strong>Stad:</strong>
+                                <strong>City:</strong>
                                 <span class="text-muted">{{ profile.city }}</span>
                             </div>
                         {% endif %}
 
                         {% if profile.location %}
                             <div class="col-md-6 mb-3">
-                                <strong>Regio:</strong>
+                                <strong>Region:</strong>
                                 <span class="text-muted">{{ profile.location }}</span>
                             </div>
                         {% endif %}
                         
                         {% if profile.study_year %}
                             <div class="col-md-6 mb-3">
-                                <strong>Studiejaar:</strong>
+                                <strong>Study Year:</strong>
                                 <span class="text-muted">{{ profile.study_year }}</span>
                             </div>
                         {% endif %}
                         
                         <div class="col-md-6 mb-3">
-                            <strong>Lid sinds:</strong>
+                            <strong>Member since:</strong>
                             <span class="text-muted">{{ profile.user.date_joined|date:"F Y" }}</span>
                         </div>
                     </div>
@@ -350,12 +384,12 @@
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h5 class="card-title">
-                            <i class="fas fa-images text-primary"></i> Foto's
+                            <i class="fas fa-images text-primary"></i> Photos
                         </h5>
                         <div class="row">
                             {% for photo in profile.photos.all %}
                                 <div class="col-md-4 mb-3">
-                                    <img src="{{ photo.image.url }}" alt="Foto" 
+                                    <img src="{{ photo.image.url }}" alt="Photo" 
                                          class="img-fluid rounded shadow-sm" 
                                          style="height: 200px; width: 100%; object-fit: cover;">
                                 </div>
@@ -369,9 +403,113 @@
             {% if not profile.is_verified %}
                 <div class="alert alert-warning" role="alert">
                     <i class="fas fa-exclamation-triangle"></i>
-                    Dit profiel is nog niet geverifieerd. Wees voorzichtig bij het delen van persoonlijke informatie.
+                    This profile has not yet been verified. Please be careful when sharing personal information.
                 </div>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Give Likes Modal -->
+<div class="modal fade" id="giveLikesModal" tabindex="-1" aria-labelledby="giveLikesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="giveLikesModalLabel">
+                    <i class="fas fa-heart"></i> Give Likes to {{ profile.user.first_name|default:profile.user.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'likes:give_like' profile.user.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <p class="lead">How many likes do you want to give?</p>
+                        <p class="text-muted">You have <strong>{{ user.likes_balance }} regular likes</strong> and <strong>{{ user.super_likes_balance }} super likes</strong> available.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="like_type" class="form-label">Like Type:</label>
+                        <select name="like_type" id="like_type" class="form-select" onchange="updateLikeBalanceDisplay()">
+                            <option value="regular">Regular Like</option>
+                            <option value="super">Super Like</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Number of Likes:</label>
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="decrementAmount('like')">-</button>
+                            <input type="number" name="amount" id="like_amount" class="form-control text-center" value="1" min="1" max="{{ user.likes_balance }}" onchange="validateLikeAmount()">
+                            <button type="button" class="btn btn-outline-secondary" onclick="incrementAmount('like')">+</button>
+                        </div>
+                        <div class="form-text">
+                            <span id="like_balance_text">Available: {{ user.likes_balance }} regular likes</span>
+                        </div>
+                    </div>
+                    
+                    <div class="range-input mb-3">
+                        <input type="range" id="like_range" class="form-range" min="1" max="{{ user.likes_balance }}" value="1" onchange="updateLikeAmountFromRange()">
+                        <div class="d-flex justify-content-between">
+                            <span>1</span>
+                            <span id="like_max_value">{{ user.likes_balance }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success" id="give_likes_btn">
+                        <i class="fas fa-heart"></i> Give <span id="like_amount_display">1</span> Like(s)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Give Dislikes Modal -->
+<div class="modal fade" id="giveDislikesModal" tabindex="-1" aria-labelledby="giveDislikesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="giveDislikesModalLabel">
+                    <i class="fas fa-times-circle"></i> Give Dislikes to {{ profile.user.first_name|default:profile.user.username }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'likes:give_unlike' profile.user.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <p class="lead">How many dislikes do you want to give?</p>
+                        <p class="text-muted">You have <strong>{{ user.unlikes_balance }} dislikes</strong> available.</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="dislike_amount" class="form-label">Number of Dislikes:</label>
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="decrementAmount('dislike')">-</button>
+                            <input type="number" name="amount" id="dislike_amount" class="form-control text-center" value="1" min="1" max="{{ user.unlikes_balance }}" onchange="validateDislikeAmount()">
+                            <button type="button" class="btn btn-outline-secondary" onclick="incrementAmount('dislike')">+</button>
+                        </div>
+                        <div class="form-text">Available: {{ user.unlikes_balance }} dislikes</div>
+                    </div>
+                    
+                    <div class="range-input mb-3">
+                        <input type="range" id="dislike_range" class="form-range" min="1" max="{{ user.unlikes_balance }}" value="1" onchange="updateDislikeAmountFromRange()">
+                        <div class="d-flex justify-content-between">
+                            <span>1</span>
+                            <span>{{ user.unlikes_balance }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="give_dislikes_btn">
+                        <i class="fas fa-times-circle"></i> Give <span id="dislike_amount_display">1</span> Dislike(s)
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -426,28 +564,28 @@
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); color: white;">
                 <h5 class="modal-title" id="giftDislikesModalLabel">
-                    <i class="fas fa-times-circle"></i> {% trans "Buy Dislikes for" %} {{ profile.user.first_name|default:profile.user.username }}
+                    <i class="fas fa-times-circle"></i> Buy Dislikes for {{ profile.user.first_name|default:profile.user.username }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="text-center mb-4">
-                    <p class="lead">{% trans "Purchase dislike packages" %}</p>
-                    <p class="text-muted">{% trans "Choose from packages with unlikes/dislikes to use on profiles." %}</p>
+                    <p class="lead">Purchase dislike packages</p>
+                    <p class="text-muted">Choose from packages with unlikes/dislikes to use on profiles.</p>
                 </div>
 
                 <!-- Direct link to packages page with unlikes filter -->
                 <div class="text-center mb-4">
                     <a href="{% url 'payments:packages' %}?type=unlikes" class="btn btn-danger btn-lg">
                         <i class="fas fa-shopping-cart me-2"></i>
-                        {% trans "Go to Dislike Packages" %}
+                        Go to Dislike Packages
                     </a>
                 </div>
 
                 <hr class="my-4">
 
                 <div class="text-center mb-3">
-                    <h6 class="text-muted">{% trans "Or choose a package below:" %}</h6>
+                    <h6 class="text-muted">Or choose a package below:</h6>
                 </div>
 
                 <div class="row" id="giftDislikePackages">
@@ -598,6 +736,138 @@
         window.location.href = `/payments/gift/${packageId}/${recipientId}/`;
     }
 
+    // Like amount controls
+    function incrementAmount(type) {
+        const input = document.getElementById(type + '_amount');
+        const max = parseInt(input.getAttribute('max'));
+        let currentValue = parseInt(input.value);
+        
+        if (currentValue < max) {
+            input.value = currentValue + 1;
+            if (type === 'like') {
+                validateLikeAmount();
+                updateLikeRangeFromAmount();
+            } else {
+                validateDislikeAmount();
+                updateDislikeRangeFromAmount();
+            }
+        }
+    }
+
+    function decrementAmount(type) {
+        const input = document.getElementById(type + '_amount');
+        let currentValue = parseInt(input.value);
+        
+        if (currentValue > 1) {
+            input.value = currentValue - 1;
+            if (type === 'like') {
+                validateLikeAmount();
+                updateLikeRangeFromAmount();
+            } else {
+                validateDislikeAmount();
+                updateDislikeRangeFromAmount();
+            }
+        }
+    }
+
+    function validateLikeAmount() {
+        const input = document.getElementById('like_amount');
+        const likeType = document.getElementById('like_type').value;
+        const regularBalance = {{ user.likes_balance }};
+        const superBalance = {{ user.super_likes_balance }};
+        const maxBalance = likeType === 'super' ? superBalance : regularBalance;
+        
+        let amount = parseInt(input.value);
+        if (amount > maxBalance) {
+            amount = maxBalance;
+            input.value = amount;
+        }
+        if (amount < 1) {
+            amount = 1;
+            input.value = amount;
+        }
+        
+        document.getElementById('like_amount_display').textContent = amount;
+        
+        // Enable/disable submit button
+        const submitBtn = document.getElementById('give_likes_btn');
+        submitBtn.disabled = amount <= 0 || amount > maxBalance;
+    }
+
+    function validateDislikeAmount() {
+        const input = document.getElementById('dislike_amount');
+        const maxBalance = {{ user.unlikes_balance }};
+        
+        let amount = parseInt(input.value);
+        if (amount > maxBalance) {
+            amount = maxBalance;
+            input.value = amount;
+        }
+        if (amount < 1) {
+            amount = 1;
+            input.value = amount;
+        }
+        
+        document.getElementById('dislike_amount_display').textContent = amount;
+        
+        // Enable/disable submit button
+        const submitBtn = document.getElementById('give_dislikes_btn');
+        submitBtn.disabled = amount <= 0 || amount > maxBalance;
+    }
+
+    function updateLikeBalanceDisplay() {
+        const likeType = document.getElementById('like_type').value;
+        const regularBalance = {{ user.likes_balance }};
+        const superBalance = {{ user.super_likes_balance }};
+        const balance = likeType === 'super' ? superBalance : regularBalance;
+        const typeName = likeType === 'super' ? 'super likes' : 'regular likes';
+        
+        document.getElementById('like_balance_text').textContent = `Available: ${balance} ${typeName}`;
+        document.getElementById('like_amount').setAttribute('max', balance);
+        document.getElementById('like_range').setAttribute('max', balance);
+        document.getElementById('like_max_value').textContent = balance;
+        
+        // Reset amount to 1 and validate
+        document.getElementById('like_amount').value = 1;
+        document.getElementById('like_range').value = 1;
+        validateLikeAmount();
+    }
+
+    function updateLikeAmountFromRange() {
+        const range = document.getElementById('like_range');
+        const input = document.getElementById('like_amount');
+        input.value = range.value;
+        validateLikeAmount();
+    }
+
+    function updateLikeRangeFromAmount() {
+        const input = document.getElementById('like_amount');
+        const range = document.getElementById('like_range');
+        range.value = input.value;
+    }
+
+    function updateDislikeAmountFromRange() {
+        const range = document.getElementById('dislike_range');
+        const input = document.getElementById('dislike_amount');
+        input.value = range.value;
+        validateDislikeAmount();
+    }
+
+    function updateDislikeRangeFromAmount() {
+        const input = document.getElementById('dislike_amount');
+        const range = document.getElementById('dislike_range');
+        range.value = input.value;
+    }
+
+    // Initialize controls when modals open
+    document.getElementById('giveLikesModal').addEventListener('show.bs.modal', function () {
+        updateLikeBalanceDisplay();
+    });
+
+    document.getElementById('giveDislikesModal').addEventListener('show.bs.modal', function () {
+        validateDislikeAmount();
+    });
+
     // Handle match request response from profile page
     function respondToMatchFromProfile(notificationId, action) {
         const formData = new FormData();
@@ -641,9 +911,183 @@
         })
         .catch(error => console.error('Error responding to match:', error));
     }
+
+    // Load advertisements on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAdvertisements();
+    });
+
+    function loadAdvertisements() {
+        fetch('/advertisements/api/active/')
+            .then(response => response.json())
+            .then(data => {
+                const slidesContainer = document.getElementById('advertisementSlides');
+                const indicatorsContainer = document.getElementById('advertisementIndicators');
+                
+                if (data.advertisements.length === 0) {
+                    slidesContainer.innerHTML = `
+                        <div class="carousel-item active">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-bullhorn fa-3x mb-3"></i>
+                                    <p>No advertisements available</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    indicatorsContainer.innerHTML = '';
+                    return;
+                }
+
+                let slidesHtml = '';
+                let indicatorsHtml = '';
+
+                data.advertisements.forEach((ad, index) => {
+                    const isActive = index === 0 ? 'active' : '';
+                    const clickAction = ad.brand_url ? `onclick="window.open('${ad.brand_url}', '_blank')"` : '';
+                    const cursorStyle = ad.brand_url ? 'cursor: pointer;' : '';
+                    
+                    slidesHtml += `
+                        <div class="carousel-item ${isActive}">
+                            <div class="advertisement-slide" ${clickAction} style="${cursorStyle}">
+                                <img src="${ad.flyer_image}" 
+                                     alt="${ad.brand_name}" 
+                                     class="d-block w-100 advertisement-image"
+                                     style="height: 200px; object-fit: contain; border-radius: 8px;">
+                                <div class="advertisement-overlay">
+                                    <h6 class="advertisement-brand">${ad.brand_name}</h6>
+                                    ${ad.brand_url ? '<small class="text-muted">Click to visit</small>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    indicatorsHtml += `
+                        <button type="button" data-bs-target="#advertisementCarousel" 
+                                data-bs-slide-to="${index}" 
+                                ${isActive ? 'class="active" aria-current="true"' : ''}
+                                aria-label="Ad ${index + 1}"></button>
+                    `;
+                });
+
+                slidesContainer.innerHTML = slidesHtml;
+                indicatorsContainer.innerHTML = indicatorsHtml;
+
+                // Hide carousel controls if only one ad
+                const carousel = document.getElementById('advertisementCarousel');
+                if (data.advertisements.length <= 1) {
+                    carousel.querySelector('.carousel-control-prev').style.display = 'none';
+                    carousel.querySelector('.carousel-control-next').style.display = 'none';
+                    indicatorsContainer.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading advertisements:', error);
+                document.getElementById('advertisementSlides').innerHTML = `
+                    <div class="carousel-item active">
+                        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                <p>Error loading advertisements</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+    }
 </script>
 
 <style>
+/* Advertisement slideshow styles */
+.advertisement-slide {
+    position: relative;
+    transition: transform 0.3s ease;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.advertisement-slide:hover {
+    transform: scale(1.02);
+}
+
+.advertisement-image {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.advertisement-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 20px 15px 10px;
+    text-align: center;
+}
+
+.advertisement-brand {
+    margin: 0;
+    font-weight: 600;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#advertisementCarousel .carousel-control-prev,
+#advertisementCarousel .carousel-control-next {
+    background: rgba(0,0,0,0.3);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+#advertisementCarousel .carousel-control-prev {
+    left: 10px;
+}
+
+#advertisementCarousel .carousel-control-next {
+    right: 10px;
+}
+
+#advertisementCarousel .carousel-indicators {
+    bottom: -30px;
+}
+
+#advertisementCarousel .carousel-indicators button {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #007bff;
+    border: none;
+    margin: 0 3px;
+}
+
+.advertisement-slide[style*="cursor: pointer"] .advertisement-overlay::after {
+    content: "🔗";
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.2em;
+}
+
+/* Responsive advertisement styles */
+@media (max-width: 768px) {
+    .advertisement-overlay {
+        padding: 15px 10px 8px;
+    }
+    
+    .advertisement-brand {
+        font-size: 0.9rem;
+    }
+    
+    #advertisementCarousel .carousel-control-prev,
+    #advertisementCarousel .carousel-control-next {
+        width: 35px;
+        height: 35px;
+    }
+}
+
 /* iPad specific improvements for profile detail */
 @media (min-width: 768px) and (max-width: 1024px) {
     .container {

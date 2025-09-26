@@ -20,40 +20,50 @@ def give_like(request, user_id):
         target_user = get_object_or_404(User, id=user_id)
         like_type = request.POST.get('like_type', 'regular')
         
-        # Check if user has enough likes based on like type
+        # Get the amount from the form (default to 1 if not provided)
+        try:
+            amount = int(request.POST.get('amount', 1))
+            if amount < 1:
+                amount = 1
+        except (ValueError, TypeError):
+            amount = 1
+        
+        # Check if user has enough likes based on like type and amount
         if like_type == 'super':
-            if request.user.super_likes_balance <= 0:
-                messages.error(request, 'You need more super likes! Buy a like package.')
+            if request.user.super_likes_balance < amount:
+                messages.error(request, f'You need {amount} super likes! You only have {request.user.super_likes_balance}. Buy more likes.')
                 return redirect('payments:packages')
         else:
-            if request.user.likes_balance <= 0:
-                messages.error(request, 'You need more likes! Buy a like package.')
+            if request.user.likes_balance < amount:
+                messages.error(request, f'You need {amount} regular likes! You only have {request.user.likes_balance}. Buy more likes.')
                 return redirect('payments:packages')
         
         # Allow multiple likes to the same person - no duplicate check needed
         
-        # Create the like
+        # Create the like with specified amount
         like = Like.objects.create(
             from_user=request.user,
             to_user=target_user,
-            like_type=like_type
+            like_type=like_type,
+            amount=amount
         )
         
         # Create notification for the user who received the like
         like_type_display = "Super Like" if like_type == 'super' else "Like"
+        amount_text = f"{amount} {like_type_display}{'s' if amount > 1 else ''}"
         Notification.objects.create(
             sender=request.user,
             receiver=target_user,
             notification_type='like_received',
-            message=f"{request.user.username} gave you a {like_type_display}!",
+            message=f"{request.user.username} gave you {amount_text}!",
             status='read'
         )
         
-        # Deduct like from balance based on type
+        # Deduct likes from balance based on type and amount
         if like_type == 'super':
-            request.user.super_likes_balance -= 1
+            request.user.super_likes_balance -= amount
         else:
-            request.user.likes_balance -= 1
+            request.user.likes_balance -= amount
         request.user.save()
         
         # TEMPORARILY DISABLED - Check for mutual like and create match
@@ -69,9 +79,9 @@ def give_like(request, user_id):
 
         # For now, just show like success message
         if like.is_mutual:
-            messages.success(request, f'It\'s a mutual like with {target_user.username}! (Chat feature temporarily disabled)')
+            messages.success(request, f'It\'s a mutual like with {target_user.username}! You gave them {amount_text}. (Chat feature temporarily disabled)')
         else:
-            messages.success(request, f'You liked {target_user.username}!')
+            messages.success(request, f'You gave {amount_text} to {target_user.username}!')
 
         return redirect('profiles:discover')
     
@@ -99,9 +109,17 @@ def give_unlike(request, user_id):
     if request.method == 'POST':
         target_user = get_object_or_404(User, id=user_id)
 
+        # Get the amount from the form (default to 1 if not provided)
+        try:
+            amount = int(request.POST.get('amount', 1))
+            if amount < 1:
+                amount = 1
+        except (ValueError, TypeError):
+            amount = 1
+
         # Check if user has enough unlikes
-        if request.user.unlikes_balance <= 0:
-            messages.error(request, 'You need more unlikes! Buy an unlike package.')
+        if request.user.unlikes_balance < amount:
+            messages.error(request, f'You need {amount} unlikes! You only have {request.user.unlikes_balance}. Buy more unlikes.')
             return redirect('payments:packages')
 
         # Check if user has already unliked this person
@@ -111,26 +129,33 @@ def give_unlike(request, user_id):
         ).first()
 
         if existing_unlike:
-            messages.warning(request, f'You have already unliked {target_user.username}.')
-            return redirect('profiles:discover')
-
-        # Create the unlike
-        Unlike.objects.create(
-            from_user=request.user,
-            to_user=target_user
-        )
+            # Update the existing unlike amount
+            existing_unlike.amount += amount
+            existing_unlike.save()
+            amount_text = f"{amount} unlike{'s' if amount > 1 else ''}"
+            messages.success(request, f'You added {amount_text} to {target_user.username}. Total unlikes: {existing_unlike.amount}')
+        else:
+            # Create new unlike
+            Unlike.objects.create(
+                from_user=request.user,
+                to_user=target_user,
+                amount=amount
+            )
+            amount_text = f"{amount} unlike{'s' if amount > 1 else ''}"
+            messages.success(request, f'You gave {amount_text} to {target_user.username}. They will no longer appear in your discover feed.')
 
         # Create notification for the user who received the unlike
+        amount_text = f"{amount} dislike{'s' if amount > 1 else ''}"
         Notification.objects.create(
             sender=request.user,
             receiver=target_user,
             notification_type='unlike_received',
-            message=f"{request.user.username} sent you a dislike.",
+            message=f"{request.user.username} sent you {amount_text}.",
             status='read'
         )
 
-        # Deduct unlike from balance
-        request.user.unlikes_balance -= 1
+        # Deduct unlikes from balance
+        request.user.unlikes_balance -= amount
         request.user.save()
 
         # Remove any existing likes between these users
@@ -139,7 +164,6 @@ def give_unlike(request, user_id):
             to_user=target_user
         ).delete()
 
-        messages.success(request, f'You unliked {target_user.username}. They will no longer appear in your discover feed.')
         return redirect('profiles:discover')
 
     return redirect('profiles:discover')

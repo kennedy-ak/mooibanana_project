@@ -1,0 +1,328 @@
+# MOOIBANANA PROJECT - COMPREHENSIVE FUNCTIONALITY OVERVIEW
+
+## PROJECT OVERVIEW
+Mooibanana is a comprehensive Django-based dating application designed for students and young adults, featuring advanced matching algorithms, real-time communication, payment processing, and gamification elements.
+
+## CORE ARCHITECTURE
+
+### Technology Stack
+- Backend: Django 5.2.6 with Python
+- Frontend: Bootstrap 5 with Crispy Forms
+- Database: PostgreSQL (Production) / SQLite (Development)
+- Real-time Features: Django Channels with WebSocket support
+- Payment Processing: Paystack integration (African payment gateway)
+- Deployment: Docker-ready with Render hosting
+- Performance: Redis caching, database optimization, GZip compression
+
+### Project Structure
+```
+mooibanana_project/
+├── accounts/           # User authentication and management
+├── profiles/           # User profiles and discovery engine
+├── likes/              # Like/dislike functionality and matching
+├── payments/           # Payment processing and packages
+├── rewards/            # Gamification and rewards system
+├── notifications/      # Real-time notification system
+├── admin_dashboard/    # Administrative interface
+└── mooibanana_project/ # Core Django settings
+```
+
+## DETAILED FUNCTIONALITY BREAKDOWN
+
+### 1. USER AUTHENTICATION & MANAGEMENT (accounts/)
+
+**Custom User Model Features:**
+- Extended Django AbstractUser with additional fields
+- Email-based authentication (unique email requirement)
+- Student verification system with educational domain validation
+- Multi-currency balance system (likes, super likes, unlikes, points)
+- Comprehensive referral system with tracking
+
+**User Account Features:**
+- Registration with email validation
+- Login/logout functionality
+- Student status auto-detection from email domain
+- University and student ID fields
+- Account verification system
+
+**Referral System:**
+- Unique 8-character referral codes for each user
+- Referral tracking with status management (pending/completed/cancelled)
+- Automatic points rewards (50 points per successful referral)
+- Referral dashboard and analytics
+
+### 2. USER PROFILES & DISCOVERY (profiles/)
+
+**Profile Management:**
+- Comprehensive profile creation with multiple fields
+- Study field selection (8 categories: Computer Science, Business, Engineering, etc.)
+- Academic year tracking (1st-5th year + Graduate)
+- School/university name integration
+- Location-based features with GPS coordinates
+- Interest tags system (comma-separated)
+
+**Photo Management:**
+- Primary profile picture with automatic resizing (300x300px)
+- Additional photo uploads (up to 800x800px)
+- Automatic image optimization and compression
+- Photo ordering system
+- Secure file deletion on model deletion
+
+**Discovery Engine:**
+- Profile completeness validation
+- Age calculation from birth date
+- Distance calculation using Haversine formula
+- Location-based matching with GPS coordinates
+- Performance-optimized database queries with indexes
+
+**Advanced Features:**
+- Profile completion status tracking
+- Automatic profile picture resizing
+- Interest-based matching compatibility
+- School/university-based connections
+
+### 3. MATCHING & LIKES SYSTEM (likes/)
+
+**Like Functionality:**
+- Regular likes and Super likes
+- Multiple likes to same person allowed (removed unique constraint)
+- Automatic mutual matching detection
+- Points reward system for interactions
+
+**Matching Algorithm:**
+- Automatic mutual like detection
+- Match creation when both users like each other
+- Real-time match notifications
+- Match status tracking and management
+
+**Unlike System:**
+- Unlike functionality with unique constraints
+- Undo mechanism for accidental likes
+- Balance-based unlike system (premium feature)
+
+**Gamification:**
+- Points awarded for likes (5 points regular, 10 points super)
+- Bonus points for recipients (10 points regular, 20 points super)
+- Mutual match bonuses (25 points each)
+- Reward claim system integration
+
+### 4. REAL-TIME CHAT SYSTEM (chat/)
+
+**Chat Infrastructure:**
+- Django Channels WebSocket implementation
+- Real-time message delivery
+- Chat room creation for matched users
+- Message read status tracking
+
+**Chat Features:**
+- One-to-one messaging between matched users
+- Message history and persistence
+- Chat room participant management
+- Last message tracking for chat previews
+
+**Match Integration:**
+- Automatic chat room creation upon matching
+- Match-based chat access control
+- User relationship validation
+
+### 5. PAYMENT SYSTEM (payments/)
+
+**Payment Processing:**
+- Paystack integration (African payment gateway)
+- Multiple package options with different like quantities
+- Secure payment handling with reference tracking
+- Transaction status management (pending/completed/failed/refunded)
+
+**Like Packages:**
+- Flexible package system with multiple like types
+- Regular likes, super likes, and unlikes bundles
+- Booster features for enhanced visibility
+- Custom package pricing in local currency (Ghana Cedis)
+
+**Payment Features:**
+- Secure transaction processing
+- Payment history tracking
+- Refund management system
+- Gift purchase capabilities
+
+### 6. REWARDS & GAMIFICATION (rewards/)
+
+**Rewards System:**
+- Physical and digital reward options
+- Discount vouchers and experiences
+- Point-based reward claiming
+- Stock quantity management
+
+**Reward Types:**
+- Physical items (shipped rewards)
+- Digital items (instant delivery)
+- Discount vouchers (partner integrations)
+- Experiences (events, activities)
+
+**Claim Management:**
+- Multi-status tracking (pending/approved/shipped/delivered/cancelled)
+- Delivery address management
+- Points deduction system
+- Reward availability tracking
+
+### 7. NOTIFICATION SYSTEM (notifications/)
+
+**Real-time Notifications:**
+- WebSocket-based instant notifications
+- Multiple notification types (matches, messages, likes, gifts)
+- Status management (pending/accepted/declined/read)
+- Notification history and tracking
+
+**Notification Types:**
+- Match requests and responses
+- New message alerts
+- Like and unlike notifications
+- Gift received notifications
+
+**Advanced Features:**
+- Automatic match creation on acceptance
+- Notification-based match workflow
+- Read status tracking
+- Bulk notification management
+
+### 8. ADMIN DASHBOARD (admin_dashboard/)
+
+**User Management:**
+- Comprehensive user overview and analytics
+- User profile management and moderation
+- Account status monitoring
+- User activity tracking
+
+**Analytics Dashboard:**
+- Platform usage statistics
+- User engagement metrics
+- Financial transaction overview
+- Growth and retention analytics
+
+**Content Moderation:**
+- Profile review and approval system
+- Content flagging and management
+- User behavior monitoring
+- Safety and compliance features
+
+## ADVANCED FEATURES
+
+### Performance Optimizations
+- Database connection pooling (60-second keep-alive)
+- Session caching with cached_db backend
+- Static file optimization and compression
+- Conditional GET middleware for caching
+- GZip compression for production
+- Database query optimization with strategic indexes
+
+### Security Features
+- CSRF protection enabled across all forms
+- Secure password validation with multiple validators
+- User input sanitization and validation
+- File upload restrictions and validation
+- Environment-based configuration management
+- Secure file handling with automatic cleanup
+
+### Internationalization
+- Multi-language support (English/Dutch)
+- Locale-based content delivery
+- Timezone management
+- Cultural adaptation features
+
+### Scalability Features
+- Docker containerization
+- Production-ready deployment configuration
+- Database connection optimization
+- Caching layers for improved performance
+- Static file serving optimization
+
+## BUSINESS LOGIC HIGHLIGHTS
+
+### Student-Focused Features
+- Educational email domain validation
+- University-based matching preferences
+- Academic year compatibility
+- Student ID verification system
+
+### Monetization Strategy
+- Freemium model with basic likes included
+- Premium packages for additional features
+- Super likes for enhanced visibility
+- Unlike functionality as premium feature
+- Reward system driving engagement
+
+### Engagement Systems
+- Points-based gamification
+- Daily activity rewards
+- Referral incentive program
+- Achievement and reward systems
+- Social interaction encouragement
+
+### Geographic Features
+- GPS-based location matching
+- Distance calculation for compatibility
+- City and region-based filtering
+- Location privacy controls
+
+## DATA MODELS SUMMARY
+
+### User Data (accounts.CustomUser)
+- Authentication credentials and student verification
+- Balance tracking (likes, super likes, unlikes, points)
+- Referral system integration
+- Account status and verification
+
+### Profile Data (profiles.Profile)
+- Personal information and preferences
+- Academic background and interests
+- Location data and photos
+- Profile completion status
+
+### Interaction Data (likes.Like, likes.Unlike)
+- User interaction tracking
+- Mutual matching detection
+- Interaction history and patterns
+
+### Communication Data (chat.ChatRoom, chat.Message)
+- Real-time messaging infrastructure
+- Chat history and participant management
+- Message delivery and read status
+
+### Financial Data (payments.Purchase, payments.LikePackage)
+- Transaction processing and history
+- Package management and pricing
+- Payment gateway integration
+
+### Reward Data (rewards.Reward, rewards.RewardClaim)
+- Gamification system backend
+- Reward inventory management
+- Claim processing and fulfillment
+
+### Notification Data (notifications.Notification)
+- Real-time notification delivery
+- Multi-type notification handling
+- Status tracking and management
+
+## TECHNICAL IMPLEMENTATION HIGHLIGHTS
+
+### WebSocket Integration
+- Real-time chat messaging
+- Live notification delivery
+- Status updates and presence indicators
+
+### Image Processing
+- Automatic image resizing and optimization
+- Multiple photo support per profile
+- Secure file storage and cleanup
+
+### Database Optimization
+- Strategic indexing for performance
+- Connection pooling and caching
+- Query optimization for discovery features
+
+### API Design
+- RESTful endpoint structure
+- Secure authentication and authorization
+- Comprehensive error handling
+
+This dating application represents a full-featured, production-ready platform with advanced matching algorithms, real-time communication, payment processing, and comprehensive user management systems designed specifically for the student demographic.https://www.coursera.org/learn/generative-ai-llm-architecture-data-preparation/lecture/3UnxY/course-introduction
