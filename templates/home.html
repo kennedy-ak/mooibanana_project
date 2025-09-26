@@ -8,17 +8,17 @@
         <div class="card border-0 bg-white">
             <div class="card-body p-5">
                 <h1 class="display-4 mb-4" style="color: var(--primary);">
-                    Verbind met medestudenten op Mooibanana
+                    Connect with fellow students on Mooibanana
                 </h1>
                 <p class="lead mb-4">
-                    Ontmoet nieuwe mensen, vind studiegenoten en verdien beloningen met likes! 
-                    Mooibanana is het platform waar studenten elkaar kunnen vinden en verbinden 
-                    op een leuke en interactieve manier.
+                    Meet new people, find study partners and earn rewards with likes! 
+                    Mooibanana is the platform where students can find and connect with each other 
+                    in a fun and interactive way.
                 </p>
                 {% if not user.is_authenticated %}
-                    <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-lg">Begin nu</a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-lg">Start Now</a>
                 {% else %}
-                    <a href="{% url 'profiles:discover' %}" class="btn btn-accent btn-lg">Ontdekken</a>
+                    <a href="{% url 'profiles:discover' %}" class="btn btn-accent btn-lg">Discover</a>
                 {% endif %}
             </div>
         </div>
@@ -35,10 +35,10 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-heart fa-3x text-primary mb-3"></i>
-                <h5 class="card-title">Geef en ontvang likes</h5>
+                <h5 class="card-title">Give and receive likes</h5>
                 <p class="card-text">
-                    Geef likes aan andere studenten en ontvang likes terug. 
-                    Hoe meer likes je geeft en ontvangt, hoe meer beloningen je kunt verdienen.
+                    Give likes to other students and receive likes back. 
+                    The more likes you give and receive, the more rewards you can earn.
                 </p>
             </div>
         </div>
@@ -48,10 +48,10 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-gift fa-3x text-warning mb-3"></i>
-                <h5 class="card-title">Win geweldige prijzen</h5>
+                <h5 class="card-title">Win amazing prizes</h5>
                 <p class="card-text">
-                    Verzamel likes en wissel ze in voor fantastische prijzen zoals 
-                    studiebenodigdheden, kortingsbonnen en zelfs gadgets!
+                    Collect likes and exchange them for fantastic prizes like 
+                    study supplies, discount vouchers and even gadgets!
                 </p>
             </div>
         </div>
@@ -61,10 +61,10 @@
         <div class="card h-100">
             <div class="card-body text-center">
                 <i class="fas fa-comments fa-3x text-success mb-3"></i>
-                <h5 class="card-title">Chat met anderen</h5>
+                <h5 class="card-title">Chat with others</h5>
                 <p class="card-text">
-                    Vind je iemand leuk? Start een gesprek met onze ingebouwde chatfunctie 
-                    en maak nieuwe vrienden op je campus.
+                    Like someone? Start a conversation with our built-in chat feature 
+                    and make new friends on your campus.
                 </p>
             </div>
         </div>
@@ -76,27 +76,27 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body text-center p-5">
-                <h2 class="mb-4" style="color: var(--primary);">Hoe Mooibanana werkt</h2>
+                <h2 class="mb-4" style="color: var(--primary);">How Mooibanana works</h2>
                 <div class="row">
                     <div class="col-md-3 mb-4">
                         <div class="badge bg-primary rounded-circle p-3 mb-3" style="font-size: 1.5rem;">1</div>
-                        <h5>Maak een profiel aan</h5>
-                        <p>Registreer je met je studentenemail en maak een aantrekkelijk profiel aan.</p>
+                        <h5>Create a profile</h5>
+                        <p>Register with your student email and create an attractive profile.</p>
                     </div>
                     <div class="col-md-3 mb-4">
                         <div class="badge bg-primary rounded-circle p-3 mb-3" style="font-size: 1.5rem;">2</div>
-                        <h5>Vind en like anderen</h5>
-                        <p>Blader door profielen van andere studenten en geef likes aan mensen die je interessant vindt.</p>
+                        <h5>Find and like others</h5>
+                        <p>Browse through profiles of other students and give likes to people you find interesting.</p>
                     </div>
                     <div class="col-md-3 mb-4">
                         <div class="badge bg-primary rounded-circle p-3 mb-3" style="font-size: 1.5rem;">3</div>
-                        <h5>Verzamel beloningen</h5>
-                        <p>Hoe meer likes je geeft en ontvangt, hoe meer punten je verdient.</p>
+                        <h5>Collect rewards</h5>
+                        <p>The more likes you give and receive, the more points you earn.</p>
                     </div>
                     <div class="col-md-3 mb-4">
                         <div class="badge bg-primary rounded-circle p-3 mb-3" style="font-size: 1.5rem;">4</div>
-                        <h5>Win prijzen</h5>
-                        <p>Gebruik je verdiende punten om leuke prijzen te winnen.</p>
+                        <h5>Win prizes</h5>
+                        <p>Use your earned points to win cool prizes.</p>
                     </div>
                 </div>
             </div>

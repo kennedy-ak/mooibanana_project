@@ -521,21 +521,21 @@
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%); color: white;">
                 <h5 class="modal-title" id="giftLikesModalLabel">
-                    <i class="fas fa-gift"></i> Koop Likes Voor {{ profile.user.first_name|default:profile.user.username }}
+                    <i class="fas fa-gift"></i> Buy Likes For {{ profile.user.first_name|default:profile.user.username }}
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="text-center mb-4">
-                    <p class="lead">Laat {{ profile.user.first_name|default:profile.user.username }} weten hoe speciaal je hem/haar vindt!</p>
-                    <p class="text-muted">Koop een like pakket en alle likes gaan direct naar {{ profile.user.first_name|default:profile.user.username }}'s account.</p>
+                    <p class="lead">Let {{ profile.user.first_name|default:profile.user.username }} know how special you think they are!</p>
+                    <p class="text-muted">Buy a like package and all likes go directly to {{ profile.user.first_name|default:profile.user.username }}'s account.</p>
                 </div>
 
                 <!-- Direct link to packages page -->
                 <div class="text-center mb-4">
                     <a href="{% url 'payments:packages' %}" class="btn btn-primary btn-lg">
                         <i class="fas fa-shopping-cart me-2"></i>
-                        Ga naar Like Pakketten
+                        Go to Like Packages
                     </a>
                 </div>
 
@@ -607,16 +607,16 @@
         <div class="modal-content">
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="likeSuccessModalLabel">
-                    <i class="fas fa-heart"></i> Like Gegeven!
+                    <i class="fas fa-heart"></i> Like Given!
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center">
-                <p>Je hebt succesvol een like gegeven aan {{ profile.user.get_full_name|default:profile.user.username }}!</p>
-                <p class="text-muted">Als deze persoon jou ook een like geeft, krijgen jullie een match en kunnen jullie chatten.</p>
+                <p>You have successfully given a like to {{ profile.user.get_full_name|default:profile.user.username }}!</p>
+                <p class="text-muted">If this person also gives you a like, you'll get a match and can chat with each other.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Oké</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
             </div>
         </div>
     </div>
@@ -660,7 +660,7 @@
                                         ${package.boosters > 0 ? `<small class="text-muted d-block"><i class="fas fa-rocket text-info"></i> ${package.boosters} Boosters</small>` : ''}
                                     </div>
                                     <button onclick="giftPackage(${package.id})" class="btn ${isPopular ? 'btn-warning' : 'btn-primary'} btn-sm w-100">
-                                        <i class="fas fa-gift"></i> Cadeau Geven
+                                        <i class="fas fa-gift"></i> Gift Package
                                     </button>
                                 </div>
                             </div>
@@ -711,7 +711,7 @@
                                         ${package.boosters > 0 ? `<small class="text-muted d-block"><i class="fas fa-rocket text-info"></i> ${package.boosters} Boosters</small>` : ''}
                                     </div>
                                     <button onclick="giftPackage(${package.id})" class="btn ${isPopular ? 'btn-danger' : 'btn-dark'} btn-sm w-100">
-                                        <i class="fas fa-gift"></i> Cadeau Geven
+                                        <i class="fas fa-gift"></i> Gift Package
                                     </button>
                                 </div>
                             </div>
