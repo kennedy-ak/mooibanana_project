@@ -357,9 +357,15 @@
         /* Mobile responsiveness */
         @media (max-width: 768px) {
             .updates-sidebar {
-                width: 100%;
+                width: calc(100% - 20px);
+                right: 10px;
+                top: 86px;
+                height: calc(100vh - 106px);
                 transform: translateX(100%);
                 transition: transform 0.3s ease;
+                border-radius: 15px;
+                margin-bottom: 20px;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             }
             
             /* Fix mobile navigation dropdown z-index issues */
@@ -785,7 +791,7 @@
                                         </a>
                                     </li>
                                     <li>
-                                        <button onclick="toggleUpdatesSidebar()" class="dropdown-item border-0 bg-transparent text-start w-100">
+                                        <button class="dropdown-item border-0 bg-transparent text-start w-100" onclick="toggleUpdatesSidebar(event)">
                                             <i class="fas fa-comments me-2"></i>Live Updates
                                         </button>
                                     </li>
@@ -926,7 +932,7 @@
     
     <!-- Mobile Updates FAB -->
     {% if user.is_authenticated %}
-    <button class="mobile-updates-fab d-md-none" onclick="toggleUpdatesSidebar()" id="mobileUpdatesFab">
+    <button class="mobile-updates-fab d-md-none" id="mobileUpdatesFab">
         <i class="fas fa-comments"></i>
     </button>
     {% endif %}
@@ -1156,7 +1162,18 @@
     }
     
     // Mobile toggle for updates sidebar
-    function toggleUpdatesSidebar() {
+    let sidebarToggling = false;
+    
+    function toggleUpdatesSidebar(event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        // Prevent multiple rapid clicks
+        if (sidebarToggling) return;
+        sidebarToggling = true;
+        
         const sidebar = document.getElementById('updatesSidebar');
         const fab = document.getElementById('mobileUpdatesFab');
         const isOpen = sidebar.classList.contains('show');
@@ -1179,6 +1196,11 @@
             // Load updates when opening
             loadUpdates();
         }
+        
+        // Reset toggle lock after animation
+        setTimeout(() => {
+            sidebarToggling = false;
+        }, 350);
     }
     
     // Close sidebar when clicking outside on mobile
@@ -1371,6 +1393,12 @@
         
         // Sync breadcrumbs between desktop and mobile views
         syncBreadcrumbs();
+        
+        // Add FAB click event listener
+        const mobileUpdatesFab = document.getElementById('mobileUpdatesFab');
+        if (mobileUpdatesFab) {
+            mobileUpdatesFab.addEventListener('click', toggleUpdatesSidebar);
+        }
     });
     </script>
     {% endif %}
