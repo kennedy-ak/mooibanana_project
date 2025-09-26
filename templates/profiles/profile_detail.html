@@ -292,7 +292,7 @@
                         <div class="carousel-inner" id="advertisementSlides">
                             <!-- Advertisements will be loaded here -->
                             <div class="carousel-item active">
-                                <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                                <div class="d-flex justify-content-center align-items-center advertisement-container">
                                     <div class="spinner-border text-primary" role="status">
                                         <span class="visually-hidden">Loading ads...</span>
                                     </div>
@@ -927,7 +927,7 @@
                 if (data.advertisements.length === 0) {
                     slidesContainer.innerHTML = `
                         <div class="carousel-item active">
-                            <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                            <div class="d-flex justify-content-center align-items-center advertisement-container">
                                 <div class="text-center text-muted">
                                     <i class="fas fa-bullhorn fa-3x mb-3"></i>
                                     <p>No advertisements available</p>
@@ -952,8 +952,7 @@
                             <div class="advertisement-slide" ${clickAction} style="${cursorStyle}">
                                 <img src="${ad.flyer_image}" 
                                      alt="${ad.brand_name}" 
-                                     class="d-block w-100 advertisement-image"
-                                     style="height: 200px; object-fit: contain; border-radius: 8px;">
+                                     class="d-block advertisement-image">
                                 <div class="advertisement-overlay">
                                     <h6 class="advertisement-brand">${ad.brand_name}</h6>
                                     ${ad.brand_url ? '<small class="text-muted">Click to visit</small>' : ''}
@@ -985,7 +984,7 @@
                 console.error('Error loading advertisements:', error);
                 document.getElementById('advertisementSlides').innerHTML = `
                     <div class="carousel-item active">
-                        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <div class="d-flex justify-content-center align-items-center advertisement-container">
                             <div class="text-center text-muted">
                                 <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                                 <p>Error loading advertisements</p>
@@ -999,11 +998,23 @@
 
 <style>
 /* Advertisement slideshow styles */
+.advertisement-container {
+    height: 350px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .advertisement-slide {
     position: relative;
     transition: transform 0.3s ease;
     border-radius: 8px;
     overflow: hidden;
+    height: 350px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .advertisement-slide:hover {
@@ -1013,6 +1024,12 @@
 .advertisement-image {
     background: #f8f9fa;
     border: 1px solid #e9ecef;
+    border-radius: 8px;
+    max-width: 250px;
+    max-height: 330px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
 }
 
 .advertisement-overlay {
@@ -1051,7 +1068,7 @@
 }
 
 #advertisementCarousel .carousel-indicators {
-    bottom: -30px;
+    bottom: -35px;
 }
 
 #advertisementCarousel .carousel-indicators button {
@@ -1073,6 +1090,19 @@
 
 /* Responsive advertisement styles */
 @media (max-width: 768px) {
+    .advertisement-container {
+        height: 300px;
+    }
+    
+    .advertisement-slide {
+        height: 300px;
+    }
+    
+    .advertisement-image {
+        max-width: 200px;
+        max-height: 280px;
+    }
+    
     .advertisement-overlay {
         padding: 15px 10px 8px;
     }

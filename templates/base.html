@@ -291,12 +291,58 @@
             align-items: center;
             background: var(--primary);
             color: white;
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .updates-header:hover {
+            background: rgba(78, 84, 200, 0.9);
+        }
+        
+        .updates-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: slideProgress 4s linear infinite;
+        }
+        
+        @keyframes slideProgress {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* Live indicator pulse */
+        .updates-header h6 {
+            animation: livePulse 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes livePulse {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0.8;
+            }
         }
         
         .updates-feed {
             flex: 1;
             overflow-y: auto;
             padding: 0.5rem;
+            cursor: pointer;
+        }
+        
+        .updates-feed:hover {
+            background: rgba(0, 0, 0, 0.02);
         }
         
         .update-card {
@@ -309,7 +355,7 @@
             position: relative;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
             transform: translateX(100%);
-            animation: slideInRight 0.5s ease forwards;
+            animation: slideInRight 0.5s ease forwards, floatMotion 3s ease-in-out infinite;
         }
         
         @keyframes slideInRight {
@@ -326,6 +372,21 @@
             to {
                 transform: translateX(100%);
                 opacity: 0;
+            }
+        }
+        
+        @keyframes floatMotion {
+            0%, 100% {
+                transform: translateX(0) translateY(0px);
+            }
+            25% {
+                transform: translateX(0) translateY(-2px);
+            }
+            50% {
+                transform: translateX(0) translateY(0px);
+            }
+            75% {
+                transform: translateX(0) translateY(2px);
             }
         }
         
@@ -722,11 +783,14 @@
     <!-- Updates Sidebar -->
     {% if user.is_authenticated %}
     <div class="updates-sidebar" id="updatesSidebar">
-        <div class="updates-header">
+        <div class="updates-header" title="Click to close">
             <h6 class="mb-0"><i class="fas fa-comments me-2"></i>Live Updates</h6>
-            <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#postUpdateModal">
-                <i class="fas fa-plus"></i>
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <small class="text-light opacity-75 d-none d-md-inline">Click to close</small>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#postUpdateModal">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
         </div>
         <div class="updates-feed" id="updatesFeed">
             <div class="text-center py-4">
@@ -992,6 +1056,10 @@
             updateElement.style.animationDelay = `${index * 0.1}s`;
             feed.appendChild(updateElement);
         });
+        
+        // Reset the current index and start auto-sliding
+        currentUpdateIndex = 3;
+        startAutoSlide();
     }
     
     // Create individual update element
@@ -1018,10 +1086,10 @@
         if (slideInterval) clearInterval(slideInterval);
         
         slideInterval = setInterval(() => {
-            if (updatesData.length > 3) {
+            if (updatesData.length > 0) {
                 slideToNext();
             }
-        }, 5000); // Slide every 5 seconds
+        }, 4000); // Slide every 4 seconds
     }
     
     // Slide to next update
@@ -1029,7 +1097,7 @@
         const feed = document.getElementById('updatesFeed');
         const currentCards = feed.querySelectorAll('.update-card');
         
-        if (currentCards.length === 0) return;
+        if (currentCards.length === 0 || updatesData.length === 0) return;
         
         // Slide out the first card
         const firstCard = currentCards[0];
@@ -1039,8 +1107,8 @@
         setTimeout(() => {
             firstCard.remove();
             
-            // Get next update index
-            currentUpdateIndex = (currentUpdateIndex + 3) % updatesData.length;
+            // Get next update index (cycle through all updates)
+            currentUpdateIndex = (currentUpdateIndex + 1) % updatesData.length;
             const nextUpdate = updatesData[currentUpdateIndex];
             
             if (nextUpdate) {
@@ -1215,46 +1283,35 @@
         }
     });
     
-    // WebSocket connection for real-time notifications
-    let notificationSocket = null;
+    
+    // Real-time notifications (using HTTP polling instead of WebSocket)
+    let notificationPollingInterval = null;
 
-    function connectWebSocket() {
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = `${protocol}//${window.location.host}/ws/notifications/`;
+    function startNotificationPolling() {
+        // Poll for notifications every 30 seconds
+        notificationPollingInterval = setInterval(() => {
+            loadNotifications();
+        }, 30000);
+    }
 
-        notificationSocket = new WebSocket(wsUrl);
-
-        notificationSocket.onopen = function(e) {
-            console.log('Notification WebSocket connected');
-            // Request current notifications
-            notificationSocket.send(JSON.stringify({
-                'type': 'get_notifications'
-            }));
-        };
-
-        notificationSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-
-            if (data.type === 'notification_count') {
-                updateNotificationCount(data.count);
-            } else if (data.type === 'notifications_list') {
-                displayNotifications(data.notifications);
-            } else if (data.type === 'notification_message') {
-                // New notification received
-                displaySingleNotification(data.notification);
-                updateNotificationCount(data.count);
-            }
-        };
-
-        notificationSocket.onclose = function(e) {
-            console.log('Notification WebSocket disconnected');
-            // Reconnect after 3 seconds
-            setTimeout(connectWebSocket, 3000);
-        };
-
-        notificationSocket.onerror = function(e) {
-            console.error('WebSocket error:', e);
-        };
+    function loadNotifications() {
+        // Try to fetch notification count, but don't error if endpoint doesn't exist
+        fetch('/notifications/api/count/')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Endpoint not available');
+                }
+            })
+            .then(data => {
+                updateNotificationCount(data.count || 0);
+            })
+            .catch(error => {
+                // Silently fail if notification API is not implemented
+                console.log('Notification polling not available:', error.message);
+                updateNotificationCount(0);
+            });
     }
 
     function updateNotificationCount(count) {
@@ -1370,26 +1427,27 @@
     }
 
     function markAsRead(notificationId) {
-        if (notificationSocket && notificationSocket.readyState === WebSocket.OPEN) {
-            notificationSocket.send(JSON.stringify({
-                'type': 'mark_read',
-                'notification_id': notificationId
-            }));
-        }
-
-        // Also make HTTP request as fallback
+        // Make HTTP request to mark notification as read
         fetch(`/notifications/api/mark-read/${notificationId}/`, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
                 'Content-Type': 'application/json',
             }
+        })
+        .then(() => {
+            // Refresh notification count after marking as read
+            loadNotifications();
+        })
+        .catch(error => {
+            console.error('Error marking notification as read:', error);
         });
     }
 
-    // Connect WebSocket on page load
+    // Start notification polling on page load
     document.addEventListener('DOMContentLoaded', function() {
-        connectWebSocket();
+        loadNotifications();
+        startNotificationPolling();
         
         // Sync breadcrumbs between desktop and mobile views
         syncBreadcrumbs();
@@ -1398,6 +1456,34 @@
         const mobileUpdatesFab = document.getElementById('mobileUpdatesFab');
         if (mobileUpdatesFab) {
             mobileUpdatesFab.addEventListener('click', toggleUpdatesSidebar);
+        }
+        
+        // Add click-to-close functionality to the sidebar itself
+        const sidebar = document.getElementById('updatesSidebar');
+        if (sidebar) {
+            sidebar.addEventListener('click', function(event) {
+                // Don't close if clicking on buttons, update cards, or interactive elements
+                if (event.target.tagName === 'BUTTON' || 
+                    event.target.closest('button') ||
+                    event.target.closest('.update-card') ||
+                    event.target.closest('.btn')) {
+                    return;
+                }
+                
+                // Only close if clicking on the sidebar background or header areas
+                if (event.target === sidebar || 
+                    event.target.classList.contains('updates-header') || 
+                    event.target.classList.contains('updates-feed') ||
+                    (event.target.tagName === 'H6' && event.target.closest('.updates-header')) ||
+                    (event.target.tagName === 'I' && event.target.closest('.updates-header')) ||
+                    (event.target.tagName === 'SMALL' && event.target.closest('.updates-header'))) {
+                    
+                    // Only close if the sidebar is open
+                    if (sidebar.classList.contains('show') || window.innerWidth > 768) {
+                        toggleUpdatesSidebar(event);
+                    }
+                }
+            });
         }
     });
     </script>

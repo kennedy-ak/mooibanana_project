@@ -96,7 +96,7 @@
                 <i class="fas fa-chart-line text-primary me-2"></i>
                 User Registrations Over Time
             </h5>
-            <div style="position: relative; height: 300px; width: 100%;">
+            <div class="chart-container">
                 <canvas id="registrationsChart"></canvas>
             </div>
         </div>
@@ -109,7 +109,7 @@
                 <i class="fas fa-heart text-danger me-2"></i>
                 Matches Over Time
             </h5>
-            <div style="position: relative; height: 300px; width: 100%;">
+            <div class="chart-container">
                 <canvas id="matchesChart"></canvas>
             </div>
         </div>
@@ -124,7 +124,7 @@
                 <i class="fas fa-graduation-cap text-success me-2"></i>
                 Most Popular Study Fields
             </h5>
-            <div style="position: relative; height: 400px; width: 100%;">
+            <div class="chart-container-large">
                 <canvas id="studyFieldsChart"></canvas>
             </div>
         </div>
@@ -275,6 +275,14 @@ new Chart(regCtx, {
         },
         layout: {
             padding: 10
+        },
+        interaction: {
+            intersect: false
+        },
+        elements: {
+            point: {
+                radius: 4
+            }
         }
     }
 });
@@ -323,6 +331,14 @@ new Chart(matchCtx, {
         },
         layout: {
             padding: 10
+        },
+        interaction: {
+            intersect: false
+        },
+        elements: {
+            point: {
+                radius: 4
+            }
         }
     }
 });
@@ -366,10 +382,19 @@ new Chart(studyCtx, {
                 ticks: {
                     stepSize: 1
                 }
+            },
+            x: {
+                ticks: {
+                    maxRotation: 45,
+                    minRotation: 0
+                }
             }
         },
         layout: {
             padding: 10
+        },
+        interaction: {
+            intersect: false
         }
     }
 });
