@@ -26,9 +26,6 @@ COPY . /app/
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Collect static files
-RUN python manage.py collectstatic --noinput || true
-
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
@@ -36,5 +33,6 @@ USER appuser
 # Expose the port Cloud Run expects
 EXPOSE 8080
 
-# Run the application with Gunicorn (Django WSGI)
-CMD ["gunicorn", "mooibanana_project.wsgi:application", "--bind", "0.0.0.0:${PORT:-8080}"]
+# Run collectstatic at startup (when env vars are available), then start gunicorn
+CMD python manage.py collectstatic --noinput && \
+    gunicorn mooibanana_project.wsgi:application --bind 0.0.0.0:${PORT:-8080}

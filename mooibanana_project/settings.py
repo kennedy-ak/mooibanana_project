@@ -113,7 +113,7 @@ CHANNEL_LAYERS = {
 import dj_database_url
 
 # Database configuration
-DATABASE_URL = config('DATABASE_URL', default='sqlite:///db.sqlite3')
+DATABASE_URL = config('DATABASE_URL')
 
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
