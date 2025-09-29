@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-
+import os
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -217,8 +217,32 @@ LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'profiles:discover'
 LOGOUT_REDIRECT_URL = 'home'
 
-# Email settings (for development)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email settings
+# Use console backend for development/testing (emails will appear in terminal)
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# SMTP settings for production (enable when Gmail app password is ready)
+# Try SSL configuration first as it's more reliable with Gmail
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 465
+EMAIL_USE_SSL = True
+EMAIL_USE_TLS = False
+EMAIL_HOST_USER = 'kennedyakogokweku@gmail.com'
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')  # Replace with actual app password
+DEFAULT_FROM_EMAIL = 'kennedyakogokweku@gmail.com'
+EMAIL_TIMEOUT = 60
+
+# Alternative TLS configuration (if SSL doesn't work)
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_HOST = 'smtp.gmail.com'
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_USE_SSL = False
+# EMAIL_HOST_USER = 'kennedyakogokweku@gmail.com'
+# EMAIL_HOST_PASSWORD = 'your-16-character-app-password'  # Replace with actual app password
+# DEFAULT_FROM_EMAIL = 'kennedyakogokweku@gmail.com'
+# EMAIL_TIMEOUT = 60
 
 # Paystack settings
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')

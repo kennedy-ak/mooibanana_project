@@ -1,7 +1,10 @@
 # accounts/forms.py
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import UserCreationForm, PasswordResetForm
+from django.contrib.auth import get_user_model
 from .models import CustomUser
+
+User = get_user_model()
 
 class CustomUserCreationForm(UserCreationForm):
     referral_code = forms.CharField(
@@ -47,3 +50,25 @@ class CustomUserCreationForm(UserCreationForm):
         if commit:
             user.save()
         return user
+
+
+class CustomPasswordResetForm(PasswordResetForm):
+    """Custom password reset form that validates if email exists"""
+    
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email:
+            # Check if any user exists with this email
+            if not User.objects.filter(email__iexact=email, is_active=True).exists():
+                raise forms.ValidationError(
+                    "No account found with this email address. "
+                    "Please check your email or create a new account."
+                )
+        return email
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Enter your email address'
+        })

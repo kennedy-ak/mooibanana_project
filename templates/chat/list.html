@@ -28,7 +28,7 @@
                             <p class="text-muted mb-0">{{ chat_data.room.last_message.content|truncatewords:10 }}</p>
                             <small class="text-muted">{{ chat_data.room.last_message.timestamp|date:"d M Y H:i" }}</small>
                         {% else %}
-                            <p class="text-muted mb-0">Nog geen berichten</p>
+                            <p class="text-muted mb-0">No messages yet</p>
                         {% endif %}
                     </div>
                     <div class="col-md-2 text-end">
@@ -41,9 +41,9 @@
         </div>
         {% empty %}
         <div class="text-center text-white">
-            <h4>Nog geen chats</h4>
-            <p>Maak eerst een match om te kunnen chatten!</p>
-            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Ontdekken</a>
+            <h4>No chats yet</h4>
+            <p>Make a match first to start chatting!</p>
+            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Discover</a>
         </div>
         {% endfor %}
     </div>

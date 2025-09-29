@@ -66,9 +66,9 @@
         </div>
         {% empty %}
         <div class="text-center text-white">
-            <h4>Nog geen matches</h4>
-            <p>Ga naar de ontdek pagina om mensen te liken en matches te maken!</p>
-            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Ontdekken</a>
+            <h4>No matches yet</h4>
+            <p>Go to the discover page to like people and make matches!</p>
+            <a href="{% url 'profiles:discover' %}" class="btn btn-accent">Discover</a>
         </div>
         {% endfor %}
     </div>

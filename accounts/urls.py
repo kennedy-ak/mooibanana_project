@@ -1,6 +1,6 @@
 
 # accounts/urls.py
-from django.urls import path
+from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
 
@@ -16,4 +16,25 @@ urlpatterns = [
     path('verify-email/', views.VerifyEmailView.as_view(), name='verify_email'),
     path('referrals/', views.ReferralDashboardView.as_view(), name='referral_dashboard'),
     path('generate-referral-link/', views.generate_referral_link, name='generate_referral_link'),
+    
+    # Password reset URLs
+    path('password-reset/', 
+         views.CustomPasswordResetView.as_view(), 
+         name='password_reset'),
+    path('password-reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='registration/password_reset_done.html'
+         ), 
+         name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', 
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='registration/password_reset_confirm.html',
+             success_url=reverse_lazy('accounts:password_reset_complete')
+         ), 
+         name='password_reset_confirm'),
+    path('reset/complete/', 
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='registration/password_reset_complete.html'
+         ), 
+         name='password_reset_complete'),
 ]
