@@ -31,6 +31,7 @@ ALLOWED_HOSTS = ["mooibanana-project-1.onrender.com","*"]
 #config('ALLOWED_HOSTS', default='').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
+    'https://mooibanana-project-295618807617.europe-west1.run.app'
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     "https://mooibanana-project-1.onrender.com"
