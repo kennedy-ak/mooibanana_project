@@ -18,7 +18,7 @@ RUN apt-get update \
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copy entire project
 COPY . /app/
@@ -26,15 +26,15 @@ COPY . /app/
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
 
-# Collect static files (only if .env exists)
-RUN if [ -f .env ]; then python manage.py collectstatic --noinput; fi
+# Collect static files
+RUN python manage.py collectstatic --noinput || true
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
 USER appuser
 
-# Expose port
-EXPOSE 8000
+# Expose the port Cloud Run expects
+EXPOSE 8080
 
-# Run the application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Run the application with Gunicorn (Django WSGI)
+CMD ["gunicorn", "mooibanana_project.wsgi:application", "--bind", "0.0.0.0:${PORT:-8080}"]
