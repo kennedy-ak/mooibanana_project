@@ -21,7 +21,21 @@
         }
         
         .navbar {
-            z-index: 1060 !important;
+            z-index: 1999 !important;
+            position: relative;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        
+        /* Force dropdown menus to always appear on top */
+        .dropdown {
+            position: relative;
+            z-index: 10001;
+        }
+        
+        .dropdown.show {
+            z-index: 10001;
         }
         
         .navbar-brand {
@@ -91,6 +105,33 @@
             padding: 1rem;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Touch-friendly improvements */
+        .nav-link,
+        .btn,
+        .card {
+            -webkit-tap-highlight-color: transparent;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        /* Improved touch targets for mobile/tablet */
+        @media (max-width: 1024px) {
+            .nav-link,
+            .btn,
+            .dropdown-item {
+                padding: 0.75rem 1rem;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+            }
+
+            .navbar-nav {
+                gap: 0.5rem;
+            }
+        }
         }
         
         /* Bootstrap Button Enhancements */
@@ -98,6 +139,69 @@
             border-radius: 8px;
             font-weight: 500;
             transition: all 0.2s ease;
+        }
+
+        /* Responsive Design for iPad Mini and Tablets */
+        @media screen and (max-width: 1024px) {
+            .container {
+                max-width: 95%;
+                padding: 0 15px;
+            }
+            
+            .profile-img {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                font-size: 14px;
+            }
+
+            .navbar-brand {
+                font-size: 1.25rem;
+            }
+
+            .card {
+                margin-bottom: 1rem;
+            }
+
+            .profile-img {
+                width: 70px;
+                height: 70px;
+            }
+
+            .btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .likes-balance,
+            .points-balance {
+                padding: 4px 12px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Specific iPad Mini Portrait Mode Optimizations */
+        @media screen and (min-width: 768px) and (max-width: 834px) {
+            .container {
+                padding: 0 20px;
+            }
+
+            .card {
+                margin: 10px;
+            }
+
+            .nav-helper-bar {
+                padding: 0.75rem;
+            }
+
+            .breadcrumb {
+                padding: 0.5rem 0.75rem;
+            }
+        }
         }
         
         .btn:hover {
@@ -214,7 +318,8 @@
             background: rgba(255, 255, 255, 0.95);
             padding: 0.75rem 0;
             margin-top: 0.5rem;
-            z-index: 1050;
+            z-index: 9999 !important;
+            position: absolute !important;
         }
         
         .dropdown-item {
@@ -254,6 +359,15 @@
         
         .btn-outline-primary .fas.fa-bars {
             font-size: 1.1rem;
+        }
+        
+        /* Hamburger dropdown menu - ensure it's always on top */
+        #mobileMenuDropdown + .dropdown-menu,
+        .dropdown-menu[aria-labelledby="mobileMenuDropdown"] {
+            z-index: 10000 !important;
+            position: absolute !important;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         /* Updates Sidebar Styles */
@@ -431,17 +545,22 @@
             
             /* Fix mobile navigation dropdown z-index issues */
             .navbar-collapse {
-                z-index: 1070 !important;
+                z-index: 2000 !important;
+                position: relative;
             }
             
             .dropdown-menu {
-                z-index: 1080 !important;
+                z-index: 2100 !important;
             }
             
             /* Ensure mobile menu appears above all content */
             #mobileMenuDropdown + .dropdown-menu {
-                z-index: 1080 !important;
+                z-index: 10000 !important;
                 position: fixed !important;
+                width: calc(100% - 30px);
+                margin: 5px 15px;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
             }
             
             /* Fix nav-helper-bar positioning on mobile */
@@ -518,16 +637,39 @@
             .d-lg-none .breadcrumb {
                 font-size: 0.9rem;
                 padding: 8px 16px;
+                z-index: 1400;
+                position: relative;
+            }
+            
+            /* Search bar positioning */
+            .search-profiles-container {
+                position: relative;
+                z-index: 1400;
+            }
+            
+            .search-input-group {
+                position: relative;
+                z-index: 1400;
             }
             
             .d-lg-none .breadcrumb-item {
                 white-space: nowrap;
             }
             
-            /* Dropdown menu adjustments for tablet */
+            /* Dropdown menu adjustments for tablet - fix z-index issue */
             .dropdown-menu {
                 min-width: 250px;
                 max-width: 300px;
+                z-index: 2200 !important;
+                position: absolute !important;
+            }
+            
+            /* Ensure hamburger dropdown appears above all content on iPad */
+            #mobileMenuDropdown + .dropdown-menu {
+                z-index: 10000 !important;
+                position: absolute !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+                border-radius: 15px;
             }
             
             .dropdown-item {
@@ -587,11 +729,25 @@
             .profile-carousel {
                 width: 140px;
                 height: 140px;
+                position: relative;
+                z-index: 1500;
             }
             
             .carousel-inner {
                 width: 140px !important;
                 height: 140px !important;
+                position: relative;
+                z-index: 1500;
+            }
+            
+            /* Ensure profile images stay above search bar */
+            .profile-img,
+            .carousel-item img {
+                position: relative;
+                z-index: 1500;
+                border-radius: 50%;
+                object-fit: cover;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             }
             
             /* Button sizing for touch */
