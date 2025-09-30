@@ -6,6 +6,7 @@ from . import views
 app_name = 'payments'
 
 urlpatterns = [
+    path('pricing/', views.PricingView.as_view(), name='pricing'),
     path('packages/', views.PackagesView.as_view(), name='packages'),
     path('api/packages/', views.packages_api, name='packages_api'),
     path('purchase/<int:package_id>/', views.purchase_package, name='purchase'),

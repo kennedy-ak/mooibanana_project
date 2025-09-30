@@ -26,6 +26,15 @@ except ImportError:
     Notification = None
     broadcast_notification = None
 
+class PricingView(ListView):
+    """Public pricing page - no login required"""
+    model = LikePackage
+    template_name = 'payments/pricing.html'
+    context_object_name = 'packages'
+    
+    def get_queryset(self):
+        return LikePackage.objects.filter(is_active=True).order_by('price')
+
 class PackagesView(LoginRequiredMixin, ListView):
     model = LikePackage
     template_name = 'payments/packages.html'

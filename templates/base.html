@@ -859,6 +859,11 @@
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">Discover</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-dark" href="{% url 'payments:pricing' %}">
+                                <i class="fas fa-euro-sign"></i> Pricing
+                            </a>
+                        </li>
                         {% comment "MATCHES REMOVED FROM SYSTEM" %}
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'likes:matches' %}">Matches</a>
@@ -997,6 +1002,11 @@
                                     <li>
                                         <a href="{% url 'profiles:discover' %}" class="dropdown-item">
                                             <i class="fas fa-search me-2"></i>Discover Profiles
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{% url 'payments:pricing' %}" class="dropdown-item">
+                                            <i class="fas fa-euro-sign me-2"></i>Pricing
                                         </a>
                                     </li>
                                     <li>

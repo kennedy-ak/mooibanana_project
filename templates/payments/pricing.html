@@ -1,0 +1,441 @@
+<!-- templates/payments/pricing.html -->
+{% extends 'base.html' %}
+
+{% block title %}Pricing - Mooibanana{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item active" aria-current="page">
+    <i class="fas fa-euro-sign"></i> Pricing
+</li>
+{% endblock %}
+
+{% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        min-height: 100vh;
+    }
+    
+    .pricing-hero {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        color: #4e54c8;
+        padding: 60px 0;
+        margin-bottom: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .pricing-card {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        background: white;
+        margin-bottom: 30px;
+        height: 100%;
+    }
+    
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    }
+    
+    .pricing-card.featured {
+        border: 3px solid #ff9a00;
+        transform: scale(1.05);
+        position: relative;
+    }
+    
+    .pricing-card.featured::before {
+        content: "MOST POPULAR";
+        position: absolute;
+        top: 20px;
+        right: -35px;
+        background: #ff9a00;
+        color: white;
+        padding: 8px 45px;
+        font-weight: bold;
+        font-size: 12px;
+        transform: rotate(45deg);
+        z-index: 10;
+        box-shadow: 0 2px 10px rgba(255, 154, 0, 0.3);
+    }
+    
+    .pricing-header {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        color: white;
+        padding: 40px 20px;
+        text-align: center;
+    }
+    
+    .pricing-header.featured {
+        background: linear-gradient(135deg, #ff9a00 0%, #ffad33 100%);
+    }
+    
+    .price {
+        font-size: 3.5rem;
+        font-weight: bold;
+        margin: 20px 0;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .price-period {
+        font-size: 1rem;
+        opacity: 0.8;
+        font-weight: normal;
+    }
+    
+    .package-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .features-list {
+        padding: 30px;
+    }
+    
+    .feature {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+    
+    .feature:hover {
+        transform: translateX(5px);
+        background: #e9ecef;
+    }
+    
+    .feature-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        color: white;
+        font-size: 20px;
+    }
+    
+    .likes-icon {
+        background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    }
+    
+    .super-likes-icon {
+        background: linear-gradient(135deg, #ffd700, #ffed4e);
+        color: #333;
+    }
+    
+    .boosters-icon {
+        background: linear-gradient(135deg, #4ecdc4, #44a08d);
+    }
+    
+    .bonus-icon {
+        background: linear-gradient(135deg, #28a745, #34ce57);
+    }
+    
+    .feature-text {
+        flex: 1;
+    }
+    
+    .feature-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .feature-desc {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .cta-button {
+        background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+        border: none;
+        color: white;
+        padding: 15px 30px;
+        border-radius: 25px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        width: 100%;
+        margin: 20px;
+        box-shadow: 0 5px 15px rgba(78, 84, 200, 0.3);
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .cta-button:hover {
+        background: linear-gradient(135deg, #3f43a0 0%, #7b80f0 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(78, 84, 200, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .cta-button.featured {
+        background: linear-gradient(135deg, #ff9a00 0%, #ffad33 100%);
+        box-shadow: 0 5px 15px rgba(255, 154, 0, 0.3);
+    }
+    
+    .cta-button.featured:hover {
+        background: linear-gradient(135deg, #e08600 0%, #ff9a00 100%);
+        box-shadow: 0 8px 25px rgba(255, 154, 0, 0.4);
+        color: white;
+    }
+    
+    .comparison-table {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 40px;
+        margin-top: 50px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .table th {
+        border: none;
+        background: #4e54c8;
+        color: white;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .table td {
+        border: none;
+        padding: 15px;
+        text-align: center;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .table tbody tr:hover {
+        background: rgba(78, 84, 200, 0.05);
+    }
+    
+    .check-icon {
+        color: #28a745;
+        font-size: 1.2rem;
+    }
+    
+    .cross-icon {
+        color: #dc3545;
+        font-size: 1.2rem;
+    }
+    
+    @media (max-width: 768px) {
+        .pricing-card.featured {
+            transform: none;
+            margin-bottom: 30px;
+        }
+        
+        .price {
+            font-size: 2.5rem;
+        }
+        
+        .pricing-hero {
+            padding: 40px 20px;
+        }
+        
+        .comparison-table {
+            overflow-x: auto;
+        }
+    }
+</style>
+
+<div class="container">
+    <!-- Hero Section -->
+    <div class="pricing-hero">
+        <div class="container">
+            <h1 class="display-4 mb-4">
+                <i class="fas fa-euro-sign text-warning"></i>
+                Simple, Transparent Pricing
+            </h1>
+            <p class="lead mb-4">Choose the perfect package to boost your connections and find amazing people!</p>
+            <p class="mb-0">
+                <i class="fas fa-shield-alt me-2"></i>
+                All prices include VAT • 30-day money-back guarantee
+            </p>
+        </div>
+    </div>
+
+    <!-- Pricing Cards -->
+    <div class="row justify-content-center">
+        {% for package in packages %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="pricing-card {% if 'Popular' in package.name %}featured{% endif %}">
+                <div class="pricing-header {% if 'Popular' in package.name %}featured{% endif %}">
+                    <div class="package-name">{{ package.name }}</div>
+                    <div class="price">
+                        €{{ package.price }}
+                        <span class="price-period">one-time</span>
+                    </div>
+                    {% if package.description %}
+                        <p class="mb-0" style="opacity: 0.9; font-size: 0.9rem;">{{ package.description }}</p>
+                    {% endif %}
+                </div>
+                
+                <div class="features-list">
+                    <div class="feature">
+                        <div class="feature-icon likes-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <div class="feature-text">
+                            <div class="feature-title">{{ package.regular_likes }} Regular Likes</div>
+                            <div class="feature-desc">Connect with other students</div>
+                        </div>
+                    </div>
+                    
+                    {% if package.super_likes > 0 %}
+                    <div class="feature">
+                        <div class="feature-icon super-likes-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="feature-text">
+                            <div class="feature-title">{{ package.super_likes }} Super Likes</div>
+                            <div class="feature-desc">Stand out from the crowd</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if package.boosters > 0 %}
+                    <div class="feature">
+                        <div class="feature-icon boosters-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="feature-text">
+                            <div class="feature-title">{{ package.boosters }} Profile Boosters</div>
+                            <div class="feature-desc">Increase your visibility</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="feature">
+                        <div class="feature-icon bonus-icon">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <div class="feature-text">
+                            <div class="feature-title">Bonus Points</div>
+                            <div class="feature-desc">Earn rewards and prizes</div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated %}
+                    <a href="{% url 'payments:purchase' package.id %}" 
+                       class="cta-button {% if 'Popular' in package.name %}featured{% endif %}">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Get Started
+                    </a>
+                {% else %}
+                    <a href="{% url 'accounts:register' %}" 
+                       class="cta-button {% if 'Popular' in package.name %}featured{% endif %}">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Sign Up to Buy
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                No packages are currently available.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="comparison-table">
+        <h3 class="text-center mb-4" style="color: #4e54c8; font-weight: bold;">Compare All Features</h3>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        {% for package in packages %}
+                        <th>{{ package.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Price</strong></td>
+                        {% for package in packages %}
+                        <td><strong>€{{ package.price }}</strong></td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Regular Likes</td>
+                        {% for package in packages %}
+                        <td>{{ package.regular_likes }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Super Likes</td>
+                        {% for package in packages %}
+                        <td>{% if package.super_likes > 0 %}{{ package.super_likes }}{% else %}<i class="fas fa-times cross-icon"></i>{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Profile Boosters</td>
+                        {% for package in packages %}
+                        <td>{% if package.boosters > 0 %}{{ package.boosters }}{% else %}<i class="fas fa-times cross-icon"></i>{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Bonus Points</td>
+                        {% for package in packages %}
+                        <td><i class="fas fa-check check-icon"></i></td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Money-back Guarantee</td>
+                        {% for package in packages %}
+                        <td><i class="fas fa-check check-icon"></i></td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="comparison-table mt-4">
+        <h3 class="text-center mb-4" style="color: #4e54c8; font-weight: bold;">Frequently Asked Questions</h3>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="mb-4">
+                    <h5 style="color: #4e54c8;"><i class="fas fa-question-circle me-2"></i>What are likes used for?</h5>
+                    <p class="text-muted">Likes help you connect with other students. Give likes to show interest and receive likes to know who's interested in you!</p>
+                </div>
+                <div class="mb-4">
+                    <h5 style="color: #4e54c8;"><i class="fas fa-question-circle me-2"></i>Do likes expire?</h5>
+                    <p class="text-muted">No! Your likes never expire. Use them whenever you want to connect with someone new.</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-4">
+                    <h5 style="color: #4e54c8;"><i class="fas fa-question-circle me-2"></i>Can I gift likes to friends?</h5>
+                    <p class="text-muted">Yes! You can purchase likes as gifts for your friends to help them connect with more people.</p>
+                </div>
+                <div class="mb-4">
+                    <h5 style="color: #4e54c8;"><i class="fas fa-question-circle me-2"></i>How do I earn bonus points?</h5>
+                    <p class="text-muted">You earn points by giving and receiving likes. Use points to claim rewards and prizes!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
