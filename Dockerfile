@@ -18,10 +18,13 @@ RUN apt-get update \
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt gunicorn
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy entire project
 COPY . /app/
+
+# Make start script executable
+RUN chmod +x /app/start.sh
 
 # Create directories for static and media files
 RUN mkdir -p /app/staticfiles /app/media
@@ -33,6 +36,5 @@ USER appuser
 # Expose the port Cloud Run expects
 EXPOSE 8080
 
-# Run collectstatic at startup (when env vars are available), then start gunicorn
-CMD python manage.py collectstatic --noinput && \
-    gunicorn mooibanana_project.wsgi:application --bind 0.0.0.0:${PORT:-8080}
+# Use the startup script
+CMD ["./start.sh"]

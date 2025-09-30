@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ["mooibanana-project-1.onrender.com","*"]
 
 CSRF_TRUSTED_ORIGINS = [
     'https://mooibanana-project-295618807617.europe-west1.run.app',
+    'https://mooibanana-project-*.run.app',  # Allow any revision
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     "https://mooibanana-project-1.onrender.com"
@@ -69,6 +70,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -149,7 +151,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 
 # Static files optimization
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Performance monitoring (only in DEBUG mode)
 # if DEBUG:
