@@ -303,7 +303,7 @@
                 <i class="fas fa-heart text-warning"></i>
                 Like Pakketten
             </h1>
-            <p class="lead mb-4">Krijg meer likes om meer studenten te ontmoeten en win fantastische prijzen! Alle prijzen in Ghana Cedis (₵).</p>
+            <p class="lead mb-4">Krijg meer likes om meer studenten te ontmoeten en win fantastische prijzen! Alle prijzen in Euros (€).</p>
             <p class="mb-0">
                 <i class="fas fa-gift me-2"></i>
                 Verdien punten met elke like die je geeft en ontvangt
@@ -342,7 +342,7 @@
             <div class="card package-card h-100 {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
                 <div class="package-header {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
                     <h3 class="mb-0">{{ package.name }}</h3>
-                    <div class="package-price">₵{{ package.price }}</div>
+                    <div class="package-price">€{{ package.price }}</div>
                     {% if package.description %}
                         <p class="mb-0" style="opacity: 0.9;">{{ package.description }}</p>
                     {% endif %}

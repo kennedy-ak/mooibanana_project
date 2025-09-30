@@ -9,7 +9,7 @@ class Command(BaseCommand):
         # Clear existing packages
         LikePackage.objects.all().delete()
         
-        # Create the three packages from the screenshot
+        # Create the three packages with updated pricing
         packages = [
             {
                 'name': 'Starter Package',
@@ -23,7 +23,7 @@ class Command(BaseCommand):
             {
                 'name': 'Popular Package',
                 'price': 9.99,
-                'regular_likes': 120,
+                'regular_likes': 110,
                 'super_likes': 15,
                 'boosters': 2,
                 'description': 'Improved profile display - Most popular choice among students',
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             {
                 'name': 'Premium Package',
                 'price': 19.99,
-                'regular_likes': 300,
+                'regular_likes': 250,
                 'super_likes': 30,
                 'boosters': 5,
                 'description': 'Premium Profile View - Exclusive pricing options and maximum visibility',

@@ -18,7 +18,7 @@ class LikePackage(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"{self.name} - ₵{self.price}"
+        return f"{self.name} - €{self.price}"
 
 class Purchase(models.Model):
     STATUS_CHOICES = [
@@ -37,7 +37,7 @@ class Purchase(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
-        return f"{self.user.username} - {self.package.name} - ₵{self.amount}"
+        return f"{self.user.username} - {self.package.name} - €{self.amount}"
 
 # Disabled - likes are now handled in the payment views to support gift purchases
 # @receiver(post_save, sender=Purchase)
