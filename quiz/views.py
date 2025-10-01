@@ -32,7 +32,15 @@ def get_daily_quiz(request):
         response = UserQuizResponse.objects.get(user=request.user, question=question)
         return JsonResponse({
             'already_answered': True,
+            'question_id': question.id,
             'question': question.text,
+            'category': question.get_category_display(),
+            'difficulty': question.get_difficulty_display(),
+            'points_value': question.points_value,
+            'choices': [
+                {'id': choice.id, 'text': choice.text, 'order': choice.order}
+                for choice in question.choices.all().order_by('order')
+            ],
             'user_choice': response.selected_choice.text,
             'correct_choice': question.choices.get(is_correct=True).text,
             'is_correct': response.is_correct,

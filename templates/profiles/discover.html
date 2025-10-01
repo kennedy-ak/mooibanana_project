@@ -309,6 +309,24 @@
 
 {% block scripts %}
 <script>
+// Global quiz functions will be defined in DOMContentLoaded
+
+// Cookie helper function
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 // Daily Quiz functionality
 document.addEventListener('DOMContentLoaded', function() {
     loadDailyQuiz();
@@ -345,6 +363,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function displayQuiz(quizData) {
+        console.log('Displaying quiz data:', quizData);
+        
         const quizHTML = `
             <div class="quiz-question">
                 <h6 class="mb-3">${quizData.question}</h6>
@@ -353,11 +373,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="badge bg-info me-2">${quizData.difficulty}</span>
                     <span class="badge bg-success">${quizData.points_value} ${quizData.points_value === 1 ? 'point' : 'points'}</span>
                 </div>
-                <div class="quiz-choices">
+                <div class="quiz-choices" id="quizChoices">
                     ${quizData.choices.map(choice => `
                         <button class="btn btn-outline-primary w-100 mb-2 quiz-choice" 
                                 data-choice-id="${choice.id}" 
-                                data-question-id="${quizData.question_id}">
+                                data-question-id="${quizData.question_id}"
+                                ${quizData.already_answered ? 'disabled' : ''}>
                             ${choice.text}
                         </button>
                     `).join('')}
@@ -365,14 +386,32 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        document.getElementById('quizInnerContent').innerHTML = quizHTML;
+        const quizContent = document.getElementById('quizInnerContent');
+        if (!quizContent) {
+            console.error('Quiz content element not found!');
+            return;
+        }
+        
+        quizContent.innerHTML = quizHTML;
+        console.log('Quiz HTML rendered successfully');
         
         // Add click handlers to choices
-        document.querySelectorAll('.quiz-choice').forEach(button => {
-            button.addEventListener('click', function() {
-                submitQuizAnswer(this.dataset.questionId, this.dataset.choiceId);
+        if (!quizData.already_answered) {
+            const choices = document.querySelectorAll('.quiz-choice');
+            choices.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Choice clicked:', this.dataset);
+                    const qId = this.dataset.questionId;
+                    const cId = this.dataset.choiceId;
+                    if (qId && cId) {
+                        submitQuizAnswer(qId, cId);
+                    } else {
+                        console.error('Missing question or choice ID:', this.dataset);
+                    }
+                });
             });
-        });
+        }
     }
     
     function displayQuizResult(resultData) {
@@ -423,26 +462,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function submitQuizAnswer(questionId, choiceId) {
-        // Disable all choice buttons
-        document.querySelectorAll('.quiz-choice').forEach(btn => {
+        console.log('Submitting answer:', { questionId, choiceId });
+        
+        // Disable all choice buttons for this user's session only
+        const quizChoices = document.querySelectorAll('.quiz-choice');
+        quizChoices.forEach(btn => {
             btn.disabled = true;
             btn.classList.add('disabled');
         });
         
         // Get CSRF token from the meta tag first, then fall back to cookie
-        let csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-        if (!csrfToken) {
-            csrfToken = getCookie('csrftoken');
-        }
-
+        const metaToken = document.querySelector('meta[name="csrf-token"]');
+        let csrfToken = metaToken ? metaToken.content : getCookie('csrftoken');
+        
         if (!csrfToken) {
             console.error('No CSRF token found');
-            document.getElementById('quizContent').innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    CSRF token not found. Please refresh the page and try again.
-                </div>
-            `;
+            alert('CSRF token not found. Please refresh the page and try again.');
+            quizChoices.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            });
             return;
         }
         
@@ -450,27 +489,34 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 question_id: questionId,
                 choice_id: choiceId
-            })
+            }),
+            credentials: 'same-origin'
         })
         .then(response => {
-            console.log('Response status:', response.status); // Debug log
+            console.log('Response received:', response.status, response.statusText);
             if (!response.ok) {
-                if (response.status === 403) {
-                    throw new Error('CSRF token error. Please refresh the page and try again.');
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
+                return response.text().then(text => {
+                    if (response.status === 403) {
+                        throw new Error('CSRF token error. Please refresh the page and try again.');
+                    }
+                    throw new Error(`Server error (${response.status}): ${text || response.statusText}`);
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
                 // Update points display
-                document.getElementById('userPoints').textContent = `${data.total_points} pts`;
+                const pointsElement = document.getElementById('userPoints');
+                if (pointsElement) {
+                    pointsElement.textContent = `${data.total_points} pts`;
+                }
                 
                 // Show result
                 displayQuizResult({
@@ -484,8 +530,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 alert('Error: ' + data.error);
-                // Re-enable buttons
-                document.querySelectorAll('.quiz-choice').forEach(btn => {
+                // Re-enable buttons only if submission failed
+                quizChoices.forEach(btn => {
                     btn.disabled = false;
                     btn.classList.remove('disabled');
                 });
@@ -494,8 +540,8 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error submitting answer:', error);
             alert('Failed to submit answer: ' + error.message);
-            // Re-enable buttons
-            document.querySelectorAll('.quiz-choice').forEach(btn => {
+            // Re-enable buttons only on error
+            quizChoices.forEach(btn => {
                 btn.disabled = false;
                 btn.classList.remove('disabled');
             });

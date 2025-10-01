@@ -1451,35 +1451,7 @@
     });
     
     
-    // Real-time notifications (using HTTP polling instead of WebSocket)
-    let notificationPollingInterval = null;
-
-    function startNotificationPolling() {
-        // Poll for notifications every 30 seconds
-        notificationPollingInterval = setInterval(() => {
-            loadNotifications();
-        }, 30000);
-    }
-
-    function loadNotifications() {
-        // Try to fetch notification count, but don't error if endpoint doesn't exist
-        fetch('/notifications/api/count/')
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Endpoint not available');
-                }
-            })
-            .then(data => {
-                updateNotificationCount(data.count || 0);
-            })
-            .catch(error => {
-                // Silently fail if notification API is not implemented
-                console.log('Notification polling not available:', error.message);
-                updateNotificationCount(0);
-            });
-    }
+    // Notification functionality disabled - no API polling
 
     function updateNotificationCount(count) {
         const countBadge = document.getElementById('notification-count');
@@ -1611,10 +1583,9 @@
         });
     }
 
-    // Start notification polling on page load
+    // Start page initialization
     document.addEventListener('DOMContentLoaded', function() {
-        loadNotifications();
-        startNotificationPolling();
+        // Notification polling disabled
         
         // Sync breadcrumbs between desktop and mobile views
         syncBreadcrumbs();

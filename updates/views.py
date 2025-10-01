@@ -7,6 +7,8 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import timedelta
 from .models import TextUpdate
 import json
 
@@ -14,8 +16,12 @@ class UpdatesFeedView(View):
     """API endpoint to fetch updates for the sliding feed"""
     
     def get(self, request):
-        # Get latest 20 active updates
-        updates = TextUpdate.objects.filter(is_active=True)[:20]
+        # Get latest 20 active updates from the last 24 hours only
+        twenty_four_hours_ago = timezone.now() - timedelta(hours=24)
+        updates = TextUpdate.objects.filter(
+            is_active=True,
+            created_at__gte=twenty_four_hours_ago
+        )[:20]
         
         data = [{
             'id': update.id,
