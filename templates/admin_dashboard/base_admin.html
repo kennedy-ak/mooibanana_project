@@ -127,6 +127,11 @@
                                 <i class="fas fa-chart-line"></i>
                                 Analytics
                             </a>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'quiz_management' %}active{% endif %}" 
+                               href="{% url 'admin_dashboard:quiz_management' %}">
+                                <i class="fas fa-brain"></i>
+                                Quiz Management
+                            </a>
                             <a class="nav-link" href="{% url 'admin:index' %}">
                                 <i class="fas fa-cog"></i>
                                 Django Admin

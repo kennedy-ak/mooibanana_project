@@ -1,0 +1,436 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}Quiz Management - Admin Dashboard{% endblock %}
+{% block page_title %}Quiz Management{% endblock %}
+{% block page_subtitle %}Manage questions, view statistics, and control daily quizzes{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary-gradient me-3">
+                    <i class="fas fa-question-circle"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_questions }}</h3>
+                    <p class="text-muted mb-0">Total Questions</p>
+                    <small class="text-success">{{ active_questions }} active</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success-gradient me-3">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_responses }}</h3>
+                    <p class="text-muted mb-0">Total Responses</p>
+                    <small class="text-info">{{ correct_responses }} correct</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning-gradient me-3">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ accuracy_rate }}%</h3>
+                    <p class="text-muted mb-0">Accuracy Rate</p>
+                    <small class="text-muted">Overall average</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-info-gradient me-3">
+                    <i class="fas fa-calendar-day"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">
+                        {% if daily_quiz_today %}
+                            <i class="fas fa-check text-success"></i>
+                        {% else %}
+                            <i class="fas fa-times text-danger"></i>
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted mb-0">Daily Quiz</p>
+                    <small class="text-muted">
+                        {% if daily_quiz_today %}Set for today{% else %}Not set{% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Question Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus-circle text-success me-2"></i>
+                    Create New Question
+                </h5>
+                <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#createQuestionForm" aria-expanded="false">
+                    <i class="fas fa-chevron-down"></i> Toggle Form
+                </button>
+            </div>
+            
+            <div class="collapse" id="createQuestionForm">
+                <form method="post" action="{% url 'admin_dashboard:create_question' %}">
+                    {% csrf_token %}
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label for="question_text" class="form-label">Question Text</label>
+                            <textarea class="form-control" id="question_text" name="question_text" rows="3" required placeholder="Enter your question here..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label for="category" class="form-label">Category</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="general">General Knowledge</option>
+                                <option value="science">Science</option>
+                                <option value="history">History</option>
+                                <option value="sports">Sports</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="geography">Geography</option>
+                                <option value="literature">Literature</option>
+                                <option value="technology">Technology</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="difficulty" class="form-label">Difficulty</label>
+                            <select class="form-select" id="difficulty" name="difficulty" required>
+                                <option value="easy">Easy (1 point)</option>
+                                <option value="medium" selected>Medium (2 points)</option>
+                                <option value="hard">Hard (3+ points)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="points_value" class="form-label">Points Value</label>
+                            <input type="number" class="form-control" id="points_value" name="points_value" min="1" max="10" value="2" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="choice_0" class="form-label">Choice A</label>
+                            <input type="text" class="form-control" id="choice_0" name="choice_0" required placeholder="First choice">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="choice_1" class="form-label">Choice B</label>
+                            <input type="text" class="form-control" id="choice_1" name="choice_1" required placeholder="Second choice">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="choice_2" class="form-label">Choice C</label>
+                            <input type="text" class="form-control" id="choice_2" name="choice_2" placeholder="Third choice (optional)">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="choice_3" class="form-label">Choice D</label>
+                            <input type="text" class="form-control" id="choice_3" name="choice_3" placeholder="Fourth choice (optional)">
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Correct Answer</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="correct_choice" id="correct_0" value="0" checked>
+                                <label class="form-check-label" for="correct_0">Choice A</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="correct_choice" id="correct_1" value="1">
+                                <label class="form-check-label" for="correct_1">Choice B</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="correct_choice" id="correct_2" value="2">
+                                <label class="form-check-label" for="correct_2">Choice C</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="correct_choice" id="correct_3" value="3">
+                                <label class="form-check-label" for="correct_3">Choice D</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Create Question
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Charts -->
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-chart-pie text-primary me-2"></i>
+                Questions by Category
+            </h5>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-chart-bar text-warning me-2"></i>
+                Questions by Difficulty
+            </h5>
+            <div class="chart-container">
+                <canvas id="difficultyChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Quiz Section -->
+{% if daily_quiz_today %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-star text-warning me-2"></i>
+                Today's Daily Quiz
+            </h5>
+            <div class="alert alert-info">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <strong>{{ daily_quiz_today.question.text }}</strong>
+                        <br>
+                        <small class="text-muted">
+                            Category: {{ daily_quiz_today.question.get_category_display }} | 
+                            Difficulty: {{ daily_quiz_today.question.get_difficulty_display }} | 
+                            Points: {{ daily_quiz_today.question.points_value }}
+                        </small>
+                        <br>
+                        <small class="text-muted">
+                            Responses: {{ daily_quiz_today.total_responses }} | 
+                            Accuracy: {{ daily_quiz_today.accuracy_percentage }}%
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Questions -->
+<div class="row">
+    <div class="col-12">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-list text-info me-2"></i>
+                Recent Questions
+            </h5>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Question</th>
+                            <th>Category</th>
+                            <th>Difficulty</th>
+                            <th>Points</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for question in recent_questions %}
+                        <tr>
+                            <td>
+                                <strong>{{ question.text|truncatechars:60 }}</strong>
+                                {% if question.created_by %}
+                                    <br><small class="text-muted">by {{ question.created_by.username }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ question.get_category_display }}</span>
+                            </td>
+                            <td>
+                                <span class="badge {% if question.difficulty == 'easy' %}bg-success{% elif question.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ question.get_difficulty_display }}
+                                </span>
+                            </td>
+                            <td>{{ question.points_value }}</td>
+                            <td>
+                                {% if question.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ question.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'admin_dashboard:toggle_question_status' question.id %}" 
+                                       class="btn btn-sm {% if question.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}"
+                                       title="{% if question.is_active %}Deactivate{% else %}Activate{% endif %}">
+                                        <i class="fas {% if question.is_active %}fa-pause{% else %}fa-play{% endif %}"></i>
+                                    </a>
+                                    {% if question.is_active %}
+                                    <a href="{% url 'admin_dashboard:set_daily_quiz' question.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="Set as Daily Quiz">
+                                        <i class="fas fa-star"></i>
+                                    </a>
+                                    {% endif %}
+                                    <form method="post" action="{% url 'admin_dashboard:delete_question' question.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Are you sure you want to delete this question?')"
+                                                title="Delete Question">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">No questions found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Category Chart
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+const categoryData = {
+    labels: [
+        {% for category in category_stats %}
+        '{{ category.category|capfirst }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for category in category_stats %}
+            {{ category.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: [
+            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', 
+            '#00f2fe', '#43e97b', '#38f9d7'
+        ],
+        borderWidth: 0
+    }]
+};
+
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: categoryData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    font: {
+                        size: 12
+                    }
+                }
+            }
+        },
+        layout: {
+            padding: 10
+        }
+    }
+});
+
+// Difficulty Chart
+const difficultyCtx = document.getElementById('difficultyChart').getContext('2d');
+const difficultyData = {
+    labels: [
+        {% for difficulty in difficulty_stats %}
+        '{{ difficulty.difficulty|capfirst }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    datasets: [{
+        data: [
+            {% for difficulty in difficulty_stats %}
+            {{ difficulty.count }}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ],
+        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+        borderWidth: 0
+    }]
+};
+
+new Chart(difficultyCtx, {
+    type: 'bar',
+    data: difficultyData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        layout: {
+            padding: 10
+        }
+    }
+});
+
+// Form validation
+document.getElementById('createQuestionForm').addEventListener('submit', function(e) {
+    const choices = [
+        document.getElementById('choice_0').value.trim(),
+        document.getElementById('choice_1').value.trim(),
+        document.getElementById('choice_2').value.trim(),
+        document.getElementById('choice_3').value.trim()
+    ];
+    
+    const filledChoices = choices.filter(choice => choice !== '');
+    
+    if (filledChoices.length < 2) {
+        e.preventDefault();
+        alert('Please provide at least 2 choices for the question.');
+        return false;
+    }
+});
+</script>
+{% endblock %}

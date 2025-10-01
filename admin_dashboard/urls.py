@@ -11,4 +11,9 @@ urlpatterns = [
     path('users/<int:user_id>/delete/', views.delete_user_profile, name='delete_user'),
     path('analytics/', views.platform_analytics, name='analytics'),
     path('export/', views.export_data, name='export_data'),
+    path('quiz/', views.quiz_management, name='quiz_management'),
+    path('quiz/create/', views.create_question, name='create_question'),
+    path('quiz/<int:question_id>/delete/', views.delete_question, name='delete_question'),
+    path('quiz/<int:question_id>/toggle/', views.toggle_question_status, name='toggle_question_status'),
+    path('quiz/<int:question_id>/set-daily/', views.set_daily_quiz, name='set_daily_quiz'),
 ]

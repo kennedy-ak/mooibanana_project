@@ -39,6 +39,7 @@ urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('updates/', include('updates.urls')),
     path('advertisements/', include('advertisements.urls')),
+    path('quiz/', include('quiz.urls')),
 ]
 
 if settings.DEBUG:

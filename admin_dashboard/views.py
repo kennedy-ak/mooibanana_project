@@ -17,6 +17,7 @@ from django.contrib.auth import get_user_model
 from profiles.models import Profile
 from notifications.models import Notification
 from likes.models import Like
+from quiz.models import Question, Choice, UserQuizResponse, DailyQuiz
 
 # Import models that might not exist
 try:
@@ -314,3 +315,167 @@ def export_data(request):
             ])
     
     return response
+
+
+@user_passes_test(is_superuser)
+def quiz_management(request):
+    """Quiz management dashboard for admins"""
+    
+    # Quiz statistics
+    total_questions = Question.objects.count()
+    active_questions = Question.objects.filter(is_active=True).count()
+    total_responses = UserQuizResponse.objects.count()
+    correct_responses = UserQuizResponse.objects.filter(is_correct=True).count()
+    
+    # Category statistics
+    category_stats = Question.objects.values('category').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    # Difficulty statistics
+    difficulty_stats = Question.objects.values('difficulty').annotate(
+        count=Count('id')
+    ).order_by('-count')
+    
+    # Recent questions
+    recent_questions = Question.objects.select_related('created_by').order_by('-created_at')[:10]
+    
+    # Daily quiz stats
+    today = timezone.now().date()
+    daily_quiz_today = DailyQuiz.objects.filter(date=today).first()
+    
+    # Response rate over last 7 days
+    week_ago = today - timedelta(days=7)
+    weekly_responses = UserQuizResponse.objects.filter(
+        answered_at__gte=week_ago
+    ).extra(
+        select={'day': 'date(answered_at)'}
+    ).values('day').annotate(
+        count=Count('id'),
+        correct=Count('id', filter=Q(is_correct=True))
+    ).order_by('day')
+    
+    # Top performing questions (highest accuracy)
+    top_questions = Question.objects.annotate(
+        total_responses=Count('user_responses'),
+        correct_responses=Count('user_responses', filter=Q(user_responses__is_correct=True))
+    ).filter(total_responses__gt=0).extra(
+        select={'accuracy': 'CASE WHEN total_responses > 0 THEN (correct_responses * 100.0 / total_responses) ELSE 0 END'}
+    ).order_by('-accuracy')[:5]
+    
+    context = {
+        'total_questions': total_questions,
+        'active_questions': active_questions,
+        'total_responses': total_responses,
+        'correct_responses': correct_responses,
+        'accuracy_rate': round((correct_responses / total_responses * 100) if total_responses > 0 else 0, 2),
+        'category_stats': category_stats,
+        'difficulty_stats': difficulty_stats,
+        'recent_questions': recent_questions,
+        'daily_quiz_today': daily_quiz_today,
+        'weekly_responses': list(weekly_responses),
+        'top_questions': top_questions,
+    }
+    
+    return render(request, 'admin_dashboard/quiz_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def create_question(request):
+    """Create a new quiz question"""
+    if request.method == 'POST':
+        try:
+            # Get form data
+            question_text = request.POST.get('question_text', '').strip()
+            category = request.POST.get('category', 'general')
+            difficulty = request.POST.get('difficulty', 'medium')
+            points_value = int(request.POST.get('points_value', 1))
+            
+            # Get choices
+            choices_data = []
+            correct_choice_index = int(request.POST.get('correct_choice', 0))
+            
+            for i in range(4):  # 4 choices
+                choice_text = request.POST.get(f'choice_{i}', '').strip()
+                if choice_text:
+                    choices_data.append({
+                        'text': choice_text,
+                        'is_correct': i == correct_choice_index,
+                        'order': i + 1
+                    })
+            
+            # Validation
+            if not question_text:
+                messages.error(request, 'Question text is required.')
+                return redirect('admin_dashboard:quiz_management')
+            
+            if len(choices_data) < 2:
+                messages.error(request, 'At least 2 choices are required.')
+                return redirect('admin_dashboard:quiz_management')
+            
+            # Create question
+            question = Question.objects.create(
+                text=question_text,
+                category=category,
+                difficulty=difficulty,
+                points_value=points_value,
+                created_by=request.user
+            )
+            
+            # Create choices
+            for choice_data in choices_data:
+                Choice.objects.create(
+                    question=question,
+                    text=choice_data['text'],
+                    is_correct=choice_data['is_correct'],
+                    order=choice_data['order']
+                )
+            
+            messages.success(request, f'Question "{question_text[:50]}..." created successfully!')
+            
+        except Exception as e:
+            messages.error(request, f'Error creating question: {str(e)}')
+    
+    return redirect('admin_dashboard:quiz_management')
+
+
+@user_passes_test(is_superuser)
+def delete_question(request, question_id):
+    """Delete a quiz question"""
+    question = get_object_or_404(Question, id=question_id)
+    
+    if request.method == 'POST':
+        question_text = question.text[:50]
+        question.delete()
+        messages.success(request, f'Question "{question_text}..." deleted successfully!')
+    
+    return redirect('admin_dashboard:quiz_management')
+
+
+@user_passes_test(is_superuser)
+def toggle_question_status(request, question_id):
+    """Toggle question active/inactive status"""
+    question = get_object_or_404(Question, id=question_id)
+    question.is_active = not question.is_active
+    question.save()
+    
+    status = "activated" if question.is_active else "deactivated"
+    messages.success(request, f'Question "{question.text[:50]}..." {status}!')
+    
+    return redirect('admin_dashboard:quiz_management')
+
+
+@user_passes_test(is_superuser)
+def set_daily_quiz(request, question_id):
+    """Set a specific question as today's daily quiz"""
+    question = get_object_or_404(Question, id=question_id, is_active=True)
+    today = timezone.now().date()
+    
+    # Remove existing daily quiz for today
+    DailyQuiz.objects.filter(date=today).delete()
+    
+    # Create new daily quiz
+    DailyQuiz.objects.create(question=question, date=today)
+    
+    messages.success(request, f'Question "{question.text[:50]}..." set as today\'s daily quiz!')
+    return redirect('admin_dashboard:quiz_management')

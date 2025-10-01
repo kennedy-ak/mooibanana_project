@@ -116,7 +116,24 @@
                 </div>
             </div>
 
-
+            <!-- Daily Quiz Widget -->
+            <div class="card border-0 shadow-lg mb-4" id="dailyQuizWidget">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-brain me-2"></i>Daily Knowledge Quiz
+                    </h5>
+                    <span class="badge bg-light text-primary" id="userPoints">{{ user.points_balance }} pts</span>
+                </div>
+                <div class="card-body">
+                    <div id="quizContent">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading quiz...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
         <!-- 2x2 Grid Layout for larger screens, single column for mobile -->
         <div class="row">
@@ -279,6 +296,168 @@
 
 {% block scripts %}
 <script>
+// Daily Quiz functionality
+document.addEventListener('DOMContentLoaded', function() {
+    loadDailyQuiz();
+    
+    function loadDailyQuiz() {
+        fetch('/quiz/daily/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('quizContent').innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            ${data.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (data.already_answered) {
+                    displayQuizResult(data);
+                } else {
+                    displayQuiz(data);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading quiz:', error);
+                document.getElementById('quizContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        Failed to load quiz. Please try again later.
+                    </div>
+                `;
+            });
+    }
+    
+    function displayQuiz(quizData) {
+        const quizHTML = `
+            <div class="quiz-question">
+                <h6 class="mb-3">${quizData.question}</h6>
+                <div class="quiz-meta mb-3">
+                    <span class="badge bg-secondary me-2">${quizData.category}</span>
+                    <span class="badge bg-info me-2">${quizData.difficulty}</span>
+                    <span class="badge bg-success">${quizData.points_value} ${quizData.points_value === 1 ? 'point' : 'points'}</span>
+                </div>
+                <div class="quiz-choices">
+                    ${quizData.choices.map(choice => `
+                        <button class="btn btn-outline-primary w-100 mb-2 quiz-choice" 
+                                data-choice-id="${choice.id}" 
+                                data-question-id="${quizData.question_id}">
+                            ${choice.text}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('quizContent').innerHTML = quizHTML;
+        
+        // Add click handlers to choices
+        document.querySelectorAll('.quiz-choice').forEach(button => {
+            button.addEventListener('click', function() {
+                submitQuizAnswer(this.dataset.questionId, this.dataset.choiceId);
+            });
+        });
+    }
+    
+    function displayQuizResult(resultData) {
+        const resultHTML = `
+            <div class="quiz-result">
+                <h6 class="mb-3">${resultData.question}</h6>
+                <div class="alert ${resultData.is_correct ? 'alert-success' : 'alert-danger'}">
+                    <div class="d-flex align-items-center">
+                        <i class="fas ${resultData.is_correct ? 'fa-check-circle' : 'fa-times-circle'} me-2"></i>
+                        <div>
+                            <strong>${resultData.is_correct ? 'Correct!' : 'Incorrect'}</strong>
+                            ${resultData.is_correct ? 
+                                `<br><small>You earned ${resultData.points_earned} ${resultData.points_earned === 1 ? 'point' : 'points'}!</small>` : 
+                                `<br><small>The correct answer was: ${resultData.correct_choice}</small>`
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="quiz-stats mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-chart-line me-1"></i>
+                        Today's accuracy: ${resultData.accuracy}%
+                    </small>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('quizContent').innerHTML = resultHTML;
+    }
+    
+    function submitQuizAnswer(questionId, choiceId) {
+        // Disable all choice buttons
+        document.querySelectorAll('.quiz-choice').forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('disabled');
+        });
+        
+        fetch('/quiz/submit/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                question_id: questionId,
+                choice_id: choiceId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update points display
+                document.getElementById('userPoints').textContent = `${data.total_points} pts`;
+                
+                // Show result
+                displayQuizResult({
+                    question: document.querySelector('.quiz-question h6').textContent,
+                    is_correct: data.is_correct,
+                    points_earned: data.points_earned,
+                    correct_choice: data.correct_choice,
+                    accuracy: data.accuracy
+                });
+            } else {
+                alert('Error: ' + data.error);
+                // Re-enable buttons
+                document.querySelectorAll('.quiz-choice').forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('disabled');
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting answer:', error);
+            alert('Failed to submit answer. Please try again.');
+            // Re-enable buttons
+            document.querySelectorAll('.quiz-choice').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('disabled');
+            });
+        });
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+
 // Auto-submit search form when study field changes
 document.addEventListener('DOMContentLoaded', function() {
     const studyField = document.getElementById('id_study_field');
@@ -761,6 +940,55 @@ document.addEventListener('DOMContentLoaded', function() {
     border-radius: 10px;
     font-size: 10px;
     z-index: 10;
+}
+
+/* Quiz Widget Styles */
+#dailyQuizWidget {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#dailyQuizWidget .card-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+.quiz-choice {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: left;
+    border: 2px solid #dee2e6;
+}
+
+.quiz-choice:hover {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+.quiz-choice:disabled {
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+.quiz-meta .badge {
+    font-size: 0.75rem;
+    padding: 0.5em 0.75em;
+}
+
+.quiz-result .alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.quiz-stats {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 6px;
 }
 </style>
 

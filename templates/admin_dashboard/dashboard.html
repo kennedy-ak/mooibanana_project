@@ -140,7 +140,9 @@
                 <i class="fas fa-chart-pie text-primary me-2"></i>
                 Popular Study Fields
             </h5>
-            <canvas id="studyFieldChart" width="400" height="200"></canvas>
+            <div class="chart-container">
+                <canvas id="studyFieldChart"></canvas>
+            </div>
         </div>
     </div>
     
@@ -287,10 +289,16 @@ new Chart(ctx, {
             legend: {
                 position: 'bottom',
                 labels: {
-                    padding: 20,
-                    usePointStyle: true
+                    padding: 15,
+                    usePointStyle: true,
+                    font: {
+                        size: 12
+                    }
                 }
             }
+        },
+        layout: {
+            padding: 10
         }
     }
 });

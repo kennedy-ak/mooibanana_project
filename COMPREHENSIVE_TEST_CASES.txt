@@ -1,0 +1,555 @@
+# MOOIBANANA DATING APPLICATION - COMPREHENSIVE TEST CASES
+
+## 1. AUTHENTICATION & USER MANAGEMENT TESTS
+
+### 1.1 User Registration Tests
+- REG-001: Valid user registration with all required fields
+- REG-002: Registration with existing email address (should fail)
+- REG-003: Registration with invalid email format
+- REG-004: Registration with weak password (test password validators)
+- REG-005: Registration with referral code (verify points awarded)
+- REG-006: Registration with invalid referral code
+- REG-007: Registration with student email domain (auto-detection)
+- REG-008: Registration with non-student email domain
+- REG-009: SQL injection attempts in registration fields
+- REG-010: XSS attempts in username/email fields
+- REG-011: Rate limiting test - multiple rapid registrations
+- REG-012: Registration with extremely long field values
+- REG-013: Registration with Unicode/special characters
+- REG-014: Email verification process after registration
+- REG-015: Auto-login functionality after successful registration
+
+### 1.2 Login/Logout Tests
+- AUTH-001: Valid login with email and password
+- AUTH-002: Login with invalid email
+- AUTH-003: Login with valid email but wrong password
+- AUTH-004: Login with non-existent user
+- AUTH-005: Session persistence after login
+- AUTH-006: Logout functionality and session cleanup
+- AUTH-007: Login redirect to intended page after authentication
+- AUTH-008: Brute force attack protection
+- AUTH-009: SQL injection in login fields
+- AUTH-010: Case sensitivity in email login
+- AUTH-011: Login with deactivated user account
+- AUTH-012: Concurrent login sessions handling
+
+### 1.3 Password Reset Tests
+- PWD-001: Password reset with valid email
+- PWD-002: Password reset with non-existent email
+- PWD-003: Password reset email delivery (SMTP)
+- PWD-004: Password reset email delivery (console fallback)
+- PWD-005: Password reset token validation
+- PWD-006: Expired password reset token
+- PWD-007: Used password reset token (should be invalid)
+- PWD-008: Password reset with new valid password
+- PWD-009: Password reset with weak password
+- PWD-010: Rate limiting on password reset requests
+- PWD-011: Password reset email HTML/text formats
+
+### 1.4 Referral System Tests
+- REF-001: Referral code generation uniqueness
+- REF-002: Referral link generation and sharing
+- REF-003: Successful referral completion and point awarding
+- REF-004: Referral dashboard statistics accuracy
+- REF-005: Duplicate referral prevention
+- REF-006: Self-referral prevention
+- REF-007: Referral point calculation (50 points per referral)
+- REF-008: Referral status tracking (pending/completed/cancelled)
+- REF-009: Referral code enumeration attack prevention
+- REF-010: Referral point balance integrity
+
+## 2. PROFILE MANAGEMENT TESTS
+
+### 2.1 Profile Creation Tests
+- PROF-001: Complete profile creation with all fields
+- PROF-002: Profile creation with minimum required fields
+- PROF-003: Profile creation without required fields (validation)
+- PROF-004: Bio field with maximum character limit (500)
+- PROF-005: Interest tags validation and parsing
+- PROF-006: Study field selection validation
+- PROF-007: Academic year selection validation
+- PROF-008: Birth date validation and age calculation
+- PROF-009: GPS coordinates validation (latitude/longitude)
+- PROF-010: Profile completeness status calculation
+- PROF-011: XSS injection in bio and interest fields
+- PROF-012: SQL injection in profile fields
+- PROF-013: Unicode and special character handling
+- PROF-014: Profile creation for student vs non-student users
+
+### 2.2 Photo Upload Tests
+- PHOTO-001: Valid image upload (JPG/PNG/GIF)
+- PHOTO-002: Invalid file type upload (should fail)
+- PHOTO-003: Image resizing functionality (300x300 for profile, 800x800 for additional)
+- PHOTO-004: Maximum photos limit (6 photos total)
+- PHOTO-005: Photo ordering and reordering
+- PHOTO-006: Photo deletion functionality
+- PHOTO-007: Large file size upload (test limits)
+- PHOTO-008: Malicious file upload (executable disguised as image)
+- PHOTO-009: File path traversal attack prevention
+- PHOTO-010: Photo storage and URL generation
+- PHOTO-011: Primary photo vs additional photos logic
+- PHOTO-012: Photo compression quality
+- PHOTO-013: Simultaneous photo uploads
+- PHOTO-014: Photo upload during profile editing
+
+### 2.3 Profile Discovery Tests
+- DISC-001: Basic profile discovery without filters
+- DISC-002: Age range filtering (18-30)
+- DISC-003: Location-based filtering and distance calculation
+- DISC-004: Study field filtering
+- DISC-005: Interest-based matching
+- DISC-006: School/university filtering
+- DISC-007: Combined multiple filters
+- DISC-008: Distance calculation accuracy (Haversine formula)
+- DISC-009: Profile exclusion logic (unliked profiles)
+- DISC-010: Cache performance (5-minute cache testing)
+- DISC-011: Pagination of discovery results
+- DISC-012: Empty results handling
+- DISC-013: SQL injection in search parameters
+- DISC-014: Performance with large user datasets
+- DISC-015: Geographic boundary testing (edge coordinates)
+
+### 2.4 Profile Viewing Tests
+- VIEW-001: Own profile viewing
+- VIEW-002: Other user profile viewing
+- VIEW-003: Non-existent profile handling (404)
+- VIEW-004: Profile privacy and visibility
+- VIEW-005: Profile photo gallery display
+- VIEW-006: Age calculation display
+- VIEW-007: Distance calculation display
+- VIEW-008: Interest tags display
+- VIEW-009: Study information display
+- VIEW-010: Profile completeness indicator
+- VIEW-011: Unauthorized profile access prevention
+
+## 3. LIKE/UNLIKE SYSTEM TESTS
+
+### 3.1 Like Functionality Tests
+- LIKE-001: Send regular like with sufficient balance
+- LIKE-002: Send super like with sufficient balance
+- LIKE-003: Like with insufficient balance (should fail)
+- LIKE-004: Multiple likes to same user (accumulation)
+- LIKE-005: Self-like prevention
+- LIKE-006: Mutual like detection and matching
+- LIKE-007: Like amount validation (minimum 1)
+- LIKE-008: Like amount upper limits testing
+- LIKE-009: Balance deduction after sending likes
+- LIKE-010: Points award system (sender: 5/10, receiver: 10/20)
+- LIKE-011: Mutual like bonus points (25 each)
+- LIKE-012: Like notification creation
+- LIKE-013: SQL injection in like parameters
+- LIKE-014: Integer overflow in like amounts
+- LIKE-015: Concurrent like operations
+- LIKE-016: Like history and tracking
+
+### 3.2 Unlike Functionality Tests
+- UNLIKE-001: Send unlike with sufficient balance
+- UNLIKE-002: Unlike with insufficient balance (should fail)
+- UNLIKE-003: Multiple unlikes to same user (accumulation)
+- UNLIKE-004: Unlike amount validation
+- UNLIKE-005: Profile exclusion after unlike
+- UNLIKE-006: Unlike notification creation
+- UNLIKE-007: Balance deduction after unlike
+- UNLIKE-008: Unlike unique constraint testing
+- UNLIKE-009: Unlike of non-existent user
+- UNLIKE-010: Concurrent unlike operations
+
+### 3.3 Match System Tests
+- MATCH-001: Automatic match creation on mutual likes
+- MATCH-002: Match uniqueness (no duplicate matches)
+- MATCH-003: Match notification creation
+- MATCH-004: Chat room creation for matches
+- MATCH-005: Match history viewing
+- MATCH-006: Match deletion/unmatch functionality
+- MATCH-007: Match statistics tracking
+- MATCH-008: Performance with high match volume
+
+## 4. PAYMENT SYSTEM TESTS
+
+### 4.1 Package Management Tests
+- PKG-001: Package listing display
+- PKG-002: Package pricing display (Ghana Cedis)
+- PKG-003: Package content validation (likes, super likes, unlikes)
+- PKG-004: Active/inactive package filtering
+- PKG-005: Package JSON API functionality
+- PKG-006: Package selection validation
+
+### 4.2 Payment Processing Tests
+- PAY-001: Successful Paystack payment flow
+- PAY-002: Failed payment handling
+- PAY-003: Payment cancellation
+- PAY-004: Duplicate payment prevention
+- PAY-005: Invalid package ID handling
+- PAY-006: Insufficient payment amount
+- PAY-007: Payment reference generation and tracking
+- PAY-008: Balance update after successful payment
+- PAY-009: Payment confirmation email
+- PAY-010: Currency validation (GHS)
+- PAY-011: Payment timeout handling
+- PAY-012: Payment method validation
+
+### 4.3 Webhook Tests
+- HOOK-001: Valid Paystack webhook signature verification
+- HOOK-002: Invalid webhook signature rejection
+- HOOK-003: Webhook payload validation
+- HOOK-004: Duplicate webhook handling
+- HOOK-005: Payment status updates via webhook
+- HOOK-006: Webhook error handling and logging
+- HOOK-007: Webhook replay attack prevention
+- HOOK-008: Webhook race condition handling
+- HOOK-009: Malformed webhook payload handling
+- HOOK-010: High volume webhook processing
+
+### 4.4 Gift System Tests
+- GIFT-001: Gift package purchase flow
+- GIFT-002: Gift recipient validation
+- GIFT-003: Gift notification creation
+- GIFT-004: Gift balance distribution (regular to recipient, super to purchaser)
+- GIFT-005: Gift to non-existent user
+- GIFT-006: Self-gift prevention
+- GIFT-007: Gift history tracking
+- GIFT-008: Gift refund handling
+
+## 5. NOTIFICATION SYSTEM TESTS
+
+### 5.1 Notification Creation Tests
+- NOTIF-001: Match request notification creation
+- NOTIF-002: Like received notification creation
+- NOTIF-003: Message received notification creation
+- NOTIF-004: Gift received notification creation
+- NOTIF-005: Notification duplicate prevention
+- NOTIF-006: Notification content validation
+- NOTIF-007: Notification type validation
+- NOTIF-008: Batch notification creation
+
+### 5.2 Notification Management Tests
+- NOTIF-009: Notification list viewing
+- NOTIF-010: Mark notification as read
+- NOTIF-011: Notification status updates
+- NOTIF-012: Notification filtering and sorting
+- NOTIF-013: Unread notification count
+- NOTIF-014: Notification pagination
+- NOTIF-015: Old notification cleanup
+
+### 5.3 Match Request System Tests
+- MATCH-REQ-001: Send match request notification
+- MATCH-REQ-002: Accept match request
+- MATCH-REQ-003: Decline match request
+- MATCH-REQ-004: Duplicate match request prevention
+- MATCH-REQ-005: Match request to non-existent user
+- MATCH-REQ-006: Self-match request prevention
+- MATCH-REQ-007: Match request response validation
+- MATCH-REQ-008: Match request expiration
+- MATCH-REQ-009: Mutual like creation on acceptance
+- MATCH-REQ-010: Chat room creation on acceptance
+
+### 5.4 Real-time Notification Tests
+- RT-001: WebSocket connection establishment
+- RT-002: Real-time notification delivery
+- RT-003: WebSocket connection handling
+- RT-004: Multiple client notification broadcasting
+- RT-005: WebSocket error handling
+- RT-006: Connection timeout handling
+- RT-007: Notification queue management
+- RT-008: WebSocket authentication
+- RT-009: Connection limit testing
+- RT-010: Performance under high notification volume
+
+## 6. CHAT SYSTEM TESTS
+
+### 6.1 Chat Room Tests
+- CHAT-001: Chat room creation for matches
+- CHAT-002: Chat room participant validation
+- CHAT-003: Chat room access control
+- CHAT-004: Chat room listing
+- CHAT-005: Chat room last message display
+- CHAT-006: Chat room ordering by activity
+- CHAT-007: Empty chat room handling
+- CHAT-008: Chat room deletion on unmatch
+
+### 6.2 Messaging Tests
+- MSG-001: Send text message
+- MSG-002: Empty message prevention
+- MSG-003: Message length validation
+- MSG-004: Message content sanitization
+- MSG-005: Message timestamp accuracy
+- MSG-006: Message read status tracking
+- MSG-007: Message history retrieval
+- MSG-008: Message pagination
+- MSG-009: XSS prevention in messages
+- MSG-010: Unicode message support
+- MSG-011: Large message handling
+- MSG-012: Concurrent message sending
+
+### 6.3 Real-time Chat Tests
+- RTCHAT-001: Real-time message delivery
+- RTCHAT-002: Multiple participant messaging
+- RTCHAT-003: Message order preservation
+- RTCHAT-004: Connection recovery handling
+- RTCHAT-005: Typing indicators (if implemented)
+- RTCHAT-006: Message delivery confirmation
+- RTCHAT-007: Offline message handling
+- RTCHAT-008: Chat performance under load
+
+## 7. REWARDS SYSTEM TESTS
+
+### 7.1 Reward Management Tests
+- REW-001: Reward listing display
+- REW-002: Reward categorization (physical/digital/discount/experience)
+- REW-003: Reward point cost validation
+- REW-004: Reward stock quantity tracking
+- REW-005: Active/inactive reward filtering
+- REW-006: Reward image display
+
+### 7.2 Reward Claiming Tests
+- CLAIM-001: Reward claim with sufficient points
+- CLAIM-002: Reward claim with insufficient points (should fail)
+- CLAIM-003: Out of stock reward claim (should fail)
+- CLAIM-004: Inactive reward claim (should fail)
+- CLAIM-005: Points deduction after claim
+- CLAIM-006: Claim status tracking (pending/approved/shipped/delivered)
+- CLAIM-007: Delivery address validation
+- CLAIM-008: Claim history viewing
+- CLAIM-009: Duplicate claim prevention
+- CLAIM-010: Claim cancellation handling
+
+## 8. ADMIN DASHBOARD TESTS
+
+### 8.1 User Management Tests
+- ADMIN-001: User list display and pagination
+- ADMIN-002: User search and filtering
+- ADMIN-003: User detail viewing
+- ADMIN-004: User account status management
+- ADMIN-005: User activity monitoring
+- ADMIN-006: User deletion/deactivation
+- ADMIN-007: User balance adjustments
+- ADMIN-008: User profile moderation
+
+### 8.2 Analytics Tests
+- ANALYTICS-001: User registration statistics
+- ANALYTICS-002: Platform usage metrics
+- ANALYTICS-003: Financial transaction overview
+- ANALYTICS-004: User engagement tracking
+- ANALYTICS-005: Growth and retention metrics
+- ANALYTICS-006: Performance statistics
+- ANALYTICS-007: Revenue tracking
+- ANALYTICS-008: Geographic user distribution
+
+### 8.3 Content Moderation Tests
+- MOD-001: Profile review and approval
+- MOD-002: Content flagging system
+- MOD-003: Photo moderation tools
+- MOD-004: User behavior monitoring
+- MOD-005: Safety compliance checks
+- MOD-006: Spam detection and prevention
+
+## 9. SECURITY TESTS
+
+### 9.1 Authentication Security Tests
+- SEC-001: Session fixation prevention
+- SEC-002: CSRF protection on all forms
+- SEC-003: SQL injection prevention
+- SEC-004: XSS prevention across all inputs
+- SEC-005: Brute force attack protection
+- SEC-006: Password strength validation
+- SEC-007: Session timeout handling
+- SEC-008: Unauthorized access prevention
+
+### 9.2 Authorization Tests
+- AUTH-SEC-001: Horizontal privilege escalation prevention
+- AUTH-SEC-002: Vertical privilege escalation prevention
+- AUTH-SEC-003: Resource ownership validation
+- AUTH-SEC-004: API endpoint authorization
+- AUTH-SEC-005: Admin panel access control
+- AUTH-SEC-006: File access authorization
+
+### 9.3 Input Validation Security Tests
+- INPUT-001: File upload security (malicious files)
+- INPUT-002: File type validation bypass attempts
+- INPUT-003: Path traversal prevention
+- INPUT-004: Buffer overflow prevention
+- INPUT-005: Integer overflow handling
+- INPUT-006: NoSQL injection prevention
+- INPUT-007: Command injection prevention
+- INPUT-008: LDAP injection prevention
+
+### 9.4 Data Protection Tests
+- DATA-001: Password hashing verification
+- DATA-002: Sensitive data logging prevention
+- DATA-003: Personal data access control
+- DATA-004: Data encryption in transit
+- DATA-005: Data retention policies
+- DATA-006: Data deletion verification
+- DATA-007: Backup security testing
+
+## 10. PERFORMANCE TESTS
+
+### 10.1 Load Testing
+- PERF-001: User registration load testing
+- PERF-002: Login process performance
+- PERF-003: Profile discovery performance with large datasets
+- PERF-004: Like/unlike operations under load
+- PERF-005: Payment processing performance
+- PERF-006: Real-time notification performance
+- PERF-007: Chat system scalability
+- PERF-008: Database query optimization verification
+
+### 10.2 Stress Testing
+- STRESS-001: Concurrent user limit testing
+- STRESS-002: Database connection pool limits
+- STRESS-003: Memory usage under high load
+- STRESS-004: File storage limits testing
+- STRESS-005: WebSocket connection limits
+- STRESS-006: Payment gateway rate limits
+- STRESS-007: Email sending rate limits
+
+### 10.3 Scalability Testing
+- SCALE-001: Horizontal scaling capability
+- SCALE-002: Database scaling performance
+- SCALE-003: Cache performance testing
+- SCALE-004: CDN integration testing
+- SCALE-005: Load balancer configuration
+- SCALE-006: Auto-scaling trigger testing
+
+## 11. INTEGRATION TESTS
+
+### 11.1 Third-party Integrations
+- INT-001: Paystack payment gateway integration
+- INT-002: Email service integration (SMTP)
+- INT-003: WebSocket service integration
+- INT-004: Database connection testing
+- INT-005: File storage service integration
+- INT-006: Caching service integration
+
+### 11.2 API Integration Tests
+- API-001: REST API endpoint functionality
+- API-002: JSON response validation
+- API-003: API rate limiting
+- API-004: API authentication
+- API-005: API error handling
+- API-006: API versioning
+- API-007: CORS configuration
+
+## 12. DEPLOYMENT & ENVIRONMENT TESTS
+
+### 12.1 Environment Configuration Tests
+- ENV-001: Development environment setup
+- ENV-002: Production environment configuration
+- ENV-003: Environment variable validation
+- ENV-004: Database configuration testing
+- ENV-005: Static file serving
+- ENV-006: Media file handling
+- ENV-007: HTTPS configuration
+- ENV-008: Domain and subdomain handling
+
+### 12.2 Deployment Tests
+- DEPLOY-001: Docker container deployment
+- DEPLOY-002: Database migration testing
+- DEPLOY-003: Static file collection
+- DEPLOY-004: Zero-downtime deployment
+- DEPLOY-005: Rollback functionality
+- DEPLOY-006: Health check endpoints
+- DEPLOY-007: Log aggregation
+- DEPLOY-008: Monitoring integration
+
+## 13. BUSINESS LOGIC TESTS
+
+### 13.1 Student Verification Tests
+- STUDENT-001: Educational email domain detection
+- STUDENT-002: Student status auto-assignment
+- STUDENT-003: University validation
+- STUDENT-004: Student ID format validation
+- STUDENT-005: Academic year progression
+- STUDENT-006: Graduation status handling
+
+### 13.2 Gamification Tests
+- GAME-001: Points calculation accuracy
+- GAME-002: Point balance integrity
+- GAME-003: Achievement system (if implemented)
+- GAME-004: Leaderboard functionality
+- GAME-005: Daily/weekly point limits
+- GAME-006: Point expiration handling
+
+### 13.3 Matching Algorithm Tests
+- ALGO-001: Compatibility scoring
+- ALGO-002: Distance-based matching
+- ALGO-003: Interest-based matching
+- ALGO-004: Age preference matching
+- ALGO-005: Study field compatibility
+- ALGO-006: Activity-based matching
+- ALGO-007: Mutual preference detection
+
+## 14. EDGE CASE TESTS
+
+### 14.1 Data Boundary Tests
+- EDGE-001: Maximum field length testing
+- EDGE-002: Minimum age validation (18)
+- EDGE-003: Maximum age handling
+- EDGE-004: GPS coordinate boundaries
+- EDGE-005: Maximum file size uploads
+- EDGE-006: Currency precision testing
+- EDGE-007: Date boundary testing (leap years, etc.)
+
+### 14.2 System Limit Tests
+- LIMIT-001: Maximum users per chat room
+- LIMIT-002: Maximum photos per profile
+- LIMIT-003: Maximum interests per user
+- LIMIT-004: Maximum message length
+- LIMIT-005: Maximum notification queue size
+- LIMIT-006: Database record limits
+- LIMIT-007: Session storage limits
+
+## 15. ACCESSIBILITY & USABILITY TESTS
+
+### 15.1 Accessibility Tests
+- ACCESS-001: Screen reader compatibility
+- ACCESS-002: Keyboard navigation
+- ACCESS-003: Color contrast compliance
+- ACCESS-004: Alternative text for images
+- ACCESS-005: Form label associations
+- ACCESS-006: Focus management
+- ACCESS-007: ARIA attributes implementation
+
+### 15.2 Mobile Responsiveness Tests
+- MOBILE-001: Mobile layout rendering
+- MOBILE-002: Touch interaction testing
+- MOBILE-003: Mobile photo upload
+- MOBILE-004: Mobile payment flow
+- MOBILE-005: Mobile chat functionality
+- MOBILE-006: Mobile performance optimization
+- MOBILE-007: Different screen size testing
+
+## CRITICAL SECURITY ISSUES IDENTIFIED DURING INVESTIGATION:
+
+1. Debug information exposure in production environments
+2. Lack of rate limiting across all endpoints
+3. Missing input validation for file uploads and user input
+4. Race conditions in financial transactions
+5. No comprehensive logging for security events
+6. Potential SQL injection in search parameters
+7. XSS vulnerabilities in message content and profile fields
+8. Webhook replay attack vulnerabilities
+9. No file type validation bypass protection
+10. Integer overflow possibilities in like amounts
+
+## PRIORITY TESTING RECOMMENDATIONS:
+
+HIGH PRIORITY:
+- All security tests (SEC-*, AUTH-SEC-*, INPUT-*, DATA-*)
+- Payment system tests (PAY-*, HOOK-*, GIFT-*)
+- Authentication tests (AUTH-*, PWD-*, REF-*)
+- File upload security tests (PHOTO-008, INPUT-001, INPUT-002)
+
+MEDIUM PRIORITY:
+- Performance tests under load (PERF-*, STRESS-*, SCALE-*)
+- Business logic validation (LIKE-*, MATCH-*, NOTIF-*)
+- Integration tests (INT-*, API-*)
+
+LOW PRIORITY:
+- Accessibility tests (ACCESS-*)
+- Edge case boundary tests (EDGE-*, LIMIT-*)
+- Mobile responsiveness (MOBILE-*)
+
+TOTAL TEST CASES: 312 individual test cases across 15 categories
+
+This comprehensive test suite should be executed in both staging and production-like environments before launch to ensure system reliability, security, and performance.
