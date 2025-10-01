@@ -54,7 +54,7 @@ class UserQuizResponse(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_responses')
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='user_responses')
     selected_choice = models.ForeignKey(Choice, on_delete=models.CASCADE)
-    is_correct = models.BooleanField()
+    is_correct = models.BooleanField(default=False)
     points_earned = models.IntegerField(default=0)
     answered_at = models.DateTimeField(auto_now_add=True)
     

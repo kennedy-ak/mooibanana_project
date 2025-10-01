@@ -4,6 +4,11 @@
 
 {% block title %}Discover - Mooibanana{% endblock %}
 
+{% block extra_head %}
+{% csrf_token %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+{% endblock %}
+
 {% block breadcrumbs %}
 <li class="breadcrumb-item active" aria-current="page">
     <i class="fas fa-search"></i> Discover
@@ -122,13 +127,21 @@
                     <h5 class="card-title mb-0">
                         <i class="fas fa-brain me-2"></i>Daily Knowledge Quiz
                     </h5>
-                    <span class="badge bg-light text-primary" id="userPoints">{{ user.points_balance }} pts</span>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-light text-primary me-2" id="userPoints">{{ user.points_balance }} pts</span>
+                        <button class="btn btn-sm btn-outline-light" type="button" data-bs-toggle="collapse" data-bs-target="#quizContent" aria-expanded="true" aria-controls="quizContent" id="quizToggleBtn">
+                            <i class="fas fa-chevron-down" id="quizToggleIcon"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <div id="quizContent">
-                        <div class="text-center">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Loading quiz...</span>
+                <div class="collapse show" id="quizContent">
+                    <div class="card-body">
+                        {% csrf_token %}
+                        <div id="quizInnerContent">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading quiz...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -305,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    document.getElementById('quizContent').innerHTML = `
+                    document.getElementById('quizInnerContent').innerHTML = `
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             ${data.error}
@@ -322,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading quiz:', error);
-                document.getElementById('quizContent').innerHTML = `
+                document.getElementById('quizInnerContent').innerHTML = `
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-circle me-2"></i>
                         Failed to load quiz. Please try again later.
@@ -352,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        document.getElementById('quizContent').innerHTML = quizHTML;
+        document.getElementById('quizInnerContent').innerHTML = quizHTML;
         
         // Add click handlers to choices
         document.querySelectorAll('.quiz-choice').forEach(button => {
@@ -366,28 +379,47 @@ document.addEventListener('DOMContentLoaded', function() {
         const resultHTML = `
             <div class="quiz-result">
                 <h6 class="mb-3">${resultData.question}</h6>
-                <div class="alert ${resultData.is_correct ? 'alert-success' : 'alert-danger'}">
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${resultData.is_correct ? 'fa-check-circle' : 'fa-times-circle'} me-2"></i>
-                        <div>
-                            <strong>${resultData.is_correct ? 'Correct!' : 'Incorrect'}</strong>
+                <div class="alert ${resultData.is_correct ? 'alert-success' : 'alert-danger'} border-0">
+                    <div class="d-flex align-items-start">
+                        <div class="me-3">
+                            <i class="fas ${resultData.is_correct ? 'fa-check-circle' : 'fa-times-circle'} fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-2">${resultData.is_correct ? '🎉 Correct!' : '❌ Incorrect'}</h5>
                             ${resultData.is_correct ? 
-                                `<br><small>You earned ${resultData.points_earned} ${resultData.points_earned === 1 ? 'point' : 'points'}!</small>` : 
-                                `<br><small>The correct answer was: ${resultData.correct_choice}</small>`
+                                `<p class="mb-2"><strong>Congratulations!</strong> You earned <span class="badge bg-success fs-6">${resultData.points_earned} ${resultData.points_earned === 1 ? 'point' : 'points'}</span></p>
+                                 <p class="mb-0"><small>Your answer: <strong>${resultData.user_choice || 'N/A'}</strong></small></p>` : 
+                                `<p class="mb-2">Don't worry, keep trying! The correct answer was:</p>
+                                 <p class="mb-2"><strong>✅ ${resultData.correct_choice}</strong></p>
+                                 <p class="mb-0"><small>Your answer: <strong>${resultData.user_choice || 'N/A'}</strong></small></p>`
                             }
                         </div>
                     </div>
                 </div>
-                <div class="quiz-stats mt-3">
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="bg-light rounded p-3 text-center">
+                            <h6 class="mb-1">${resultData.accuracy || 0}%</h6>
+                            <small class="text-muted">Today's Accuracy</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="bg-light rounded p-3 text-center">
+                            <h6 class="mb-1" id="currentPoints">${resultData.total_points || document.getElementById('userPoints').textContent.replace(' pts', '')}</h6>
+                            <small class="text-muted">Total Points</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
                     <small class="text-muted">
-                        <i class="fas fa-chart-line me-1"></i>
-                        Today's accuracy: ${resultData.accuracy}%
+                        <i class="fas fa-info-circle me-1"></i>
+                        Come back tomorrow for a new question!
                     </small>
                 </div>
             </div>
         `;
         
-        document.getElementById('quizContent').innerHTML = resultHTML;
+        document.getElementById('quizInnerContent').innerHTML = resultHTML;
     }
     
     function submitQuizAnswer(questionId, choiceId) {
@@ -397,18 +429,44 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.classList.add('disabled');
         });
         
+        // Get CSRF token from the meta tag first, then fall back to cookie
+        let csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        if (!csrfToken) {
+            csrfToken = getCookie('csrftoken');
+        }
+
+        if (!csrfToken) {
+            console.error('No CSRF token found');
+            document.getElementById('quizContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    CSRF token not found. Please refresh the page and try again.
+                </div>
+            `;
+            return;
+        }
+        
         fetch('/quiz/submit/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 question_id: questionId,
                 choice_id: choiceId
             })
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Response status:', response.status); // Debug log
+            if (!response.ok) {
+                if (response.status === 403) {
+                    throw new Error('CSRF token error. Please refresh the page and try again.');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Update points display
@@ -420,7 +478,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     is_correct: data.is_correct,
                     points_earned: data.points_earned,
                     correct_choice: data.correct_choice,
-                    accuracy: data.accuracy
+                    user_choice: data.user_choice,
+                    accuracy: data.accuracy,
+                    total_points: data.total_points
                 });
             } else {
                 alert('Error: ' + data.error);
@@ -433,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Error submitting answer:', error);
-            alert('Failed to submit answer. Please try again.');
+            alert('Failed to submit answer: ' + error.message);
             // Re-enable buttons
             document.querySelectorAll('.quiz-choice').forEach(btn => {
                 btn.disabled = false;
@@ -455,6 +515,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return cookieValue;
+    }
+    
+    // Alternative CSRF token getter
+    function getCSRFToken() {
+        // Try to get from cookie first
+        let token = getCookie('csrftoken');
+        if (token) return token;
+        
+        // Try to get from meta tag
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) return metaTag.getAttribute('content');
+        
+        // Try to get from hidden input
+        const hiddenInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
+        if (hiddenInput) return hiddenInput.value;
+        
+        return null;
+    }
+    
+    // Handle quiz collapse/expand
+    const quizToggleBtn = document.getElementById('quizToggleBtn');
+    const quizToggleIcon = document.getElementById('quizToggleIcon');
+    const quizContent = document.getElementById('quizContent');
+    
+    if (quizToggleBtn && quizContent) {
+        quizContent.addEventListener('show.bs.collapse', function () {
+            quizToggleIcon.classList.remove('fa-chevron-down');
+            quizToggleIcon.classList.add('fa-chevron-up');
+        });
+        
+        quizContent.addEventListener('hide.bs.collapse', function () {
+            quizToggleIcon.classList.remove('fa-chevron-up');
+            quizToggleIcon.classList.add('fa-chevron-down');
+        });
     }
 });
 
@@ -989,6 +1083,45 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #f8f9fa;
     padding: 10px;
     border-radius: 6px;
+}
+
+/* Quiz toggle button */
+#quizToggleBtn {
+    transition: all 0.3s ease;
+}
+
+#quizToggleBtn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+#quizToggleIcon {
+    transition: transform 0.3s ease;
+}
+
+/* Quiz result enhancements */
+.quiz-result .alert {
+    animation: slideInDown 0.5s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.quiz-result .bg-light {
+    transition: all 0.3s ease;
+}
+
+.quiz-result .bg-light:hover {
+    background-color: #e9ecef !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 </style>
 

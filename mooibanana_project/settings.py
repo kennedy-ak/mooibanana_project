@@ -39,9 +39,9 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # CSRF Settings
-CSRF_COOKIE_SECURE = True  # Only send CSRF cookie over HTTPS
-CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript from accessing CSRF cookie
-CSRF_USE_SESSIONS = True  # Store CSRF token in session instead of cookie
+CSRF_COOKIE_SECURE = not DEBUG  # Only require HTTPS in production
+CSRF_COOKIE_HTTPONLY = False    # Allow JavaScript to access CSRF cookie for AJAX requests
+CSRF_USE_SESSIONS = False       # Use cookie-based CSRF tokens
 # Application definition
 
 INSTALLED_APPS = [
