@@ -17,9 +17,16 @@ class CustomUser(AbstractUser):
     student_id = models.CharField(max_length=50, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+    # Like/Dislike Bank (what users can spend)
     likes_balance = models.IntegerField(default=0)
     super_likes_balance = models.IntegerField(default=0)
     unlikes_balance = models.IntegerField(default=0)
+    
+    # Received counts (what others gave them)
+    received_likes_count = models.IntegerField(default=0)
+    received_super_likes_count = models.IntegerField(default=0)
+    received_unlikes_count = models.IntegerField(default=0)
+    
     points_balance = models.IntegerField(default=0)
 
     # Referral system fields

@@ -27,6 +27,29 @@ class Like(models.Model):
         return f"{self.from_user.username} gave {self.amount} {self.like_type} like(s) to {self.to_user.username}"
 
     def save(self, *args, **kwargs):
+        # Check if user has enough bank balance before saving
+        if not self.pk:  # Only check on creation
+            if self.like_type == 'regular':
+                if self.from_user.likes_balance < self.amount:
+                    raise ValueError(f"Insufficient likes balance. Required: {self.amount}, Available: {self.from_user.likes_balance}")
+                # Deduct from bank
+                self.from_user.likes_balance -= self.amount
+            else:  # super like
+                if self.from_user.super_likes_balance < self.amount:
+                    raise ValueError(f"Insufficient super likes balance. Required: {self.amount}, Available: {self.from_user.super_likes_balance}")
+                # Deduct from bank
+                self.from_user.super_likes_balance -= self.amount
+            
+            # Update receiver's received count
+            if self.like_type == 'regular':
+                self.to_user.received_likes_count += self.amount
+            else:
+                self.to_user.received_super_likes_count += self.amount
+            
+            # Save the users with updated balances
+            self.from_user.save()
+            self.to_user.save()
+        
         # Check if this creates a mutual like (if both users have liked each other)
         if Like.objects.filter(from_user=self.to_user, to_user=self.from_user).exists():
             self.is_mutual = True
@@ -65,6 +88,22 @@ class Unlike(models.Model):
 
     class Meta:
         unique_together = ['from_user', 'to_user']
+
+    def save(self, *args, **kwargs):
+        # Check if user has enough bank balance before saving
+        if not self.pk:  # Only check on creation
+            if self.from_user.unlikes_balance < self.amount:
+                raise ValueError(f"Insufficient unlikes balance. Required: {self.amount}, Available: {self.from_user.unlikes_balance}")
+            
+            # Deduct from bank and update receiver's count
+            self.from_user.unlikes_balance -= self.amount
+            self.to_user.received_unlikes_count += self.amount
+            
+            # Save the users with updated balances
+            self.from_user.save()
+            self.to_user.save()
+        
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.from_user.username} gave {self.amount} unlike(s) to {self.to_user.username}"

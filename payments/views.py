@@ -12,7 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from .models import LikePackage, Purchase
+from .models import LikePackage, DislikePackage, Purchase
 import hashlib
 import hmac
 
@@ -35,47 +35,69 @@ class PricingView(ListView):
     def get_queryset(self):
         return LikePackage.objects.filter(is_active=True).order_by('price')
 
-class PackagesView(LoginRequiredMixin, ListView):
-    model = LikePackage
+class PackagesView(LoginRequiredMixin, TemplateView):
     template_name = 'payments/packages.html'
-    context_object_name = 'packages'
     
-    def get_queryset(self):
-        queryset = LikePackage.objects.filter(is_active=True)
-        package_type = self.request.GET.get('type')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        package_type = self.request.GET.get('type', 'likes')
         
-        if package_type == 'unlikes':
-            # Filter packages that have unlikes
-            queryset = queryset.filter(unlikes__gt=0)
+        if package_type == 'likes':
+            context['packages'] = LikePackage.objects.filter(is_active=True).order_by('price')
+            context['package_type'] = 'likes'
+            context['page_title'] = 'Like Packages'
+        elif package_type == 'dislikes':
+            context['packages'] = DislikePackage.objects.filter(is_active=True).order_by('price')
+            context['package_type'] = 'dislikes'
+            context['page_title'] = 'Dislike Packages'
+        else:
+            # Default to likes
+            context['packages'] = LikePackage.objects.filter(is_active=True).order_by('price')
+            context['package_type'] = 'likes'
+            context['page_title'] = 'Like Packages'
         
-        return queryset
+        return context
 
 @login_required
 def packages_api(request):
     """API endpoint to return packages as JSON"""
-    packages = LikePackage.objects.filter(is_active=True)
-    package_type = request.GET.get('type')
+    package_type = request.GET.get('type', 'likes')
     
-    if package_type == 'unlikes':
-        # Filter packages that have unlikes
-        packages = packages.filter(unlikes__gt=0)
+    if package_type == 'dislikes':
+        packages = DislikePackage.objects.filter(is_active=True)
+        data = {
+            'packages': [{
+                'id': package.id,
+                'name': package.name,
+                'price': float(package.price),
+                'regular_likes': 0,
+                'super_likes': 0,
+                'unlikes': package.unlikes,
+                'boosters': 0,
+                'description': package.description,
+                'package_type': 'dislike'
+            } for package in packages]
+        }
+    else:
+        packages = LikePackage.objects.filter(is_active=True)
+        data = {
+            'packages': [{
+                'id': package.id,
+                'name': package.name,
+                'price': float(package.price),
+                'regular_likes': package.regular_likes,
+                'super_likes': package.super_likes,
+                'unlikes': 0,
+                'boosters': package.boosters,
+                'description': package.description,
+                'package_type': 'like'
+            } for package in packages]
+        }
     
-    data = {
-        'packages': [{
-            'id': package.id,
-            'name': package.name,
-            'price': float(package.price),
-            'regular_likes': package.regular_likes,
-            'super_likes': package.super_likes,
-            'unlikes': package.unlikes,
-            'boosters': package.boosters,
-            'description': package.description,
-        } for package in packages]
-    }
     return JsonResponse(data)
 
 @login_required
-def purchase_package(request, package_id):
+def purchase_like_package(request, package_id):
     package = get_object_or_404(LikePackage, id=package_id, is_active=True)
     
     # Check if user has email
@@ -87,7 +109,8 @@ def purchase_package(request, package_id):
         # Create purchase record
         purchase = Purchase.objects.create(
             user=request.user,
-            package=package,
+            package_type='like',
+            like_package=package,
             amount=package.price,
             status='pending'
         )
@@ -104,6 +127,83 @@ def purchase_package(request, package_id):
                 'package_id': str(package.id),
                 'purchase_id': str(purchase.id),
                 'purchase_type': 'self',
+                'package_type': 'like',
+            }
+        }
+        
+        headers = {
+            'Authorization': f'Bearer {settings.PAYSTACK_SECRET_KEY}',
+            'Content-Type': 'application/json',
+        }
+        
+        print(f"Paystack data: {paystack_data}")  # Debug print
+        print(f"Headers: {headers}")  # Debug print
+        
+        response = requests.post(
+            'https://api.paystack.co/transaction/initialize',
+            headers=headers,
+            data=json.dumps(paystack_data)
+        )
+        
+        print(f"Response status: {response.status_code}")  # Debug print
+        print(f"Response content: {response.text}")  # Debug print
+        
+        if response.status_code == 200:
+            paystack_response = response.json()
+            if paystack_response['status']:
+                # Store the reference for verification
+                purchase.paystack_reference = paystack_data['reference']
+                purchase.save()
+                
+                # Redirect to Paystack payment page
+                return redirect(paystack_response['data']['authorization_url'])
+            else:
+                error_msg = paystack_response.get('message', 'Payment initialization failed')
+                messages.error(request, f'Payment failed: {error_msg}')
+                purchase.delete()
+                return redirect('payments:packages')
+        else:
+            messages.error(request, f'Payment service error: {response.status_code}')
+            purchase.delete()
+            return redirect('payments:packages')
+        
+    except Exception as e:
+        messages.error(request, f'Payment error: {str(e)}')
+        print(f"Exception: {e}")  # Debug print
+        return redirect('payments:packages')
+
+@login_required
+def purchase_dislike_package(request, package_id):
+    package = get_object_or_404(DislikePackage, id=package_id, is_active=True)
+    
+    # Check if user has email
+    if not request.user.email:
+        messages.error(request, 'Je moet een geldig e-mailadres hebben om te kunnen betalen.')
+        return redirect('payments:packages')
+    
+    try:
+        # Create purchase record
+        purchase = Purchase.objects.create(
+            user=request.user,
+            package_type='dislike',
+            dislike_package=package,
+            amount=package.price,
+            status='pending'
+        )
+        
+        # Initialize Paystack transaction
+        paystack_data = {
+            'email': request.user.email,
+            'amount': int(package.price * 100),  # Convert to pesewas (GHS uses pesewas like kobo)
+            'currency': 'GHS',  # Ghana Cedis
+            'reference': f'dislike_purchase_{purchase.id}_{request.user.id}',
+            'callback_url': request.build_absolute_uri(reverse('payments:paystack_callback')),
+            'metadata': {
+                'user_id': str(request.user.id),
+                'package_id': str(package.id),
+                'purchase_id': str(purchase.id),
+                'purchase_type': 'self',
+                'package_type': 'dislike',
             }
         }
         
@@ -252,79 +352,88 @@ def paystack_callback(request):
                         purchase.completed_at = timezone.now()
                         purchase.save()
                         
-                        # Process the likes based on purchase type
+                        # Process the purchase based on package type and purchase type
                         metadata = paystack_data['data']['metadata']
                         purchase_type = metadata.get('purchase_type', 'self')
+                        package_type = metadata.get('package_type', 'like')
                         
-                        print(f"DEBUG: Processing payment - purchase_type: {purchase_type}, metadata: {metadata}")  # Debug line
+                        print(f"DEBUG: Processing payment - purchase_type: {purchase_type}, package_type: {package_type}, metadata: {metadata}")  # Debug line
                         
                         if purchase_type == 'gift' and 'recipient_id' in metadata:
-                            # Gift purchase - regular likes to recipient, super likes and boosters to purchaser
+                            # Gift purchase - handle based on package type
                             try:
                                 recipient = User.objects.get(id=metadata['recipient_id'])
-
-                                # Give regular likes to recipient
-                                recipient.likes_balance += purchase.package.regular_likes
-                                if purchase.package.unlikes > 0:
-                                    recipient.unlikes_balance += purchase.package.unlikes
-                                recipient.save()
-
-                                # Give super likes and boosters to purchaser
-                                if purchase.package.super_likes > 0:
-                                    purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
-
-                                if purchase.package.boosters > 0:
-                                    # Add boosters to purchaser (implement boosters later if needed)
-                                    pass
-
-                                purchase.user.save()
-
-                                # Create notification for recipient about the gift
-                                if Notification:
-                                    notification = Notification.objects.create(
-                                        sender=purchase.user,
-                                        receiver=recipient,
-                                        notification_type='gift_received',
-                                        message=f'You received a gift: {purchase.package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
-                                    )
-
-                                    # Send real-time notification
-                                    if broadcast_notification:
-                                        broadcast_notification(notification)
-
-                                # Create success message showing correct distribution
-                                recipient_name = metadata.get("recipient_name", "onbekend")
-                                success_parts = [f'{purchase.package.regular_likes} regular likes naar {recipient_name}']
+                                package = purchase.package
                                 
-                                if purchase.package.super_likes > 0:
-                                    success_parts.append(f'{purchase.package.super_likes} super likes voor jou')
-                                if purchase.package.boosters > 0:
-                                    success_parts.append(f'{purchase.package.boosters} boosters voor jou')
-
-                                messages.success(request, f'Cadeau succesvol verzonden! {", ".join(success_parts)}!')
+                                if package_type == 'like':
+                                    # Give regular likes to recipient
+                                    recipient.likes_balance += package.regular_likes
+                                    # Give super likes and boosters to purchaser
+                                    if package.super_likes > 0:
+                                        purchase.user.super_likes_balance += package.super_likes
+                                    # Save both users
+                                    recipient.save()
+                                    purchase.user.save()
+                                    
+                                    # Create notification
+                                    if Notification:
+                                        notification = Notification.objects.create(
+                                            sender=purchase.user,
+                                            receiver=recipient,
+                                            notification_type='gift_received',
+                                            message=f'You received a gift: {package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
+                                        )
+                                        if broadcast_notification:
+                                            broadcast_notification(notification)
+                                    
+                                    recipient_name = metadata.get("recipient_name", "unknown")
+                                    messages.success(request, f'Gift sent successfully! {package.regular_likes} regular likes to {recipient_name}!')
+                                    
+                                elif package_type == 'dislike':
+                                    # Give unlikes to recipient
+                                    recipient.unlikes_balance += package.unlikes
+                                    recipient.save()
+                                    
+                                    # Create notification
+                                    if Notification:
+                                        notification = Notification.objects.create(
+                                            sender=purchase.user,
+                                            receiver=recipient,
+                                            notification_type='gift_received',
+                                            message=f'You received a gift: {package.unlikes} dislikes from {purchase.user.first_name or purchase.user.username}!'
+                                        )
+                                        if broadcast_notification:
+                                            broadcast_notification(notification)
+                                    
+                                    recipient_name = metadata.get("recipient_name", "unknown")
+                                    messages.success(request, f'Gift sent successfully! {package.unlikes} dislikes to {recipient_name}!')
                                 
                                 # Redirect back to the recipient's profile for gift purchases
                                 return redirect('profiles:profile_detail', pk=recipient.id)
                             except User.DoesNotExist:
-                                messages.error(request, 'Ontvanger niet gevonden')
+                                messages.error(request, 'Recipient not found')
                                 return redirect('payments:success')
                         else:
-                            # Regular purchase - add likes to buyer
-                            purchase.user.likes_balance += purchase.package.regular_likes
-                            if purchase.package.super_likes > 0:
-                                purchase.user.super_likes_balance = getattr(purchase.user, 'super_likes_balance', 0) + purchase.package.super_likes
-                            if purchase.package.unlikes > 0:
-                                purchase.user.unlikes_balance += purchase.package.unlikes
-                            purchase.user.save()
-
-                            # Create success message
-                            success_parts = [f'{purchase.package.regular_likes} likes']
-                            if purchase.package.super_likes > 0:
-                                success_parts.append(f'{purchase.package.super_likes} super likes')
-                            if purchase.package.unlikes > 0:
-                                success_parts.append(f'{purchase.package.unlikes} unlikes')
-
-                            messages.success(request, f'Betaling succesvol! Je hebt {", ".join(success_parts)} ontvangen.')
+                            # Regular purchase - add to buyer based on package type
+                            package = purchase.package
+                            
+                            if package_type == 'like':
+                                purchase.user.likes_balance += package.regular_likes
+                                if package.super_likes > 0:
+                                    purchase.user.super_likes_balance += package.super_likes
+                                purchase.user.save()
+                                
+                                # Create success message
+                                success_parts = [f'{package.regular_likes} likes']
+                                if package.super_likes > 0:
+                                    success_parts.append(f'{package.super_likes} super likes')
+                                messages.success(request, f'Payment successful! You received {", ".join(success_parts)}.')
+                                
+                            elif package_type == 'dislike':
+                                purchase.user.unlikes_balance += package.unlikes
+                                purchase.user.save()
+                                
+                                messages.success(request, f'Payment successful! You received {package.unlikes} dislikes.')
                             
                             # Redirect to success page for regular purchases
                             return redirect('payments:success')

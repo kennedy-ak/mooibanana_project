@@ -1,7 +1,7 @@
 <!-- templates/payments/packages.html -->
 {% extends 'base.html' %}
 
-{% block title %}Like Pakketten - Mooibanana{% endblock %}
+{% block title %}{{ page_title|default:"Packages" }} - Mooibanana{% endblock %}
 
 {% block breadcrumbs %}
 <li class="breadcrumb-item active" aria-current="page">
@@ -296,18 +296,55 @@
         {% endfor %}
     {% endif %}
     
+    <!-- Package Type Navigation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-pills nav-justified">
+                        <li class="nav-item">
+                            <a class="nav-link {% if package_type == 'likes' %}active{% endif %}" 
+                               href="{% url 'payments:packages' %}?type=likes">
+                                <i class="fas fa-heart me-2"></i>Like Packages
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if package_type == 'dislikes' %}active{% endif %}" 
+                               href="{% url 'payments:packages' %}?type=dislikes">
+                                <i class="fas fa-times-circle me-2"></i>Dislike Packages
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hero Section -->
     <div class="pricing-hero text-center">
         <div class="container">
             <h1 class="display-4 mb-4">
-                <i class="fas fa-heart text-warning"></i>
-                Like Pakketten
+                {% if package_type == 'dislikes' %}
+                    <i class="fas fa-times-circle text-danger"></i>
+                    Dislike Packages
+                {% else %}
+                    <i class="fas fa-heart text-warning"></i>
+                    Like Packages
+                {% endif %}
             </h1>
-            <p class="lead mb-4">Krijg meer likes om meer studenten te ontmoeten en win fantastische prijzen! Alle prijzen in Euros (€).</p>
-            <p class="mb-0">
-                <i class="fas fa-gift me-2"></i>
-                Verdien punten met elke like die je geeft en ontvangt
-            </p>
+            {% if package_type == 'dislikes' %}
+                <p class="lead mb-4">Get dislikes to hide profiles permanently. All prices in Euros (€).</p>
+                <p class="mb-0">
+                    <i class="fas fa-eye-slash me-2"></i>
+                    Hide profiles you don't want to see again
+                </p>
+            {% else %}
+                <p class="lead mb-4">Get more likes to meet more students and win fantastic prizes! All prices in Euros (€).</p>
+                <p class="mb-0">
+                    <i class="fas fa-gift me-2"></i>
+                    Earn points with every like you give and receive
+                </p>
+            {% endif %}
         </div>
     </div>
 
@@ -319,18 +356,29 @@
             Jouw Huidige Saldo
         </h5>
         <div class="current-balance">
-            <div class="balance-item">
-                <h4>{{ user.likes_balance|default:0 }}</h4>
-                <p>Regular Likes</p>
-            </div>
-            <div class="balance-item">
-                <h4>0</h4>
-                <p>Super Likes</p>
-            </div>
-            <div class="balance-item">
-                <h4>{{ user.points_balance|default:0 }}</h4>
-                <p>Punten</p>
-            </div>
+            {% if package_type == 'dislikes' %}
+                <div class="balance-item">
+                    <h4>{{ user.unlikes_balance|default:0 }}</h4>
+                    <p>Dislikes</p>
+                </div>
+                <div class="balance-item">
+                    <h4>{{ user.points_balance|default:0 }}</h4>
+                    <p>Points</p>
+                </div>
+            {% else %}
+                <div class="balance-item">
+                    <h4>{{ user.likes_balance|default:0 }}</h4>
+                    <p>Regular Likes</p>
+                </div>
+                <div class="balance-item">
+                    <h4>{{ user.super_likes_balance|default:0 }}</h4>
+                    <p>Super Likes</p>
+                </div>
+                <div class="balance-item">
+                    <h4>{{ user.points_balance|default:0 }}</h4>
+                    <p>Points</p>
+                </div>
+            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -350,69 +398,89 @@
                 
                 <div class="card-body-flex">
                     <div class="package-features">
-                        <div class="feature-item">
-                            <div class="feature-icon likes-icon">
-                                <i class="fas fa-heart"></i>
+                        {% if package_type == 'dislikes' %}
+                            <!-- Dislike Package Features -->
+                            <div class="feature-item">
+                                <div class="feature-icon unlikes-icon">
+                                    <i class="fas fa-times-circle"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ package.unlikes }}</strong> Dislikes
+                                    <br><small class="text-muted">Hide profiles permanently</small>
+                                </div>
                             </div>
-                            <div>
-                                <strong>{{ package.regular_likes }}</strong> Regular Likes
-                                <br><small class="text-muted">Geef likes aan andere studenten</small>
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon bonus-icon">
+                                    <i class="fas fa-gift"></i>
+                                </div>
+                                <div>
+                                    <strong>Bonus Points</strong>
+                                    <br><small class="text-muted">For rewards</small>
+                                </div>
                             </div>
-                        </div>
-                        
-                        {% if package.super_likes > 0 %}
-                        <div class="feature-item">
-                            <div class="feature-icon super-likes-icon">
-                                <i class="fas fa-star"></i>
+                        {% else %}
+                            <!-- Like Package Features -->
+                            <div class="feature-item">
+                                <div class="feature-icon likes-icon">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ package.regular_likes }}</strong> Regular Likes
+                                    <br><small class="text-muted">Give likes to other students</small>
+                                </div>
                             </div>
-                            <div>
-                                <strong>{{ package.super_likes }}</strong> Super Likes
-                                <br><small class="text-muted">Valt extra op bij anderen</small>
+                            
+                            {% if package.super_likes > 0 %}
+                            <div class="feature-item">
+                                <div class="feature-icon super-likes-icon">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ package.super_likes }}</strong> Super Likes
+                                    <br><small class="text-muted">Stand out to others</small>
+                                </div>
                             </div>
-                        </div>
+                            {% endif %}
+                            
+                            {% if package.boosters > 0 %}
+                            <div class="feature-item">
+                                <div class="feature-icon boosters-icon">
+                                    <i class="fas fa-rocket"></i>
+                                </div>
+                                <div>
+                                    <strong>{{ package.boosters }}</strong> Profile Boosters
+                                    <br><small class="text-muted">Increase your visibility</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <div class="feature-item">
+                                <div class="feature-icon bonus-icon">
+                                    <i class="fas fa-gift"></i>
+                                </div>
+                                <div>
+                                    <strong>Bonus Points</strong>
+                                    <br><small class="text-muted">For rewards</small>
+                                </div>
+                            </div>
                         {% endif %}
-
-                        {% if package.unlikes > 0 %}
-                        <div class="feature-item">
-                            <div class="feature-icon unlikes-icon">
-                                <i class="fas fa-times-circle"></i>
-                            </div>
-                            <div>
-                                <strong>{{ package.unlikes }}</strong> Unlikes
-                                <br><small class="text-muted">Verberg profielen permanent</small>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if package.boosters > 0 %}
-                        <div class="feature-item">
-                            <div class="feature-icon boosters-icon">
-                                <i class="fas fa-rocket"></i>
-                            </div>
-                            <div>
-                                <strong>{{ package.boosters }}</strong> Profile Boosters
-                                <br><small class="text-muted">Verhoog je zichtbaarheid</small>
-                            </div>
-                        </div>
-                        {% endif %}
-                        
-                        <div class="feature-item">
-                            <div class="feature-icon bonus-icon">
-                                <i class="fas fa-gift"></i>
-                            </div>
-                            <div>
-                                <strong>Bonus Punten</strong>
-                                <br><small class="text-muted">Voor beloningen</small>
-                            </div>
-                        </div>
                     </div>
                     
                     <div class="p-3">
-                        <a href="{% url 'payments:purchase' package.id %}" 
-                           class="btn btn-package {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
-                            <i class="fas fa-shopping-cart me-2"></i>
-                            Koop Nu
-                        </a>
+                        {% if package_type == 'dislikes' %}
+                            <a href="{% url 'payments:purchase_dislike' package.id %}" 
+                               class="btn btn-package {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Buy Now
+                            </a>
+                        {% else %}
+                            <a href="{% url 'payments:purchase_like' package.id %}" 
+                               class="btn btn-package {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
+                                <i class="fas fa-shopping-cart me-2"></i>
+                                Buy Now
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -432,37 +500,73 @@
         <div class="row">
             <div class="col-12">
                 <div class="text-center mb-5">
-                    <h3 style="color: #4e54c8; font-weight: bold;">Waarom Like Pakketten Kopen?</h3>
-                    <p class="text-muted">Ontdek alle voordelen van onze like pakketten</p>
+                    {% if package_type == 'dislikes' %}
+                        <h3 style="color: #4e54c8; font-weight: bold;">Why Buy Dislike Packages?</h3>
+                        <p class="text-muted">Discover all the benefits of our dislike packages</p>
+                    {% else %}
+                        <h3 style="color: #4e54c8; font-weight: bold;">Why Buy Like Packages?</h3>
+                        <p class="text-muted">Discover all the benefits of our like packages</p>
+                    {% endif %}
                 </div>
             </div>
-            <div class="col-md-4 text-center mb-4 benefit-card">
-                <div class="p-4">
-                    <div class="mb-3 benefit-icon">
-                        <i class="fas fa-users fa-3x" style="color: #4e54c8;"></i>
+            
+            {% if package_type == 'dislikes' %}
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-eye-slash fa-3x" style="color: #dc3545;"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">Hide Profiles</h5>
+                        <p class="text-muted">Permanently hide profiles you don't want to see again.</p>
                     </div>
-                    <h5 style="color: #4e54c8;">Meer Connecties</h5>
-                    <p class="text-muted">Ontmoet meer studenten en maak nieuwe vrienden op je campus.</p>
                 </div>
-            </div>
-            <div class="col-md-4 text-center mb-4 benefit-card">
-                <div class="p-4">
-                    <div class="mb-3 benefit-icon">
-                        <i class="fas fa-trophy fa-3x" style="color: #ff9a00;"></i>
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-filter fa-3x" style="color: #6c757d;"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">Better Experience</h5>
+                        <p class="text-muted">Customize your discovery feed by removing unwanted profiles.</p>
                     </div>
-                    <h5 style="color: #4e54c8;">Win Prijzen</h5>
-                    <p class="text-muted">Verdien punten en wissel ze in voor geweldige beloningen.</p>
                 </div>
-            </div>
-            <div class="col-md-4 text-center mb-4 benefit-card">
-                <div class="p-4">
-                    <div class="mb-3 benefit-icon">
-                        <i class="fas fa-heart fa-3x text-danger"></i>
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-trophy fa-3x" style="color: #ff9a00;"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">Earn Points</h5>
+                        <p class="text-muted">Earn points and exchange them for great rewards.</p>
                     </div>
-                    <h5 style="color: #4e54c8;">Vind je Match</h5>
-                    <p class="text-muted">Verhoog je kansen om je perfecte studiegenoot te vinden.</p>
                 </div>
-            </div>
+            {% else %}
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-users fa-3x" style="color: #4e54c8;"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">More Connections</h5>
+                        <p class="text-muted">Meet more students and make new friends on your campus.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-trophy fa-3x" style="color: #ff9a00;"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">Win Prizes</h5>
+                        <p class="text-muted">Earn points and exchange them for great rewards.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center mb-4 benefit-card">
+                    <div class="p-4">
+                        <div class="mb-3 benefit-icon">
+                            <i class="fas fa-heart fa-3x text-danger"></i>
+                        </div>
+                        <h5 style="color: #4e54c8;">Find Your Match</h5>
+                        <p class="text-muted">Increase your chances of finding your perfect study partner.</p>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

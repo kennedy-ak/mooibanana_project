@@ -1,7 +1,7 @@
 # payments/admin.py
 from django.contrib import admin
 from django.db.models import Q
-from .models import LikePackage, Purchase
+from .models import LikePackage, DislikePackage, Purchase
 
 class HasUnlikesFilter(admin.SimpleListFilter):
     title = 'has unlikes'
@@ -37,31 +37,45 @@ class HasBoostersFilter(admin.SimpleListFilter):
 
 @admin.register(LikePackage)
 class LikePackageAdmin(admin.ModelAdmin):
-    list_display = ['name', 'price', 'regular_likes', 'super_likes', 'unlikes', 'boosters', 'is_active', 'has_unlikes', 'has_boosters']
-    list_filter = ['is_active', HasUnlikesFilter, HasBoostersFilter]
+    list_display = ['name', 'price', 'regular_likes', 'super_likes', 'boosters', 'is_active', 'has_boosters']
+    list_filter = ['is_active', HasBoostersFilter]
     search_fields = ['name', 'description']
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'description', 'price', 'is_active')
         }),
         ('Package Contents', {
-            'fields': ('regular_likes', 'super_likes', 'unlikes', 'boosters'),
-            'description': 'Configure what this package includes'
+            'fields': ('regular_likes', 'super_likes', 'boosters'),
+            'description': 'Configure what this like package includes'
         }),
     )
-    
-    def has_unlikes(self, obj):
-        return obj.unlikes > 0
-    has_unlikes.boolean = True
-    has_unlikes.short_description = 'Has Unlikes'
     
     def has_boosters(self, obj):
         return obj.boosters > 0
     has_boosters.boolean = True
     has_boosters.short_description = 'Has Boosters'
 
+@admin.register(DislikePackage)
+class DislikePackageAdmin(admin.ModelAdmin):
+    list_display = ['name', 'price', 'unlikes', 'is_active']
+    list_filter = ['is_active']
+    search_fields = ['name', 'description']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'description', 'price', 'is_active')
+        }),
+        ('Package Contents', {
+            'fields': ('unlikes',),
+            'description': 'Configure what this dislike package includes'
+        }),
+    )
+
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display = ['user', 'package', 'amount', 'status', 'created_at']
-    list_filter = ['status', 'created_at']
-    search_fields = ['user__username', 'package__name']
+    list_display = ['user', 'package_type', 'package_name', 'amount', 'status', 'created_at']
+    list_filter = ['status', 'package_type', 'created_at']
+    search_fields = ['user__username', 'like_package__name', 'dislike_package__name']
+    
+    def package_name(self, obj):
+        return obj.package.name if obj.package else "Unknown Package"
+    package_name.short_description = 'Package Name'

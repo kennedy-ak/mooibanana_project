@@ -34,6 +34,16 @@ class Question(models.Model):
     class Meta:
         ordering = ['-created_at']
     
+    def save(self, *args, **kwargs):
+        # Auto-set points_value based on difficulty if not explicitly set
+        if self.difficulty == 'easy' and self.points_value == 1:
+            self.points_value = 1
+        elif self.difficulty == 'medium' and self.points_value == 1:
+            self.points_value = 3
+        elif self.difficulty == 'hard' and self.points_value == 1:
+            self.points_value = 5
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.text[:50]}..."
 
@@ -65,7 +75,16 @@ class UserQuizResponse(models.Model):
     def save(self, *args, **kwargs):
         self.is_correct = self.selected_choice.is_correct
         if self.is_correct:
-            self.points_earned = self.question.points_value
+            # Award points based on difficulty level
+            if self.question.difficulty == 'easy':
+                self.points_earned = 1
+            elif self.question.difficulty == 'medium':
+                self.points_earned = 3
+            elif self.question.difficulty == 'hard':
+                self.points_earned = 5
+            else:
+                self.points_earned = self.question.points_value  # fallback
+            
             self.user.points_balance += self.points_earned
             self.user.save()
         super().save(*args, **kwargs)

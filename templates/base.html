@@ -913,8 +913,8 @@
                             </a>
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item" href="{% url 'profiles:my_profile' %}">My Profile</a></li>
-                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}">Buy Likes</a></li>
-                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=unlikes">Buy Dislikes</a></li>
+                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=likes">Buy Likes</a></li>
+                                <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=dislikes">Buy Dislikes</a></li>
                                 <li><a class="dropdown-item" href="{% url 'rewards:my_claims' %}">My Claims</a></li>
                                 <li><a class="dropdown-item" href="{% url 'accounts:referral_dashboard' %}">
                                     <i class="fas fa-users"></i> Referrals

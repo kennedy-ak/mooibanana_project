@@ -283,15 +283,19 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         ).first()
         context['incoming_match_request'] = incoming_request
 
-        # Add statistics for received likes and dislikes
-        context['received_likes_count'] = self.object.user.likes_received.count()
-        
-
-        context['received_dislikes_count'] = self.object.user.unlikes_received.count()
+        # Add statistics for received likes and dislikes from the user model fields
+        context['received_likes_count'] = self.object.user.received_likes_count + self.object.user.received_super_likes_count
+        context['received_dislikes_count'] = self.object.user.received_unlikes_count
         
         # Add statistics for given likes and dislikes (what this user has given to others)
         context['given_likes_count'] = self.object.user.likes_given.count()
         context['given_dislikes_count'] = self.object.user.unlikes_given.count()
+        
+        # Add bank balances if viewing own profile
+        if self.request.user == self.object.user:
+            context['likes_bank_balance'] = self.object.user.likes_balance
+            context['super_likes_bank_balance'] = self.object.user.super_likes_balance
+            context['unlikes_bank_balance'] = self.object.user.unlikes_balance
 
         return context
 
@@ -307,13 +311,18 @@ class MyProfileView(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Add statistics for received likes and dislikes
-        context['received_likes_count'] = self.object.user.likes_received.count()
-        context['received_dislikes_count'] = self.object.user.unlikes_received.count()
+        # Add statistics for received likes and dislikes from the user model fields
+        context['received_likes_count'] = self.object.user.received_likes_count + self.object.user.received_super_likes_count
+        context['received_dislikes_count'] = self.object.user.received_unlikes_count
         
         # Add statistics for given likes and dislikes (what user has given to others)
         context['given_likes_count'] = self.object.user.likes_given.count()
         context['given_dislikes_count'] = self.object.user.unlikes_given.count()
+        
+        # Add bank balances for my profile
+        context['likes_bank_balance'] = self.object.user.likes_balance
+        context['super_likes_bank_balance'] = self.object.user.super_likes_balance
+        context['unlikes_bank_balance'] = self.object.user.unlikes_balance
         
         return context
 

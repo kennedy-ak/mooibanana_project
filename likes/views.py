@@ -59,12 +59,7 @@ def give_like(request, user_id):
             status='read'
         )
         
-        # Deduct likes from balance based on type and amount
-        if like_type == 'super':
-            request.user.super_likes_balance -= amount
-        else:
-            request.user.likes_balance -= amount
-        request.user.save()
+        # Balance deduction is handled in the Like model save() method
         
         # TEMPORARILY DISABLED - Check for mutual like and create match
         # if like.is_mutual:
@@ -154,9 +149,7 @@ def give_unlike(request, user_id):
             status='read'
         )
 
-        # Deduct unlikes from balance
-        request.user.unlikes_balance -= amount
-        request.user.save()
+        # Balance deduction is handled in the Unlike model save() method
 
         # Remove any existing likes between these users
         Like.objects.filter(

@@ -191,20 +191,20 @@
                 </div>
             </div>
             
-            <!-- Bootstrap Stats Card -->
+            <!-- Profile Statistics Card -->
             <div class="card border-0 shadow-sm mt-4">
                 <div class="card-header bg-transparent border-0">
-                    <h6 class="card-title text-center mb-0">Available Balances</h6>
+                    <h6 class="card-title text-center mb-0">Profile Reputation</h6>
                 </div>
                 <div class="card-body text-center py-3">
                     <div class="row justify-content-center">
                         <div class="col-12">
                             <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
-                                <span class="badge likes-balance fs-6 px-3 py-2">
-                                    <i class="fas fa-heart me-1"></i> {{ profile.user.likes_balance }} likes
+                                <span class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-heart me-1"></i> {{ received_likes_count }} Likes Received
                                 </span>
                                 <span class="badge bg-danger fs-6 px-3 py-2">
-                                    <i class="fas fa-times-circle me-1"></i> {{ profile.user.unlikes_balance }} unlikes
+                                    <i class="fas fa-times-circle me-1"></i> {{ received_dislikes_count }} Dislikes Received
                                 </span>
                             </div>
                         </div>
@@ -533,7 +533,7 @@
 
                 <!-- Direct link to packages page -->
                 <div class="text-center mb-4">
-                    <a href="{% url 'payments:packages' %}" class="btn btn-primary btn-lg">
+                    <a href="{% url 'payments:packages' %}?type=likes" class="btn btn-primary btn-lg">
                         <i class="fas fa-shopping-cart me-2"></i>
                         Go to Like Packages
                     </a>
@@ -576,7 +576,7 @@
 
                 <!-- Direct link to packages page with unlikes filter -->
                 <div class="text-center mb-4">
-                    <a href="{% url 'payments:packages' %}?type=unlikes" class="btn btn-danger btn-lg">
+                    <a href="{% url 'payments:packages' %}?type=dislikes" class="btn btn-danger btn-lg">
                         <i class="fas fa-shopping-cart me-2"></i>
                         Go to Dislike Packages
                     </a>
