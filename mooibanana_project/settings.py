@@ -247,9 +247,13 @@ EMAIL_TIMEOUT = 60
 # DEFAULT_FROM_EMAIL = 'kennedyakogokweku@gmail.com'
 # EMAIL_TIMEOUT = 60
 
-# Paystack settings
+# Paystack settings (for Ghana)
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
+
+# Stripe settings (for Europe)
+STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 
 # Custom user model
 AUTH_USER_MODEL = 'accounts.CustomUser'

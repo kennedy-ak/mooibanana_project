@@ -332,13 +332,13 @@
                 </div>
                 
                 {% if user.is_authenticated %}
-                    <a href="{% url 'payments:purchase' package.id %}" 
+                    <a href="{% url 'payments:purchase_like' package.id %}"
                        class="cta-button {% if 'Popular' in package.name %}featured{% endif %}">
                         <i class="fas fa-shopping-cart me-2"></i>
                         Get Started
                     </a>
                 {% else %}
-                    <a href="{% url 'accounts:register' %}" 
+                    <a href="{% url 'accounts:register' %}"
                        class="cta-button {% if 'Popular' in package.name %}featured{% endif %}">
                         <i class="fas fa-user-plus me-2"></i>
                         Sign Up to Buy

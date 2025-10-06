@@ -11,22 +11,55 @@ from datetime import datetime
 
 
 class CustomUser(AbstractUser):
+    COUNTRY_CHOICES = [
+        ('GH', 'Ghana'),
+        ('AT', 'Austria'),
+        ('BE', 'Belgium'),
+        ('BG', 'Bulgaria'),
+        ('HR', 'Croatia'),
+        ('CY', 'Cyprus'),
+        ('CZ', 'Czech Republic'),
+        ('DK', 'Denmark'),
+        ('EE', 'Estonia'),
+        ('FI', 'Finland'),
+        ('FR', 'France'),
+        ('DE', 'Germany'),
+        ('GR', 'Greece'),
+        ('HU', 'Hungary'),
+        ('IE', 'Ireland'),
+        ('IT', 'Italy'),
+        ('LV', 'Latvia'),
+        ('LT', 'Lithuania'),
+        ('LU', 'Luxembourg'),
+        ('MT', 'Malta'),
+        ('NL', 'Netherlands'),
+        ('PL', 'Poland'),
+        ('PT', 'Portugal'),
+        ('RO', 'Romania'),
+        ('SK', 'Slovakia'),
+        ('SI', 'Slovenia'),
+        ('ES', 'Spain'),
+        ('SE', 'Sweden'),
+    ]
+
     email = models.EmailField(unique=True, validators=[EmailValidator()])
     is_student = models.BooleanField(default=False)
     university = models.CharField(max_length=200, blank=True)
     student_id = models.CharField(max_length=50, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True)
     is_verified = models.BooleanField(default=False)
+    country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True)
+
     # Like/Dislike Bank (what users can spend)
     likes_balance = models.IntegerField(default=0)
     super_likes_balance = models.IntegerField(default=0)
     unlikes_balance = models.IntegerField(default=0)
-    
+
     # Received counts (what others gave them)
     received_likes_count = models.IntegerField(default=0)
     received_super_likes_count = models.IntegerField(default=0)
     received_unlikes_count = models.IntegerField(default=0)
-    
+
     points_balance = models.IntegerField(default=0)
 
     # Referral system fields

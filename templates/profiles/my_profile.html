@@ -1,20 +1,20 @@
 <!-- templates/profiles/my_profile.html -->
 {% extends 'base.html' %}
 
-{% block title %}Mijn Profiel - Mooibanana{% endblock %}
+{% block title %}My Profile - Mooibanana{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-md-8 mx-auto">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h3>Mijn Profiel</h3>
+                <h3>My Profile</h3>
                 <div>
                     <a href="{% url 'profiles:upload_photos' %}" class="btn btn-success me-2">
-                        <i class="fas fa-images"></i> Foto's Beheren
+                        <i class="fas fa-images"></i> Manage Photos
                     </a>
                     <a href="{% url 'profiles:edit_profile' %}" class="btn btn-primary">
-                        <i class="fas fa-edit"></i> Bewerk Profiel
+                        <i class="fas fa-edit"></i> Edit Profile
                     </a>
                 </div>
             </div>
@@ -56,7 +56,7 @@
                         <div class="alert alert-warning">
                             <small>
                                 <i class="fas fa-exclamation-triangle"></i>
-                                Je profiel is niet compleet. <a href="{% url 'profiles:edit_profile' %}">Voltooi je profiel</a> om zichtbaar te zijn voor anderen.
+                                Your profile is not complete. <a href="{% url 'profiles:edit_profile' %}">Complete your profile</a> to be visible to others.
                             </small>
                         </div>
                         {% endif %}
@@ -71,8 +71,8 @@
                         <p><strong>Email:</strong> {{ user.email }}</p>
                         
                         {% if profile.study_field %}
-                        <p><strong>Studie:</strong> {{ profile.get_study_field_display }}
-                            {% if profile.study_year %} - Jaar {{ profile.study_year }}{% endif %}
+                        <p><strong>Study:</strong> {{ profile.get_study_field_display }}
+                            {% if profile.study_year %} - Year {{ profile.study_year }}{% endif %}
                         </p>
                         {% endif %}
 
@@ -81,11 +81,11 @@
                         {% endif %}
 
                         {% if profile.city %}
-                        <p><strong>Stad:</strong> {{ profile.city }}</p>
+                        <p><strong>City:</strong> {{ profile.city }}</p>
                         {% endif %}
 
                         {% if profile.location %}
-                        <p><strong>Regio:</strong> {{ profile.location }}</p>
+                        <p><strong>Region:</strong> {{ profile.location }}</p>
                         {% endif %}
                         
                         {% if profile.bio %}
@@ -94,35 +94,35 @@
                         {% endif %}
                         
                         {% if profile.get_interests_list %}
-                        <p><strong>Interesses:</strong></p>
+                        <p><strong>Interests:</strong></p>
                         <div class="mb-3">
                             {% for interest in profile.get_interests_list %}
                                 <span class="badge bg-secondary me-1">{{ interest }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
+
                         <!-- Bank Balances (What you can spend) -->
                         <div class="alert alert-info mb-4">
-                            <h6><i class="fas fa-wallet"></i> Je Like/Dislike Bank</h6>
+                            <h6><i class="fas fa-wallet"></i> Your Like/Dislike Bank</h6>
                             <div class="row text-center">
                                 <div class="col-4">
                                     <span class="badge bg-success fs-6 px-2 py-2">
                                         <i class="fas fa-heart"></i> {{ likes_bank_balance }} Likes
                                     </span>
-                                    <small class="d-block text-muted">Te Besteden</small>
+                                    <small class="d-block text-muted">To Spend</small>
                                 </div>
                                 <div class="col-4">
                                     <span class="badge bg-warning fs-6 px-2 py-2">
                                         <i class="fas fa-star"></i> {{ super_likes_bank_balance }} Super
                                     </span>
-                                    <small class="d-block text-muted">Te Besteden</small>
+                                    <small class="d-block text-muted">To Spend</small>
                                 </div>
                                 <div class="col-4">
                                     <span class="badge bg-danger fs-6 px-2 py-2">
                                         <i class="fas fa-times-circle"></i> {{ unlikes_bank_balance }} Dislikes
                                     </span>
-                                    <small class="d-block text-muted">Te Besteden</small>
+                                    <small class="d-block text-muted">To Spend</small>
                                 </div>
                             </div>
                         </div>
@@ -133,28 +133,28 @@
                                 <div class="text-center p-3 bg-success bg-opacity-10 rounded">
                                     <i class="fas fa-heart text-success fa-2x mb-2"></i>
                                     <h5 class="mb-0 text-success">{{ received_likes_count }}</h5>
-                                    <small class="text-muted">Likes Ontvangen</small>
+                                    <small class="text-muted">Likes Received</small>
                                 </div>
                             </div>
                             <div class="col-lg-3 col-md-6 mb-3">
                                 <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
                                     <i class="fas fa-heart text-primary fa-2x mb-2"></i>
                                     <h5 class="mb-0 text-primary">{{ given_likes_count }}</h5>
-                                    <small class="text-muted">Likes Gegeven</small>
+                                    <small class="text-muted">Likes Given</small>
                                 </div>
                             </div>
                             <div class="col-lg-3 col-md-6 mb-3">
                                 <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
                                     <i class="fas fa-times-circle text-danger fa-2x mb-2"></i>
                                     <h5 class="mb-0 text-danger">{{ received_dislikes_count }}</h5>
-                                    <small class="text-muted">Dislikes Ontvangen</small>
+                                    <small class="text-muted">Dislikes Received</small>
                                 </div>
                             </div>
                             <div class="col-lg-3 col-md-6 mb-3">
                                 <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
                                     <i class="fas fa-times-circle text-warning fa-2x mb-2"></i>
                                     <h5 class="mb-0 text-warning">{{ given_dislikes_count }}</h5>
-                                    <small class="text-muted">Dislikes Gegeven</small>
+                                    <small class="text-muted">Dislikes Given</small>
                                 </div>
                             </div>
                         </div>

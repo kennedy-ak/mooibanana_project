@@ -13,8 +13,9 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
 import logging
-from .forms import CustomUserCreationForm, CustomPasswordResetForm
+from .forms import CustomUserCreationForm, CustomPasswordResetForm, UserSettingsForm
 from .models import CustomUser, Referral
+from django.views.generic.edit import UpdateView
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +130,18 @@ class CustomPasswordResetView(PasswordResetView):
                 print(f"{'='*50}\n")
             
             return redirect(self.success_url)
+
+
+class UserSettingsView(LoginRequiredMixin, UpdateView):
+    """View for users to update their account settings including country"""
+    model = CustomUser
+    form_class = UserSettingsForm
+    template_name = 'accounts/settings.html'
+    success_url = reverse_lazy('accounts:settings')
+
+    def get_object(self):
+        return self.request.user
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Your settings have been updated successfully!')
+        return super().form_valid(form)

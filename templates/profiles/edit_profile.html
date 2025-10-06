@@ -3,14 +3,14 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
 
-{% block title %}Profiel Bewerken - Mooibanana{% endblock %}
+{% block title %}Edit Profile - Mooibanana{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header text-center">
-                <h3>Profiel Bewerken</h3>
+                <h3>Edit Profile</h3>
             </div>
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data">
@@ -19,20 +19,20 @@
 
                     <!-- Location Helper -->
                     <div class="mb-3">
-                        <label class="form-label">Locatie Helper</label>
+                        <label class="form-label">Location Helper</label>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-outline-primary" onclick="getCurrentLocation()">
-                                <i class="fas fa-map-marker-alt"></i> Gebruik Huidige Locatie
+                                <i class="fas fa-map-marker-alt"></i> Use Current Location
                             </button>
                             <small class="text-muted align-self-center">
-                                Dit helpt andere gebruikers je te vinden op basis van afstand
+                                This helps other users find you based on distance
                             </small>
                         </div>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">Opslaan</button>
-                        <a href="{% url 'profiles:my_profile' %}" class="btn btn-secondary">Annuleren</a>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <a href="{% url 'profiles:my_profile' %}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -54,23 +54,23 @@ function getCurrentLocation() {
                     lonField.value = position.coords.longitude.toFixed(6);
 
                     // Show success message
-                    alert('Locatie succesvol ingesteld! Latitude: ' + position.coords.latitude.toFixed(6) + ', Longitude: ' + position.coords.longitude.toFixed(6));
+                    alert('Location successfully set! Latitude: ' + position.coords.latitude.toFixed(6) + ', Longitude: ' + position.coords.longitude.toFixed(6));
                 }
             },
             function(error) {
-                let errorMessage = 'Kon locatie niet ophalen: ';
+                let errorMessage = 'Could not get location: ';
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMessage += 'Locatie toegang geweigerd door gebruiker.';
+                        errorMessage += 'Location access denied by user.';
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Locatie informatie niet beschikbaar.';
+                        errorMessage += 'Location information unavailable.';
                         break;
                     case error.TIMEOUT:
-                        errorMessage += 'Locatie verzoek time-out.';
+                        errorMessage += 'Location request timeout.';
                         break;
                     default:
-                        errorMessage += 'Onbekende fout.';
+                        errorMessage += 'Unknown error.';
                         break;
                 }
                 alert(errorMessage);
@@ -82,7 +82,7 @@ function getCurrentLocation() {
             }
         );
     } else {
-        alert('Geolocation wordt niet ondersteund door deze browser.');
+        alert('Geolocation is not supported by this browser.');
     }
 }
 </script>

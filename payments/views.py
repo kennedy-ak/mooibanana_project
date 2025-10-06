@@ -1,6 +1,7 @@
 # payments/views.py
 import requests
 import json
+import stripe
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
@@ -17,6 +18,9 @@ import hashlib
 import hmac
 
 User = get_user_model()
+
+# Initialize Stripe
+stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 
 # Import notification model and utils
 try:
@@ -96,15 +100,49 @@ def packages_api(request):
     
     return JsonResponse(data)
 
+def get_payment_provider(user):
+    """Determine which payment provider to use based on user's country"""
+    if not user.country:
+        return 'paystack'  # Default to Paystack if no country set
+
+    # Ghana uses Paystack
+    if user.country == 'GH':
+        return 'paystack'
+
+    # European countries use Stripe
+    european_countries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
+                         'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
+                         'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
+    if user.country in european_countries:
+        return 'stripe'
+
+    return 'paystack'  # Default
+
 @login_required
 def purchase_like_package(request, package_id):
     package = get_object_or_404(LikePackage, id=package_id, is_active=True)
-    
+
     # Check if user has email
     if not request.user.email:
         messages.error(request, 'Je moet een geldig e-mailadres hebben om te kunnen betalen.')
         return redirect('payments:packages')
-    
+
+    # Check if user has country set
+    if not request.user.country:
+        messages.error(request, 'Please select your country in your profile settings first.')
+        return redirect('payments:packages')
+
+    # Determine payment provider
+    payment_provider = get_payment_provider(request.user)
+
+    if payment_provider == 'stripe':
+        return purchase_like_package_stripe(request, package)
+    else:
+        return purchase_like_package_paystack(request, package)
+
+@login_required
+def purchase_like_package_paystack(request, package):
+    """Handle Paystack payment for like packages"""
     try:
         # Create purchase record
         purchase = Purchase.objects.create(
@@ -112,6 +150,7 @@ def purchase_like_package(request, package_id):
             package_type='like',
             like_package=package,
             amount=package.price,
+            payment_provider='paystack',
             status='pending'
         )
         
@@ -173,14 +212,84 @@ def purchase_like_package(request, package_id):
         return redirect('payments:packages')
 
 @login_required
+def purchase_like_package_stripe(request, package):
+    """Handle Stripe payment for like packages"""
+    try:
+        # Create purchase record
+        purchase = Purchase.objects.create(
+            user=request.user,
+            package_type='like',
+            like_package=package,
+            amount=package.price,
+            payment_provider='stripe',
+            status='pending'
+        )
+
+        # Create Stripe Checkout Session
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=request.user.email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'unit_amount': int(package.price * 100),  # Convert to cents
+                    'product_data': {
+                        'name': package.name,
+                        'description': f'{package.regular_likes} regular likes' +
+                                     (f', {package.super_likes} super likes' if package.super_likes > 0 else ''),
+                    },
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=request.build_absolute_uri(reverse('payments:stripe_success')) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.build_absolute_uri(reverse('payments:cancel')),
+            metadata={
+                'user_id': str(request.user.id),
+                'package_id': str(package.id),
+                'purchase_id': str(purchase.id),
+                'purchase_type': 'self',
+                'package_type': 'like',
+            }
+        )
+
+        # Store session ID
+        purchase.stripe_session_id = checkout_session.id
+        purchase.save()
+
+        # Redirect to Stripe Checkout
+        return redirect(checkout_session.url)
+
+    except Exception as e:
+        messages.error(request, f'Payment error: {str(e)}')
+        print(f"Stripe Exception: {e}")  # Debug print
+        return redirect('payments:packages')
+
+@login_required
 def purchase_dislike_package(request, package_id):
     package = get_object_or_404(DislikePackage, id=package_id, is_active=True)
-    
+
     # Check if user has email
     if not request.user.email:
         messages.error(request, 'Je moet een geldig e-mailadres hebben om te kunnen betalen.')
         return redirect('payments:packages')
-    
+
+    # Check if user has country set
+    if not request.user.country:
+        messages.error(request, 'Please select your country in your profile settings first.')
+        return redirect('payments:packages')
+
+    # Determine payment provider
+    payment_provider = get_payment_provider(request.user)
+
+    if payment_provider == 'stripe':
+        return purchase_dislike_package_stripe(request, package)
+    else:
+        return purchase_dislike_package_paystack(request, package)
+
+@login_required
+def purchase_dislike_package_paystack(request, package):
+    """Handle Paystack payment for dislike packages"""
     try:
         # Create purchase record
         purchase = Purchase.objects.create(
@@ -188,6 +297,7 @@ def purchase_dislike_package(request, package_id):
             package_type='dislike',
             dislike_package=package,
             amount=package.price,
+            payment_provider='paystack',
             status='pending'
         )
         
@@ -246,6 +356,59 @@ def purchase_dislike_package(request, package_id):
     except Exception as e:
         messages.error(request, f'Payment error: {str(e)}')
         print(f"Exception: {e}")  # Debug print
+        return redirect('payments:packages')
+
+@login_required
+def purchase_dislike_package_stripe(request, package):
+    """Handle Stripe payment for dislike packages"""
+    try:
+        # Create purchase record
+        purchase = Purchase.objects.create(
+            user=request.user,
+            package_type='dislike',
+            dislike_package=package,
+            amount=package.price,
+            payment_provider='stripe',
+            status='pending'
+        )
+
+        # Create Stripe Checkout Session
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=request.user.email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'eur',
+                    'unit_amount': int(package.price * 100),  # Convert to cents
+                    'product_data': {
+                        'name': package.name,
+                        'description': f'{package.unlikes} dislikes',
+                    },
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=request.build_absolute_uri(reverse('payments:stripe_success')) + '?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=request.build_absolute_uri(reverse('payments:cancel')),
+            metadata={
+                'user_id': str(request.user.id),
+                'package_id': str(package.id),
+                'purchase_id': str(purchase.id),
+                'purchase_type': 'self',
+                'package_type': 'dislike',
+            }
+        )
+
+        # Store session ID
+        purchase.stripe_session_id = checkout_session.id
+        purchase.save()
+
+        # Redirect to Stripe Checkout
+        return redirect(checkout_session.url)
+
+    except Exception as e:
+        messages.error(request, f'Payment error: {str(e)}')
+        print(f"Stripe Exception: {e}")  # Debug print
         return redirect('payments:packages')
 
 @login_required
@@ -447,6 +610,114 @@ def paystack_callback(request):
             messages.error(request, 'Payment verification failed')
             return redirect('payments:cancel')
             
+    except Exception as e:
+        messages.error(request, f'Payment verification error: {str(e)}')
+        return redirect('payments:cancel')
+
+@login_required
+def stripe_success(request):
+    """Handle Stripe payment success callback"""
+    session_id = request.GET.get('session_id')
+
+    if not session_id:
+        messages.error(request, 'Invalid payment session')
+        return redirect('payments:packages')
+
+    try:
+        # Retrieve the Stripe session
+        session = stripe.checkout.Session.retrieve(session_id)
+
+        if session.payment_status == 'paid':
+            # Find purchase by session ID
+            try:
+                purchase = Purchase.objects.get(stripe_session_id=session_id)
+
+                if purchase.status != 'completed':
+                    purchase.status = 'completed'
+                    purchase.completed_at = timezone.now()
+                    purchase.save()
+
+                    # Process the purchase based on package type and purchase type
+                    metadata = session.metadata
+                    purchase_type = metadata.get('purchase_type', 'self')
+                    package_type = metadata.get('package_type', 'like')
+
+                    if purchase_type == 'gift' and 'recipient_id' in metadata:
+                        # Gift purchase
+                        try:
+                            recipient = User.objects.get(id=metadata['recipient_id'])
+                            package = purchase.package
+
+                            if package_type == 'like':
+                                recipient.likes_balance += package.regular_likes
+                                if package.super_likes > 0:
+                                    purchase.user.super_likes_balance += package.super_likes
+                                recipient.save()
+                                purchase.user.save()
+
+                                if Notification:
+                                    notification = Notification.objects.create(
+                                        sender=purchase.user,
+                                        receiver=recipient,
+                                        notification_type='gift_received',
+                                        message=f'You received a gift: {package.regular_likes} regular likes from {purchase.user.first_name or purchase.user.username}!'
+                                    )
+                                    if broadcast_notification:
+                                        broadcast_notification(notification)
+
+                                recipient_name = metadata.get("recipient_name", "unknown")
+                                messages.success(request, f'Gift sent successfully! {package.regular_likes} regular likes to {recipient_name}!')
+
+                            elif package_type == 'dislike':
+                                recipient.unlikes_balance += package.unlikes
+                                recipient.save()
+
+                                if Notification:
+                                    notification = Notification.objects.create(
+                                        sender=purchase.user,
+                                        receiver=recipient,
+                                        notification_type='gift_received',
+                                        message=f'You received a gift: {package.unlikes} dislikes from {purchase.user.first_name or purchase.user.username}!'
+                                    )
+                                    if broadcast_notification:
+                                        broadcast_notification(notification)
+
+                                recipient_name = metadata.get("recipient_name", "unknown")
+                                messages.success(request, f'Gift sent successfully! {package.unlikes} dislikes to {recipient_name}!')
+
+                            return redirect('profiles:profile_detail', pk=recipient.id)
+                        except User.DoesNotExist:
+                            messages.error(request, 'Recipient not found')
+                            return redirect('payments:success')
+                    else:
+                        # Regular purchase
+                        package = purchase.package
+
+                        if package_type == 'like':
+                            purchase.user.likes_balance += package.regular_likes
+                            if package.super_likes > 0:
+                                purchase.user.super_likes_balance += package.super_likes
+                            purchase.user.save()
+
+                            success_parts = [f'{package.regular_likes} likes']
+                            if package.super_likes > 0:
+                                success_parts.append(f'{package.super_likes} super likes')
+                            messages.success(request, f'Payment successful! You received {", ".join(success_parts)}.')
+
+                        elif package_type == 'dislike':
+                            purchase.user.unlikes_balance += package.unlikes
+                            purchase.user.save()
+
+                            messages.success(request, f'Payment successful! You received {package.unlikes} dislikes.')
+
+                        return redirect('payments:success')
+            except Purchase.DoesNotExist:
+                messages.error(request, 'Purchase not found')
+                return redirect('payments:packages')
+        else:
+            messages.error(request, 'Payment not completed')
+            return redirect('payments:cancel')
+
     except Exception as e:
         messages.error(request, f'Payment verification error: {str(e)}')
         return redirect('payments:cancel')

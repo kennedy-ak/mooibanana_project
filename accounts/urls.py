@@ -16,6 +16,7 @@ urlpatterns = [
     path('verify-email/', views.VerifyEmailView.as_view(), name='verify_email'),
     path('referrals/', views.ReferralDashboardView.as_view(), name='referral_dashboard'),
     path('generate-referral-link/', views.generate_referral_link, name='generate_referral_link'),
+    path('settings/', views.UserSettingsView.as_view(), name='settings'),
     
     # Password reset URLs
     path('password-reset/', 

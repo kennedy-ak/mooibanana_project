@@ -7,6 +7,15 @@ from .models import CustomUser
 User = get_user_model()
 
 class CustomUserCreationForm(UserCreationForm):
+    country = forms.ChoiceField(
+        choices=CustomUser.COUNTRY_CHOICES,
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-control'
+        }),
+        help_text='Select your country to use the appropriate payment system'
+    )
+
     referral_code = forms.CharField(
         max_length=10,
         required=False,
@@ -19,7 +28,7 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = CustomUser
-        fields = ('username', 'email', 'password1', 'password2', 'referral_code')
+        fields = ('username', 'email', 'country', 'password1', 'password2', 'referral_code')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -54,7 +63,7 @@ class CustomUserCreationForm(UserCreationForm):
 
 class CustomPasswordResetForm(PasswordResetForm):
     """Custom password reset form that validates if email exists"""
-    
+
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if email:
@@ -65,10 +74,26 @@ class CustomPasswordResetForm(PasswordResetForm):
                     "Please check your email or create a new account."
                 )
         return email
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['email'].widget.attrs.update({
             'class': 'form-control',
             'placeholder': 'Enter your email address'
         })
+
+
+class UserSettingsForm(forms.ModelForm):
+    """Form for users to update their account settings including country"""
+
+    class Meta:
+        model = CustomUser
+        fields = ('country',)
+        widgets = {
+            'country': forms.Select(attrs={
+                'class': 'form-control'
+            })
+        }
+        help_texts = {
+            'country': 'Your country determines which payment system will be used (Ghana uses Paystack, Europe uses Stripe)'
+        }
