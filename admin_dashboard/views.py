@@ -3,7 +3,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Sum, Avg, Max, Min, F, ExpressionWrapper
+from django.db.models.functions import TruncDate, ExtractHour, ExtractYear
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -16,7 +17,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from profiles.models import Profile
 from notifications.models import Notification
-from likes.models import Like
+from likes.models import Like, Unlike
 from quiz.models import Question, Choice, UserQuizResponse, DailyQuiz
 
 # Import models that might not exist
@@ -84,7 +85,7 @@ def admin_dashboard(request):
         total_purchases = Purchase.objects.count()
         completed_purchases = Purchase.objects.filter(status='completed').count()
         revenue = Purchase.objects.filter(status='completed').aggregate(
-            total=Count('amount')
+            total=Sum('amount')
         )['total'] or 0
     else:
         total_purchases = completed_purchases = revenue = 0
@@ -92,7 +93,7 @@ def admin_dashboard(request):
     # Recent activity
     recent_users = User.objects.order_by('-date_joined')[:5]
     recent_matches = Match.objects.select_related('user1', 'user2').order_by('-created_at')[:5] if Match else []
-    recent_purchases = Purchase.objects.select_related('user', 'package').order_by('-created_at')[:5] if Purchase else []
+    recent_purchases = Purchase.objects.select_related('user', 'like_package', 'dislike_package').order_by('-created_at')[:5] if Purchase else []
     
     # Study field distribution
     study_field_stats = Profile.objects.values('study_field').annotate(
@@ -231,47 +232,456 @@ def delete_user_profile(request, user_id):
 
 @user_passes_test(is_superuser)
 def platform_analytics(request):
-    """Platform analytics and insights"""
-    
+    """Comprehensive platform analytics and insights"""
+    from django.db.models import Avg, Sum, Max, Min, F, ExpressionWrapper, fields as dj_fields
+    from datetime import date
+    from decimal import Decimal
+
     # Get date range from request
     days = int(request.GET.get('days', 30))
     start_date = timezone.now() - timedelta(days=days)
-    
-    # User registration over time
-    user_registrations = User.objects.filter(
-        date_joined__gte=start_date
-    ).extra(
-        select={'day': 'date(date_joined)'}
-    ).values('day').annotate(count=Count('id')).order_by('day')
-    
-    # Matches over time
-    if Match:
-        matches_over_time = Match.objects.filter(
-            created_at__gte=start_date
-        ).extra(
-            select={'day': 'date(created_at)'}
-        ).values('day').annotate(count=Count('id')).order_by('day')
-    else:
-        matches_over_time = []
-    
-    # Most popular study fields
-    popular_fields = Profile.objects.values('study_field').annotate(
+    today = timezone.now()
+    week_ago = today - timedelta(days=7)
+    month_ago = today - timedelta(days=30)
+
+    # ===== 1. USER ANALYTICS =====
+    total_users = User.objects.count()
+    new_users_period = User.objects.filter(date_joined__gte=start_date).count()
+
+    # Daily/Weekly/Monthly Active Users
+    dau = User.objects.filter(last_login__gte=today - timedelta(days=1)).count()
+    wau = User.objects.filter(last_login__gte=week_ago).count()
+    mau = User.objects.filter(last_login__gte=month_ago).count()
+
+    # Retention Rate (Day 1, 7, 30)
+    day1_cohort = User.objects.filter(date_joined__gte=today - timedelta(days=2), date_joined__lt=today - timedelta(days=1))
+    day1_retained = day1_cohort.filter(last_login__gte=today - timedelta(days=1)).count()
+    day1_retention = round((day1_retained / day1_cohort.count() * 100) if day1_cohort.count() > 0 else 0, 2)
+
+    day7_cohort = User.objects.filter(date_joined__gte=today - timedelta(days=14), date_joined__lt=today - timedelta(days=7))
+    day7_retained = day7_cohort.filter(last_login__gte=week_ago).count()
+    day7_retention = round((day7_retained / day7_cohort.count() * 100) if day7_cohort.count() > 0 else 0, 2)
+
+    day30_cohort = User.objects.filter(date_joined__gte=today - timedelta(days=60), date_joined__lt=month_ago)
+    day30_retained = day30_cohort.filter(last_login__gte=month_ago).count()
+    day30_retention = round((day30_retained / day30_cohort.count() * 100) if day30_cohort.count() > 0 else 0, 2)
+
+    # Churn Rate (users who haven't logged in for 30+ days)
+    churned_users = User.objects.filter(last_login__lt=month_ago).count()
+    churn_rate = round((churned_users / total_users * 100) if total_users > 0 else 0, 2)
+
+    # User demographics
+    students_count = User.objects.filter(is_student=True).count()
+    verified_count = User.objects.filter(is_verified=True).count()
+    country_distribution = User.objects.values('country').annotate(count=Count('id')).order_by('-count')[:10]
+
+    # Gender distribution
+    gender_distribution = Profile.objects.exclude(gender='').values('gender').annotate(count=Count('id')).order_by('-count')
+
+    # Study year distribution
+    study_year_distribution = Profile.objects.exclude(study_year__isnull=True).values('study_year').annotate(count=Count('id')).order_by('study_year')
+
+    # Age distribution (calculated from birth_date)
+    from django.db.models.functions import ExtractYear
+    age_ranges = {
+        '18-22': User.objects.filter(profile__birth_date__gte=today - timedelta(days=365*22), profile__birth_date__lt=today - timedelta(days=365*18)).count(),
+        '23-27': User.objects.filter(profile__birth_date__gte=today - timedelta(days=365*27), profile__birth_date__lt=today - timedelta(days=365*23)).count(),
+        '28-32': User.objects.filter(profile__birth_date__gte=today - timedelta(days=365*32), profile__birth_date__lt=today - timedelta(days=365*28)).count(),
+        '33+': User.objects.filter(profile__birth_date__lt=today - timedelta(days=365*33)).count(),
+    }
+
+    # School/University distribution (top 10)
+    university_distribution = Profile.objects.exclude(school_name='').values('school_name').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
-    
-    # User engagement metrics
-    active_users = User.objects.filter(
-        last_login__gte=start_date
+
+    # Referral analytics
+    referred_users = User.objects.filter(referred_by__isnull=False).count()
+    organic_users = total_users - referred_users
+
+    # User registrations over time
+    from django.db.models.functions import TruncDate
+    user_registrations = User.objects.filter(
+        date_joined__gte=start_date
+    ).annotate(
+        day=TruncDate('date_joined')
+    ).values('day').annotate(count=Count('id')).order_by('day')
+
+    # ===== 2. PROFILE ANALYTICS =====
+    total_profiles = Profile.objects.count()
+    complete_profiles = Profile.objects.filter(is_complete=True).count()
+    incomplete_profiles = total_profiles - complete_profiles
+    profiles_with_photos = Profile.objects.exclude(profile_picture='').count()
+    completion_rate = round((complete_profiles / total_profiles * 100) if total_profiles > 0 else 0, 2)
+
+    # Average time to complete profile (users who completed within 7 days)
+    completed_with_time = User.objects.filter(
+        profile__is_complete=True,
+        profile__updated_at__isnull=False
+    ).annotate(
+        completion_time=ExpressionWrapper(
+            F('profile__updated_at') - F('date_joined'),
+            output_field=dj_fields.DurationField()
+        )
+    )
+    avg_completion_time_seconds = completed_with_time.aggregate(avg=Avg('completion_time'))['avg']
+    avg_completion_hours = round(avg_completion_time_seconds.total_seconds() / 3600, 2) if avg_completion_time_seconds else 0
+
+    # Profile abandonment rate (incomplete profiles > 7 days old)
+    old_incomplete = Profile.objects.filter(
+        is_complete=False,
+        user__date_joined__lt=today - timedelta(days=7)
     ).count()
-    
+    abandonment_rate = round((old_incomplete / total_profiles * 100) if total_profiles > 0 else 0, 2)
+
+    # Popular interests (top 20)
+    all_interests = []
+    for profile in Profile.objects.exclude(interests=''):
+        interests_list = [i.strip() for i in profile.interests.split(',') if i.strip()]
+        all_interests.extend(interests_list)
+
+    from collections import Counter
+    interest_counts = Counter(all_interests)
+    popular_interests = [{'interest': k, 'count': v} for k, v in interest_counts.most_common(20)]
+
+    # Study field distribution
+    popular_fields = Profile.objects.exclude(study_field='').values('study_field').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    # ===== 3. LIKE/UNLIKE ANALYTICS =====
+    total_likes = Like.objects.count()
+    regular_likes = Like.objects.filter(like_type='regular').count()
+    super_likes = Like.objects.filter(like_type='super').count()
+    mutual_likes = Like.objects.filter(is_mutual=True).count()
+
+    total_unlikes = Unlike.objects.count()
+
+    # Like conversion rate (likes that became mutual)
+    like_conversion_rate = round((mutual_likes / total_likes * 100) if total_likes > 0 else 0, 2)
+
+    # Average time to mutual like (not tracked - no mutual_at field)
+    avg_time_to_mutual_hours = 0  # Placeholder - field doesn't exist in model
+
+    # Likes over time
+    likes_over_time = Like.objects.filter(
+        created_at__gte=start_date
+    ).annotate(
+        day=TruncDate('created_at')
+    ).values('day').annotate(count=Count('id')).order_by('day')
+
+    # Top liked users
+    top_liked_users = User.objects.annotate(
+        total_received=F('received_likes_count') + F('received_super_likes_count')
+    ).order_by('-total_received')[:10]
+
+    # Average likes per user
+    avg_likes_sent = Like.objects.values('from_user').annotate(count=Count('id')).aggregate(avg=Avg('count'))['avg'] or 0
+    avg_likes_received = round((total_likes / total_users) if total_users > 0 else 0, 2)
+
+    # ===== 4. PAYMENT & REVENUE ANALYTICS =====
+    if Purchase:
+        total_purchases = Purchase.objects.count()
+        completed_purchases = Purchase.objects.filter(status='completed')
+        failed_purchases = Purchase.objects.filter(status='failed')
+        total_revenue = completed_purchases.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        # Revenue by provider
+        paystack_revenue = completed_purchases.filter(payment_provider='paystack').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        stripe_revenue = completed_purchases.filter(payment_provider='stripe').aggregate(total=Sum('amount'))['total'] or Decimal('0')
+
+        # Revenue over time
+        revenue_over_time = completed_purchases.filter(
+            created_at__gte=start_date
+        ).annotate(
+            day=TruncDate('created_at')
+        ).values('day').annotate(revenue=Sum('amount')).order_by('day')
+
+        # Average order value
+        aov = completed_purchases.aggregate(avg=Avg('amount'))['avg'] or Decimal('0')
+
+        # Revenue per user (RPU)
+        buyers_count = completed_purchases.values('user').distinct().count()
+        rpu = round(float(total_revenue) / buyers_count, 2) if buyers_count > 0 else 0
+
+        # Repeat purchase rate
+        repeat_buyers = completed_purchases.values('user').annotate(
+            purchase_count=Count('id')
+        ).filter(purchase_count__gt=1).count()
+        repeat_purchase_rate = round((repeat_buyers / buyers_count * 100) if buyers_count > 0 else 0, 2)
+
+        # Failed transaction analysis
+        failed_count = failed_purchases.count()
+        failure_rate = round((failed_count / total_purchases * 100) if total_purchases > 0 else 0, 2)
+
+        # Failed by provider
+        paystack_failed = failed_purchases.filter(payment_provider='paystack').count()
+        stripe_failed = failed_purchases.filter(payment_provider='stripe').count()
+
+        # Package popularity
+        like_packages_sold = completed_purchases.filter(package_type='like').count()
+        dislike_packages_sold = completed_purchases.filter(package_type='dislike').count()
+
+        # Conversion metrics
+        conversion_rate = round((buyers_count / total_users * 100) if total_users > 0 else 0, 2)
+    else:
+        total_purchases = total_revenue = aov = rpu = 0
+        revenue_over_time = []
+        paystack_revenue = stripe_revenue = Decimal('0')
+        like_packages_sold = dislike_packages_sold = 0
+        conversion_rate = repeat_purchase_rate = failure_rate = 0
+        failed_count = paystack_failed = stripe_failed = 0
+
+    # ===== 5. QUIZ ANALYTICS =====
+    total_questions = Question.objects.count()
+    active_questions = Question.objects.filter(is_active=True).count()
+    total_quiz_responses = UserQuizResponse.objects.count()
+    correct_responses = UserQuizResponse.objects.filter(is_correct=True).count()
+    quiz_accuracy = round((correct_responses / total_quiz_responses * 100) if total_quiz_responses > 0 else 0, 2)
+
+    # Quiz participation rate
+    users_participated = UserQuizResponse.objects.values('user').distinct().count()
+    participation_rate = round((users_participated / total_users * 100) if total_users > 0 else 0, 2)
+
+    # Quiz engagement by time of day
+    from django.db.models.functions import ExtractHour
+    quiz_by_hour = UserQuizResponse.objects.annotate(
+        hour=ExtractHour('answered_at')
+    ).values('hour').annotate(count=Count('id')).order_by('hour')
+
+    # Quiz streaks (users with consecutive daily participation)
+    # Simplified: count users who answered in last 3 consecutive days
+    three_days_ago = today - timedelta(days=3)
+    streak_users = UserQuizResponse.objects.filter(
+        answered_at__gte=three_days_ago
+    ).values('user').annotate(
+        days_participated=Count('answered_at__date', distinct=True)
+    ).filter(days_participated__gte=3).count()
+
+    # Quiz engagement over time
+    quiz_responses_over_time = UserQuizResponse.objects.filter(
+        answered_at__gte=start_date
+    ).annotate(
+        day=TruncDate('answered_at')
+    ).values('day').annotate(count=Count('id')).order_by('day')
+
+    # Category popularity
+    category_stats = Question.objects.values('category').annotate(
+        total_questions=Count('id'),
+        total_responses=Count('user_responses')
+    ).order_by('-total_responses')
+
+    # ===== 6. REFERRAL ANALYTICS =====
+    try:
+        from accounts.models import Referral
+        total_referrals = Referral.objects.count()
+        completed_referrals = Referral.objects.filter(status='completed').count()
+        referral_conversion_rate = round((completed_referrals / total_referrals * 100) if total_referrals > 0 else 0, 2)
+        total_referral_points = Referral.objects.filter(status='completed').aggregate(total=Sum('points_awarded'))['total'] or 0
+
+        # Top referrers
+        top_referrers = User.objects.annotate(
+            referral_count=Count('referral_activities', filter=Q(referral_activities__status='completed'))
+        ).filter(referral_count__gt=0).order_by('-referral_count')[:10]
+    except ImportError:
+        total_referrals = completed_referrals = referral_conversion_rate = total_referral_points = 0
+        top_referrers = []
+
+    # ===== 8. REWARDS ANALYTICS =====
+    try:
+        from rewards.models import Reward, RewardClaim
+        total_rewards = Reward.objects.count()
+        active_rewards = Reward.objects.filter(is_active=True).count()
+        total_claims = RewardClaim.objects.count()
+
+        # Points circulation
+        total_points_in_system = User.objects.aggregate(total=Sum('points_balance'))['total'] or 0
+        total_points_spent = RewardClaim.objects.aggregate(total=Sum('points_spent'))['total'] or 0
+
+        # Popular rewards
+        popular_rewards = Reward.objects.annotate(
+            claim_count=Count('rewards_claims')
+        ).order_by('-claim_count')[:5]
+    except ImportError:
+        total_rewards = active_rewards = total_claims = 0
+        total_points_in_system = total_points_spent = 0
+        popular_rewards = []
+
+    # ===== 9. GEOGRAPHIC ANALYTICS =====
+    users_by_country = User.objects.exclude(country='').values('country').annotate(
+        count=Count('id')
+    ).order_by('-count')
+
+    # City distribution (top 10)
+    users_by_city = Profile.objects.exclude(city='').values('city').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    # ===== 10. FUNNEL ANALYSIS =====
+    # Registration → Profile Completion → First Like → Purchase
+    funnel_registered = total_users
+    funnel_profile_complete = complete_profiles
+    funnel_first_like = User.objects.filter(likes_given__isnull=False).distinct().count()
+    funnel_purchased = Purchase.objects.values('user').distinct().count() if Purchase else 0
+
+    funnel_profile_rate = round((funnel_profile_complete / funnel_registered * 100) if funnel_registered > 0 else 0, 2)
+    funnel_like_rate = round((funnel_first_like / funnel_profile_complete * 100) if funnel_profile_complete > 0 else 0, 2)
+    funnel_purchase_rate = round((funnel_purchased / funnel_first_like * 100) if funnel_first_like > 0 else 0, 2)
+
+    # ===== 11. COMPARATIVE & TREND ANALYTICS =====
+    # Week-over-week growth
+    users_this_week = User.objects.filter(date_joined__gte=week_ago).count()
+    users_last_week = User.objects.filter(
+        date_joined__gte=week_ago - timedelta(days=7),
+        date_joined__lt=week_ago
+    ).count()
+    wow_growth = round(((users_this_week - users_last_week) / users_last_week * 100) if users_last_week > 0 else 0, 2)
+
+    # Month-over-month growth
+    users_this_month = User.objects.filter(date_joined__gte=month_ago).count()
+    users_last_month = User.objects.filter(
+        date_joined__gte=month_ago - timedelta(days=30),
+        date_joined__lt=month_ago
+    ).count()
+    mom_growth = round(((users_this_month - users_last_month) / users_last_month * 100) if users_last_month > 0 else 0, 2)
+
+    # ===== 12. UPDATES ANALYTICS =====
+    try:
+        from updates.models import Update
+        total_updates = Update.objects.count()
+        recent_updates = Update.objects.filter(created_at__gte=start_date).count()
+    except:
+        total_updates = recent_updates = 0
+
+    # ===== 13. ADVERTISEMENT ANALYTICS =====
+    try:
+        from advertisements.models import Advertisement
+        total_ads = Advertisement.objects.count()
+        active_ads = Advertisement.objects.filter(is_active=True).count()
+    except:
+        total_ads = active_ads = 0
+
+    # ===== 10. CONTENT & DISCOVERY ANALYTICS =====
+    # Profile views (if tracked - placeholder for now)
+    # Calculate percentage of profiles with photos
+    profiles_with_photos_count = Profile.objects.exclude(profile_picture='').count()
+    avg_profile_completeness = round((profiles_with_photos_count / total_profiles * 100) if total_profiles > 0 else 0, 2)
+
     context = {
         'days': days,
+
+        # User Analytics
+        'total_users': total_users,
+        'new_users_period': new_users_period,
+        'dau': dau,
+        'wau': wau,
+        'mau': mau,
+        'day1_retention': day1_retention,
+        'day7_retention': day7_retention,
+        'day30_retention': day30_retention,
+        'churn_rate': churn_rate,
+        'students_count': students_count,
+        'verified_count': verified_count,
+        'country_distribution': country_distribution,
+        'gender_distribution': gender_distribution,
+        'study_year_distribution': study_year_distribution,
+        'age_ranges': age_ranges,
+        'university_distribution': university_distribution,
+        'referred_users': referred_users,
+        'organic_users': organic_users,
         'user_registrations': list(user_registrations),
-        'matches_over_time': list(matches_over_time),
+
+        # Profile Analytics
+        'total_profiles': total_profiles,
+        'complete_profiles': complete_profiles,
+        'incomplete_profiles': incomplete_profiles,
+        'profiles_with_photos': profiles_with_photos,
+        'completion_rate': completion_rate,
+        'avg_completion_hours': avg_completion_hours,
+        'abandonment_rate': abandonment_rate,
+        'popular_interests': popular_interests,
         'popular_fields': popular_fields,
-        'active_users': active_users,
+
+        # Like/Unlike Analytics
+        'total_likes': total_likes,
+        'regular_likes': regular_likes,
+        'super_likes': super_likes,
+        'mutual_likes': mutual_likes,
+        'total_unlikes': total_unlikes,
+        'like_conversion_rate': like_conversion_rate,
+        'avg_time_to_mutual_hours': avg_time_to_mutual_hours,
+        'likes_over_time': list(likes_over_time),
+        'top_liked_users': top_liked_users,
+        'avg_likes_sent': round(avg_likes_sent, 2),
+        'avg_likes_received': avg_likes_received,
+
+        # Payment Analytics
+        'total_purchases': total_purchases,
+        'total_revenue': total_revenue,
+        'paystack_revenue': paystack_revenue,
+        'stripe_revenue': stripe_revenue,
+        'revenue_over_time': list(revenue_over_time),
+        'aov': aov,
+        'rpu': rpu,
+        'repeat_purchase_rate': repeat_purchase_rate,
+        'failure_rate': failure_rate,
+        'failed_count': failed_count,
+        'paystack_failed': paystack_failed,
+        'stripe_failed': stripe_failed,
+        'like_packages_sold': like_packages_sold,
+        'dislike_packages_sold': dislike_packages_sold,
+        'conversion_rate': conversion_rate,
+
+        # Quiz Analytics
+        'total_questions': total_questions,
+        'active_questions': active_questions,
+        'total_quiz_responses': total_quiz_responses,
+        'quiz_accuracy': quiz_accuracy,
+        'participation_rate': participation_rate,
+        'quiz_by_hour': list(quiz_by_hour),
+        'streak_users': streak_users,
+        'quiz_responses_over_time': list(quiz_responses_over_time),
+        'category_stats': category_stats,
+
+        # Referral Analytics
+        'total_referrals': total_referrals,
+        'completed_referrals': completed_referrals,
+        'referral_conversion_rate': referral_conversion_rate,
+        'total_referral_points': total_referral_points,
+        'top_referrers': top_referrers,
+
+        # Rewards Analytics
+        'total_rewards': total_rewards,
+        'active_rewards': active_rewards,
+        'total_claims': total_claims,
+        'total_points_in_system': total_points_in_system,
+        'total_points_spent': total_points_spent,
+        'popular_rewards': popular_rewards,
+
+        # Geographic Analytics
+        'users_by_country': users_by_country,
+        'users_by_city': users_by_city,
+
+        # Funnel Analytics
+        'funnel_registered': funnel_registered,
+        'funnel_profile_complete': funnel_profile_complete,
+        'funnel_first_like': funnel_first_like,
+        'funnel_purchased': funnel_purchased,
+        'funnel_profile_rate': funnel_profile_rate,
+        'funnel_like_rate': funnel_like_rate,
+        'funnel_purchase_rate': funnel_purchase_rate,
+
+        # Trend Analytics
+        'wow_growth': wow_growth,
+        'mom_growth': mom_growth,
+
+        # Content Analytics
+        'total_updates': total_updates,
+        'recent_updates': recent_updates,
+        'total_ads': total_ads,
+        'active_ads': active_ads,
     }
-    
+
     return render(request, 'admin_dashboard/analytics.html', context)
 
 
@@ -348,8 +758,8 @@ def quiz_management(request):
     week_ago = today - timedelta(days=7)
     weekly_responses = UserQuizResponse.objects.filter(
         answered_at__gte=week_ago
-    ).extra(
-        select={'day': 'date(answered_at)'}
+    ).annotate(
+        day=TruncDate('answered_at')
     ).values('day').annotate(
         count=Count('id'),
         correct=Count('id', filter=Q(is_correct=True))
@@ -470,12 +880,155 @@ def set_daily_quiz(request, question_id):
     """Set a specific question as today's daily quiz"""
     question = get_object_or_404(Question, id=question_id, is_active=True)
     today = timezone.now().date()
-    
+
     # Remove existing daily quiz for today
     DailyQuiz.objects.filter(date=today).delete()
-    
+
     # Create new daily quiz
     DailyQuiz.objects.create(question=question, date=today)
-    
+
     messages.success(request, f'Question "{question.text[:50]}..." set as today\'s daily quiz!')
     return redirect('admin_dashboard:quiz_management')
+
+
+@user_passes_test(is_superuser)
+def question_detail(request, question_id):
+    """View detailed statistics for a specific question including users who got it right/wrong"""
+    question = get_object_or_404(Question, id=question_id)
+
+    # Get all responses for this question
+    all_responses = UserQuizResponse.objects.filter(
+        question=question
+    ).select_related('user', 'selected_choice').order_by('-answered_at')
+
+    # Separate correct and incorrect responses
+    correct_responses = all_responses.filter(is_correct=True)
+    incorrect_responses = all_responses.filter(is_correct=False)
+
+    # Calculate statistics
+    total_responses = all_responses.count()
+    total_correct = correct_responses.count()
+    total_incorrect = incorrect_responses.count()
+    accuracy = round((total_correct / total_responses * 100) if total_responses > 0 else 0, 2)
+
+    # Get choice statistics
+    choice_stats = []
+    for choice in question.choices.all().order_by('order'):
+        choice_count = all_responses.filter(selected_choice=choice).count()
+        choice_percentage = round((choice_count / total_responses * 100) if total_responses > 0 else 0, 2)
+        choice_stats.append({
+            'choice': choice,
+            'count': choice_count,
+            'percentage': choice_percentage,
+            'is_correct': choice.is_correct
+        })
+
+    # Check if this is the daily quiz
+    today = timezone.now().date()
+    is_daily_quiz = DailyQuiz.objects.filter(question=question, date=today).exists()
+
+    context = {
+        'question': question,
+        'total_responses': total_responses,
+        'total_correct': total_correct,
+        'total_incorrect': total_incorrect,
+        'accuracy': accuracy,
+        'correct_responses': correct_responses,
+        'incorrect_responses': incorrect_responses,
+        'choice_stats': choice_stats,
+        'is_daily_quiz': is_daily_quiz,
+    }
+
+    return render(request, 'admin_dashboard/question_detail.html', context)
+
+
+@user_passes_test(is_superuser)
+def generate_questions(request):
+    """Generate quiz questions using Open Trivia Database API"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+    try:
+        import json
+        import requests
+        import html
+
+        data = json.loads(request.body)
+        category = data.get('category', 'general')
+        difficulty = data.get('difficulty', 'medium')
+        count = min(int(data.get('count', 5)), 10)  # Max 10 questions
+
+        # Map our categories to Open Trivia DB categories
+        category_map = {
+            'general': 9,      # General Knowledge
+            'science': 17,     # Science & Nature
+            'history': 23,     # History
+            'sports': 21,      # Sports
+            'entertainment': 11,  # Film
+            'geography': 22,   # Geography
+            'literature': 10,  # Books
+            'technology': 18,  # Computers
+        }
+
+        trivia_category = category_map.get(category, 9)
+
+        # Fetch questions from Open Trivia Database
+        url = f'https://opentdb.com/api.php?amount={count}&category={trivia_category}&difficulty={difficulty}&type=multiple'
+
+        response = requests.get(url, timeout=10)
+
+        if response.status_code != 200:
+            return JsonResponse({'success': False, 'error': 'Failed to fetch questions from API'})
+
+        trivia_data = response.json()
+
+        if trivia_data['response_code'] != 0:
+            return JsonResponse({'success': False, 'error': 'No questions available for this category/difficulty'})
+
+        created_count = 0
+
+        for item in trivia_data['results']:
+            # Decode HTML entities
+            question_text = html.unescape(item['question'])
+            correct_answer = html.unescape(item['correct_answer'])
+            incorrect_answers = [html.unescape(ans) for ans in item['incorrect_answers']]
+
+            # All questions are worth 1 point regardless of difficulty
+            points_value = 1
+
+            # Create question
+            question = Question.objects.create(
+                text=question_text,
+                category=category,
+                difficulty=difficulty,
+                points_value=points_value,
+                created_by=request.user,
+                is_active=True
+            )
+
+            # Shuffle answers
+            all_answers = incorrect_answers + [correct_answer]
+            import random
+            random.shuffle(all_answers)
+
+            # Create choices
+            for i, answer in enumerate(all_answers):
+                Choice.objects.create(
+                    question=question,
+                    text=answer,
+                    is_correct=(answer == correct_answer),
+                    order=i + 1
+                )
+
+            created_count += 1
+
+        return JsonResponse({
+            'success': True,
+            'created_count': created_count,
+            'message': f'Successfully created {created_count} questions'
+        })
+
+    except requests.exceptions.RequestException as e:
+        return JsonResponse({'success': False, 'error': f'API request failed: {str(e)}'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

@@ -13,30 +13,78 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        :root {
+            --primary-color: #4540F7;
+            --secondary-color: #F9A51B;
+            --sidebar-width: 250px;
         }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 0.75rem 1rem;
-            margin: 0.25rem 0;
-            border-radius: 0.5rem;
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background: var(--primary-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
             transition: all 0.3s ease;
         }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.875rem 1.5rem;
+            margin: 0.125rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+
         .sidebar .nav-link:hover,
         .sidebar .nav-link.active {
             color: white;
             background-color: rgba(255,255,255,0.1);
             transform: translateX(5px);
         }
+
         .sidebar .nav-link i {
             width: 20px;
-            margin-right: 10px;
+            margin-right: 12px;
+            font-size: 1.1rem;
         }
+
         .main-content {
+            margin-left: var(--sidebar-width);
             background-color: #f8f9fa;
             min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
         }
         .stat-card {
             background: white;
@@ -63,13 +111,13 @@
         .bg-warning-gradient { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
         .bg-info-gradient { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
         .bg-danger-gradient { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        
+
         .admin-header {
             background: white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 1rem 0;
         }
-        
+
         /* Chart container fixes */
         .chart-container {
             position: relative !important;
@@ -78,13 +126,13 @@
             max-height: 300px !important;
             overflow: hidden !important;
         }
-        
+
         .chart-container canvas {
             max-height: 100% !important;
             width: 100% !important;
             height: 100% !important;
         }
-        
+
         .chart-container-large {
             position: relative !important;
             width: 100% !important;
@@ -92,11 +140,96 @@
             max-height: 400px !important;
             overflow: hidden !important;
         }
-        
+
         .chart-container-large canvas {
             max-height: 100% !important;
             width: 100% !important;
             height: 100% !important;
+        }
+
+        /* Enhanced Tab Styling */
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 1.5rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            color: #6c757d;
+            padding: 0.75rem 1.25rem;
+            margin-bottom: -2px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        .nav-tabs .nav-link:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background-color: rgba(102,126,234,0.05);
+        }
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            background-color: rgba(102,126,234,0.1);
+            border-color: #667eea;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+        .nav-tabs .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+            }
+            .stat-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            .stat-card {
+                padding: 1rem;
+            }
+            .nav-tabs .nav-link {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            .nav-tabs .nav-link i {
+                display: none;
+            }
+            .chart-container {
+                height: 250px !important;
+                max-height: 250px !important;
+            }
+        }
+
+        /* Tab Content Animations */
+        .tab-pane {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
     </style>
 </head>
@@ -104,28 +237,45 @@
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 px-0">
-                <div class="sidebar">
-                    <div class="p-3">
-                        <h4 class="text-white mb-4">
-                            <i class="fas fa-crown me-2"></i>
-                            Admin Panel
-                        </h4>
-                        <nav class="nav flex-column">
+            <div class="sidebar">
+                <a href="{% url 'admin_dashboard:dashboard' %}" class="sidebar-brand">
+                    <i class="fas fa-crown me-2"></i>
+                    Mooibanana Admin
+                </a>
+                <div class="px-3">
+                    <div class="user-info mb-4 p-3 bg-white bg-opacity-10 rounded-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-user-shield fa-2x text-white"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-0 text-white">{{ user.username }}</h6>
+                                <small class="text-white-50">Superuser</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <nav class="nav flex-column">
+                        <div class="nav-section mb-2">
+                            <small class="text-white-50 text-uppercase px-3">Main</small>
                             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
                                href="{% url 'admin_dashboard:dashboard' %}">
                                 <i class="fas fa-tachometer-alt"></i>
                                 Dashboard
                             </a>
-                            <a class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}" 
-                               href="{% url 'admin_dashboard:user_management' %}">
-                                <i class="fas fa-users"></i>
-                                User Management
-                            </a>
                             <a class="nav-link {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}" 
                                href="{% url 'admin_dashboard:analytics' %}">
                                 <i class="fas fa-chart-line"></i>
                                 Analytics
+                            </a>
+                        </div>
+
+                        <div class="nav-section mb-2">
+                            <small class="text-white-50 text-uppercase px-3">Management</small>
+                            <a class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}" 
+                               href="{% url 'admin_dashboard:user_management' %}">
+                                <i class="fas fa-users"></i>
+                                User Management
                             </a>
                             <a class="nav-link {% if request.resolver_match.url_name == 'quiz_management' %}active{% endif %}" 
                                href="{% url 'admin_dashboard:quiz_management' %}">
@@ -133,10 +283,13 @@
                                 Quiz Management
                             </a>
                             <a class="nav-link" href="{% url 'admin:index' %}">
-                                <i class="fas fa-cog"></i>
-                                Django Admin
+                                <i class="fas fa-cogs"></i>
+                                Advanced Settings
                             </a>
-                            <hr class="my-3" style="border-color: rgba(255,255,255,0.3);">
+                        </div>
+
+                        <div class="nav-section mt-auto">
+                            <hr class="my-3" style="border-color: rgba(255,255,255,0.2);">
                             <a class="nav-link" href="{% url 'profiles:discover' %}">
                                 <i class="fas fa-home"></i>
                                 Back to Site
@@ -145,32 +298,49 @@
                                 <i class="fas fa-sign-out-alt"></i>
                                 Logout
                             </a>
-                        </nav>
-                    </div>
+                        </div>
+                    </nav>
                 </div>
             </div>
             
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 px-0">
-                <div class="main-content">
-                    <!-- Header -->
-                    <div class="admin-header">
-                        <div class="container-fluid">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h2 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h2>
-                                    <small class="text-muted">{% block page_subtitle %}Platform Overview{% endblock %}</small>
-                                </div>
+            <div class="main-content">
+                <!-- Header -->
+                <div class="admin-header bg-white shadow-sm">
+                    <div class="container-fluid">
+                        <div class="d-flex justify-content-between align-items-center py-3">
+                            <div>
                                 <div class="d-flex align-items-center">
-                                    <span class="me-3">
-                                        <i class="fas fa-user-shield text-primary"></i>
-                                        {{ user.username }}
-                                    </span>
-                                    <span class="badge bg-success">Superuser</span>
+                                    <button class="btn btn-link text-dark d-md-none me-3" id="sidebarToggle">
+                                        <i class="fas fa-bars"></i>
+                                    </button>
+                                    <div>
+                                        <h4 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h4>
+                                        <nav aria-label="breadcrumb">
+                                            <ol class="breadcrumb mb-0 small">
+                                                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard:dashboard' %}" class="text-decoration-none">Admin</a></li>
+                                                <li class="breadcrumb-item active" aria-current="page">{% block page_subtitle %}Platform Overview{% endblock %}</li>
+                                            </ol>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-link text-dark dropdown-toggle" type="button" id="quickActions" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-plus-circle"></i> Quick Actions
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quickActions">
+                                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:quiz_management' %}"><i class="fas fa-plus me-2"></i>Add New Question</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'admin_dashboard:user_management' %}"><i class="fas fa-users me-2"></i>Manage Users</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{% url 'admin:index' %}"><i class="fas fa-cogs me-2"></i>Django Admin</a></li>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
                     
                     <!-- Content -->
                     <div class="container-fluid py-4">
@@ -203,6 +373,47 @@
                 }
             }, 300000); // 5 minutes
         }
+
+        // Mobile sidebar toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                    mainContent.classList.toggle('sidebar-open');
+                });
+            }
+
+            // Close sidebar when clicking outside
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    const isClickInside = sidebar.contains(event.target) || 
+                                       sidebarToggle.contains(event.target);
+                    
+                    if (!isClickInside && sidebar.classList.contains('show')) {
+                        sidebar.classList.remove('show');
+                        mainContent.classList.remove('sidebar-open');
+                    }
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('show');
+                    mainContent.classList.remove('sidebar-open');
+                }
+            });
+        });
+
+        // Initialize all tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
 
         // Confirm delete actions
         function confirmDelete(message) {

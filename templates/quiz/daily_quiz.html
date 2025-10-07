@@ -2,92 +2,160 @@
 
 {% block title %}Daily Quiz - Mooibanana{% endblock %}
 
+{% block extra_head %}
+<style>
+    .quiz-card {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    .quiz-choices .btn-outline-primary {
+        border-radius: 0.5rem;
+        padding: 1rem;
+        transition: all 0.3s ease;
+    }
+    .quiz-choices .btn-outline-primary:hover {
+        transform: translateY(-2px);
+    }
+    .quiz-meta .badge {
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    .points-badge {
+        font-size: 1.25rem;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+    }
+    .stats-card {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
-    <div class="card">
+    <div class="quiz-card card">
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="fas fa-question-circle me-2"></i>
+                    <i class="fas fa-brain me-2"></i>
                     Daily Knowledge Quiz
                 </h5>
-                <span class="badge bg-light text-primary">{{ user.points_balance }} pts</span>
+                <span class="points-badge badge bg-light text-primary">
+                    <i class="fas fa-star me-1"></i>
+                    {{ user.points_balance }} pts
+                </span>
             </div>
         </div>
         <div class="card-body">
-            {% if user_response %}
-                {# Show result if user has already answered #}
-                <h6 class="mb-3">{{ question.text }}</h6>
-                <div class="alert {% if user_response.is_correct %}alert-success{% else %}alert-danger{% endif %} border-0">
-                    <div class="d-flex align-items-start">
-                        <div class="me-3">
-                            <i class="fas {% if user_response.is_correct %}fa-check-circle{% else %}fa-times-circle{% endif %} fa-2x"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h5 class="mb-2">{% if user_response.is_correct %}🎉 Correct!{% else %}❌ Incorrect{% endif %}</h5>
-                            {% if user_response.is_correct %}
-                                <p class="mb-2"><strong>Congratulations!</strong> You earned <span class="badge bg-success fs-6">{{ user_response.points_earned }} point{{ user_response.points_earned|pluralize }}</span></p>
-                                <p class="mb-0"><small>Your answer: <strong>{{ user_response.selected_choice.text }}</strong></small></p>
-                            {% else %}
-                                <p class="mb-2">Don't worry, keep trying! The correct answer was:</p>
-                                <p class="mb-2"><strong>✅ {{ question.choices.get_correct.text }}</strong></p>
-                                <p class="mb-0"><small>Your answer: <strong>{{ user_response.selected_choice.text }}</strong></small></p>
-                            {% endif %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% if not question %}
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-circle fa-3x text-warning mb-3"></i>
+                    <h5>Oops! Quiz Not Available</h5>
+                    <p class="text-muted">There seems to be an issue loading today's quiz. Please try again later.</p>
+                    <a href="{% url 'quiz:daily_quiz' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Quiz
+                    </a>
+                </div>
+            {% else %}
+                {% if user_response %}
+                    {# Show result if user has already answered #}
+                    <h5 class="mb-3">{{ question.text }}</h5>
+                    <div class="alert {% if user_response.is_correct %}alert-success{% else %}alert-danger{% endif %} border-0">
+                        <div class="d-flex align-items-start">
+                            <div class="me-3">
+                                <i class="fas {% if user_response.is_correct %}fa-check-circle{% else %}fa-times-circle{% endif %} fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-2">{% if user_response.is_correct %}🎉 Correct!{% else %}❌ Incorrect{% endif %}</h5>
+                                {% if user_response.is_correct %}
+                                    <p class="mb-2"><strong>Congratulations!</strong> You earned <span class="badge bg-success fs-6">{{ user_response.points_earned }} point{{ user_response.points_earned|pluralize }}</span></p>
+                                    <p class="mb-0"><small>Your answer: <strong>{{ user_response.selected_choice.text }}</strong></small></p>
+                                {% else %}
+                                    <p class="mb-2">Don't worry, keep learning! The correct answer was:</p>
+                                    <p class="mb-2"><strong>✅ {{ question.choices.get_correct.text }}</strong></p>
+                                    <p class="mb-0"><small>Your answer: <strong>{{ user_response.selected_choice.text }}</strong></small></p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="bg-light rounded p-3 text-center">
+                {% else %}
+                    {# Show quiz form if user hasn't answered yet #}
+                    <form method="post" action="{% url 'quiz:daily_quiz' %}" class="quiz-form">
+                        {% csrf_token %}
+                        <h5 class="mb-3">{{ question.text }}</h5>
+                        <div class="quiz-meta mb-3">
+                            <span class="badge bg-secondary me-2">
+                                <i class="fas fa-tag me-1"></i>{{ question.get_category_display }}
+                            </span>
+                            <span class="badge bg-info me-2">
+                                <i class="fas fa-chart-bar me-1"></i>{{ question.get_difficulty_display }}
+                            </span>
+                            <span class="badge bg-success">
+                                <i class="fas fa-star me-1"></i>{{ question.points_value }} point{{ question.points_value|pluralize }}
+                            </span>
+                        </div>
+                        <div class="quiz-choices">
+                            {% for choice in choices %}
+                                <div class="mb-3">
+                                    <input type="radio" 
+                                           class="btn-check" 
+                                           name="choice" 
+                                           id="choice_{{ choice.id }}" 
+                                           value="{{ choice.id }}" 
+                                           required>
+                                    <label class="btn btn-outline-primary w-100 text-start" 
+                                           for="choice_{{ choice.id }}">
+                                        {{ choice.text }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Answer
+                        </button>
+                    </form>
+                {% endif %}
+
+                {# Quiz Statistics #}
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="stats-card p-3 text-center">
+                            <i class="fas fa-users mb-2 text-primary"></i>
+                            <h6 class="mb-1">{{ daily_quiz.total_responses }}</h6>
+                            <small class="text-muted">Total Responses</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stats-card p-3 text-center">
+                            <i class="fas fa-chart-line mb-2 text-success"></i>
                             <h6 class="mb-1">{{ daily_quiz.accuracy_percentage }}%</h6>
                             <small class="text-muted">Today's Accuracy</small>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="bg-light rounded p-3 text-center">
+                    <div class="col-md-4">
+                        <div class="stats-card p-3 text-center">
+                            <i class="fas fa-star mb-2 text-warning"></i>
                             <h6 class="mb-1">{{ user.points_balance }}</h6>
-                            <small class="text-muted">Total Points</small>
+                            <small class="text-muted">Your Total Points</small>
                         </div>
                     </div>
                 </div>
-                <div class="text-center mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        Come back tomorrow for a new question!
-                    </small>
-                </div>
-            {% else %}
-                {# Show quiz form if user hasn't answered yet #}
-                <form method="post" action="{% url 'quiz:daily_quiz' %}">
-                    {% csrf_token %}
-                    <h6 class="mb-3">{{ question.text }}</h6>
-                    <div class="quiz-meta mb-3">
-                        <span class="badge bg-secondary me-2">{{ question.get_category_display }}</span>
-                        <span class="badge bg-info me-2">{{ question.get_difficulty_display }}</span>
-                        <span class="badge bg-success">{{ question.points_value }} point{{ question.points_value|pluralize }}</span>
-                    </div>
-                    <div class="quiz-choices">
-                        {% for choice in choices %}
-                            <div class="mb-2">
-                                <input type="radio" 
-                                       class="btn-check" 
-                                       name="choice" 
-                                       id="choice_{{ choice.id }}" 
-                                       value="{{ choice.id }}" 
-                                       required>
-                                <label class="btn btn-outline-primary w-100 text-start" 
-                                       for="choice_{{ choice.id }}">
-                                    {{ choice.text }}
-                                </label>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary w-100">
-                            Submit Answer
-                        </button>
-                    </div>
-                </form>
             {% endif %}
         </div>
     </div>

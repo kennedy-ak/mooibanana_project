@@ -1,0 +1,656 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}Analytics - Admin Dashboard{% endblock %}
+{% block page_title %}Platform Analytics{% endblock %}
+{% block page_subtitle %}Comprehensive insights and trends{% endblock %}
+
+{% block content %}
+<!-- Time Range Selector & Export -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label for="days" class="form-label">Time Period</label>
+                    <select class="form-select" id="days" name="days" onchange="this.form.submit()">
+                        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+                        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 3 months</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'admin_dashboard:export_data' %}?type=users" class="btn btn-sm btn-success">
+                            <i class="fas fa-download me-1"></i> Users
+                        </a>
+                        <a href="{% url 'admin_dashboard:export_data' %}?type=matches" class="btn btn-sm btn-info">
+                            <i class="fas fa-download me-1"></i> Matches
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 1: KEY METRICS OVERVIEW ========== -->
+<h5 class="mb-3"><i class="fas fa-chart-line me-2 text-primary"></i>Key Performance Indicators</h5>
+<div class="row mb-4">
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-primary-gradient mx-auto mb-2"><i class="fas fa-users"></i></div>
+            <h4 class="mb-0">{{ total_users }}</h4>
+            <small class="text-muted">Total Users</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-success-gradient mx-auto mb-2"><i class="fas fa-user-check"></i></div>
+            <h4 class="mb-0">{{ mau }}</h4>
+            <small class="text-muted">MAU</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-warning-gradient mx-auto mb-2"><i class="fas fa-dollar-sign"></i></div>
+            <h4 class="mb-0">${{ total_revenue|floatformat:2 }}</h4>
+            <small class="text-muted">Revenue</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-info-gradient mx-auto mb-2"><i class="fas fa-heart"></i></div>
+            <h4 class="mb-0">{{ total_likes }}</h4>
+            <small class="text-muted">Total Likes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-danger-gradient mx-auto mb-2"><i class="fas fa-brain"></i></div>
+            <h4 class="mb-0">{{ total_quiz_responses }}</h4>
+            <small class="text-muted">Quiz Responses</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-4 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-icon bg-purple-gradient mx-auto mb-2"><i class="fas fa-user-plus"></i></div>
+            <h4 class="mb-0">+{{ new_users_period }}</h4>
+            <small class="text-muted">New ({{ days }}d)</small>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 2: USER ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-users me-2 text-primary"></i>User Analytics</h5>
+<div class="row mb-4">
+    <!-- User Growth Chart -->
+    <div class="col-md-8 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">User Registrations Over Time</h6>
+            <canvas id="registrationsChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- User Stats -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">User Breakdown</h6>
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>DAU</span><strong>{{ dau }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>WAU</span><strong>{{ wau }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>MAU</span><strong>{{ mau }}</strong>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Students</span><strong>{{ students_count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Verified</span><strong>{{ verified_count }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Referred</span><strong>{{ referred_users }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Organic</span><strong>{{ organic_users }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Growth Trends -->
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Growth Trends</h6>
+            <div class="row text-center">
+                <div class="col-6">
+                    <h3 class="{% if wow_growth > 0 %}text-success{% elif wow_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {% if wow_growth > 0 %}+{% endif %}{{ wow_growth }}%
+                    </h3>
+                    <small class="text-muted">Week-over-Week</small>
+                </div>
+                <div class="col-6">
+                    <h3 class="{% if mom_growth > 0 %}text-success{% elif mom_growth < 0 %}text-danger{% else %}text-muted{% endif %}">
+                        {% if mom_growth > 0 %}+{% endif %}{{ mom_growth }}%
+                    </h3>
+                    <small class="text-muted">Month-over-Month</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Country Distribution -->
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Top Countries</h6>
+            {% for country in country_distribution|slice:":5" %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span>{{ country.country|default:"Unknown" }}</span>
+                <span class="badge bg-primary">{{ country.count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 3: PROFILE ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-id-card me-2 text-success"></i>Profile Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h3 class="text-success">{{ completion_rate }}%</h3>
+            <p class="mb-0">Completion Rate</p>
+            <small class="text-muted">{{ complete_profiles }}/{{ total_profiles }}</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h3>{{ profiles_with_photos }}</h3>
+            <p class="mb-0">With Photos</p>
+        </div>
+    </div>
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Study Fields</h6>
+            <canvas id="studyFieldsChart" height="100"></canvas>
+        </div>
+    </div>
+
+    <!-- Popular Interests -->
+    <div class="col-md-12 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Popular Interests (Top 20)</h6>
+            <div class="d-flex flex-wrap gap-2">
+                {% for interest in popular_interests %}
+                <span class="badge bg-secondary" style="font-size: {% if interest.count > 10 %}14{% elif interest.count > 5 %}12{% else %}10{% endif %}px;">
+                    {{ interest.interest }} ({{ interest.count }})
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 4: LIKE/UNLIKE ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-heart me-2 text-danger"></i>Like & Unlike Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_likes }}</h4>
+            <small>Total Likes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ regular_likes }}</h4>
+            <small>Regular Likes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ super_likes }}</h4>
+            <small>Super Likes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ mutual_likes }}</h4>
+            <small>Mutual Likes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_unlikes }}</h4>
+            <small>Total Unlikes</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ avg_likes_sent }}</h4>
+            <small>Avg per User</small>
+        </div>
+    </div>
+
+    <!-- Likes Over Time -->
+    <div class="col-md-8 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Likes Over Time</h6>
+            <canvas id="likesChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Top Liked Users -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Top Liked Users</h6>
+            {% for user in top_liked_users|slice:":10" %}
+            <div class="d-flex justify-content-between mb-2">
+                <small>{{ user.username }}</small>
+                <span class="badge bg-danger">{{ user.total_received }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 5: REVENUE & PAYMENTS ========== -->
+<h5 class="mb-3"><i class="fas fa-dollar-sign me-2 text-warning"></i>Revenue & Payment Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>${{ total_revenue|floatformat:2 }}</h4>
+            <small>Total Revenue</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>${{ aov|floatformat:2 }}</h4>
+            <small>Avg Order Value</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_purchases }}</h4>
+            <small>Total Purchases</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ conversion_rate }}%</h4>
+            <small>Conversion Rate</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ like_packages_sold }}</h4>
+            <small>Like Packages</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ dislike_packages_sold }}</h4>
+            <small>Dislike Packages</small>
+        </div>
+    </div>
+
+    <!-- Revenue Over Time -->
+    <div class="col-md-8 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Revenue Over Time</h6>
+            <canvas id="revenueChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Payment Providers -->
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Revenue by Provider</h6>
+            <canvas id="providerChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 6: QUIZ ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-brain me-2 text-info"></i>Quiz Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_questions }}</h4>
+            <small>Total Questions</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_quiz_responses }}</h4>
+            <small>Responses</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ quiz_accuracy }}%</h4>
+            <small>Accuracy</small>
+        </div>
+    </div>
+    <div class="col-md-2 col-sm-6 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ participation_rate }}%</h4>
+            <small>Participation</small>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Category Stats</h6>
+            {% for cat in category_stats|slice:":5" %}
+            <div class="d-flex justify-content-between mb-1">
+                <small>{{ cat.category|capfirst }}</small>
+                <span class="badge bg-info">{{ cat.total_responses }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Quiz Responses Over Time</h6>
+            <canvas id="quizChart" height="60"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 7: REFERRAL ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-user-friends me-2 text-purple"></i>Referral Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_referrals }}</h4>
+            <small>Total Referrals</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ completed_referrals }}</h4>
+            <small>Completed</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ referral_conversion_rate }}%</h4>
+            <small>Conversion Rate</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_referral_points }}</h4>
+            <small>Points Awarded</small>
+        </div>
+    </div>
+
+    <div class="col-md-12 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Top Referrers</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Referrals</th>
+                            <th>Points Earned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for referrer in top_referrers %}
+                        <tr>
+                            <td>{{ referrer.username }}</td>
+                            <td><span class="badge bg-success">{{ referrer.referral_count }}</span></td>
+                            <td>{{ referrer.referral_points_earned }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 8: REWARDS ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-gift me-2 text-warning"></i>Rewards Analytics</h5>
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_rewards }}</h4>
+            <small>Total Rewards</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_claims }}</h4>
+            <small>Total Claims</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_points_in_system }}</h4>
+            <small>Points in Circulation</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_points_spent }}</h4>
+            <small>Points Spent</small>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Popular Rewards</h6>
+            {% for reward in popular_rewards %}
+            <div class="d-flex justify-content-between mb-2">
+                <span>{{ reward.name }}</span>
+                <span class="badge bg-warning">{{ reward.claim_count }} claims</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Points Economy</h6>
+            <canvas id="pointsChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 9: GEOGRAPHIC ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-globe me-2 text-success"></i>Geographic Distribution</h5>
+<div class="row mb-4">
+    <div class="col-md-12 mb-3">
+        <div class="stat-card">
+            <h6 class="mb-3">Users by Country</h6>
+            <canvas id="geoChart" height="60"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ========== SECTION 10: CONTENT ANALYTICS ========== -->
+<h5 class="mb-3"><i class="fas fa-bullhorn me-2 text-info"></i>Content & Engagement</h5>
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_updates }}</h4>
+            <small>Total Updates</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ recent_updates }}</h4>
+            <small>Recent Updates</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ total_ads }}</h4>
+            <small>Total Ads</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <h4>{{ active_ads }}</h4>
+            <small>Active Ads</small>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Common chart options
+const commonOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: { legend: { display: false } }
+};
+
+// 1. User Registrations Chart
+new Chart(document.getElementById('registrationsChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for reg in user_registrations %}'{{ reg.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'New Users',
+            data: [{% for reg in user_registrations %}{{ reg.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } } }
+});
+
+// 2. Study Fields Chart
+new Chart(document.getElementById('studyFieldsChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for field in popular_fields %}'{{ field.study_field|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for field in popular_fields %}{{ field.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7']
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } } }
+});
+
+// 3. Likes Over Time
+new Chart(document.getElementById('likesChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for like in likes_over_time %}'{{ like.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for like in likes_over_time %}{{ like.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#f5576c',
+            backgroundColor: 'rgba(245, 87, 108, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } } }
+});
+
+// 4. Revenue Over Time
+new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for rev in revenue_over_time %}'{{ rev.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for rev in revenue_over_time %}{{ rev.revenue }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#ffc107',
+            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } } }
+});
+
+// 5. Payment Providers
+new Chart(document.getElementById('providerChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Paystack', 'Stripe'],
+        datasets: [{
+            data: [{{ paystack_revenue }}, {{ stripe_revenue }}],
+            backgroundColor: ['#28a745', '#6772e5']
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: true }
+});
+
+// 6. Quiz Responses
+new Chart(document.getElementById('quizChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for resp in quiz_responses_over_time %}'{{ resp.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for resp in quiz_responses_over_time %}{{ resp.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#17a2b8',
+            backgroundColor: 'rgba(23, 162, 184, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } } }
+});
+
+// 7. Points Economy
+new Chart(document.getElementById('pointsChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Available', 'Spent'],
+        datasets: [{
+            data: [{{ total_points_in_system }}, {{ total_points_spent }}],
+            backgroundColor: ['#28a745', '#dc3545']
+        }]
+    },
+    options: { responsive: true, maintainAspectRatio: true }
+});
+
+// 8. Geographic Chart
+new Chart(document.getElementById('geoChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for country in users_by_country %}'{{ country.country }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for country in users_by_country %}{{ country.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#667eea'
+        }]
+    },
+    options: { ...commonOptions, scales: { y: { beginAtZero: true } }, indexAxis: 'y' }
+});
+</script>
+
+<style>
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+}
+.bg-primary-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.bg-success-gradient { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.bg-warning-gradient { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.bg-info-gradient { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.bg-danger-gradient { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.bg-purple-gradient { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); }
+</style>
+{% endblock %}

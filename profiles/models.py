@@ -17,7 +17,7 @@ class Profile(models.Model):
         ('psychology', 'Psychology'),
         ('other', 'Other'),
     ]
-    
+
     YEAR_CHOICES = [
         (1, 'First Year'),
         (2, 'Second Year'),
@@ -26,10 +26,18 @@ class Profile(models.Model):
         (5, 'Fifth Year'),
         (6, 'Graduate'),
     ]
-    
+
+    GENDER_CHOICES = [
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('non_binary', 'Non-Binary'),
+        ('prefer_not_to_say', 'Prefer not to say'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    gender = models.CharField(max_length=20, choices=GENDER_CHOICES, blank=True)
     study_field = models.CharField(max_length=20, choices=STUDY_CHOICES, blank=True)
     study_year = models.IntegerField(choices=YEAR_CHOICES, null=True, blank=True)
     school_name = models.CharField(max_length=200, blank=True, help_text="Name of your school/university")

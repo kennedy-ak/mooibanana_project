@@ -1,0 +1,264 @@
+{% extends 'admin_dashboard/base_admin.html' %}
+
+{% block title %}Question Details - Admin Dashboard{% endblock %}
+{% block page_title %}Question Details{% endblock %}
+{% block page_subtitle %}View responses and statistics for this question{% endblock %}
+
+{% block content %}
+<!-- Back Button -->
+<div class="mb-3">
+    <a href="{% url 'admin_dashboard:quiz_management' %}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Quiz Management
+    </a>
+</div>
+
+<!-- Question Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h4 class="mb-2">{{ question.text }}</h4>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <span class="badge bg-secondary">{{ question.get_category_display }}</span>
+                        <span class="badge {% if question.difficulty == 'easy' %}bg-success{% elif question.difficulty == 'medium' %}bg-warning{% else %}bg-danger{% endif %}">
+                            {{ question.get_difficulty_display }}
+                        </span>
+                        <span class="badge bg-info">{{ question.points_value }} points</span>
+                        {% if question.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                        {% if is_daily_quiz %}
+                        <span class="badge bg-warning"><i class="fas fa-star me-1"></i>Today's Daily Quiz</span>
+                        {% endif %}
+                    </div>
+                    {% if question.created_by %}
+                    <small class="text-muted d-block mt-2">
+                        Created by {{ question.created_by.username }} on {{ question.created_at|date:"M d, Y" }}
+                    </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Answer Choices -->
+            <div class="mb-3">
+                <h6 class="mb-2">Answer Choices:</h6>
+                <div class="row">
+                    {% for choice_stat in choice_stats %}
+                    <div class="col-md-6 mb-2">
+                        <div class="p-3 border rounded {% if choice_stat.is_correct %}bg-success bg-opacity-10 border-success{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <strong>{{ choice_stat.choice.text }}</strong>
+                                    {% if choice_stat.is_correct %}
+                                    <span class="badge bg-success ms-2">
+                                        <i class="fas fa-check"></i> Correct Answer
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-muted small">{{ choice_stat.count }} responses</div>
+                                    <div class="fw-bold">{{ choice_stat.percentage }}%</div>
+                                </div>
+                            </div>
+                            <div class="progress mt-2" style="height: 8px;">
+                                <div class="progress-bar {% if choice_stat.is_correct %}bg-success{% else %}bg-secondary{% endif %}"
+                                     role="progressbar"
+                                     style="width: {{ choice_stat.percentage }}%"
+                                     aria-valuenow="{{ choice_stat.percentage }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-primary-gradient me-3">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_responses }}</h3>
+                    <p class="text-muted mb-0">Total Responses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-success-gradient me-3">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_correct }}</h3>
+                    <p class="text-muted mb-0">Correct Answers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-danger-gradient me-3">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ total_incorrect }}</h3>
+                    <p class="text-muted mb-0">Incorrect Answers</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="stat-card">
+            <div class="d-flex align-items-center">
+                <div class="stat-icon bg-warning-gradient me-3">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div>
+                    <h3 class="mb-0">{{ accuracy }}%</h3>
+                    <p class="text-muted mb-0">Accuracy Rate</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Who Got It Right/Wrong -->
+<div class="row">
+    <!-- Users Who Got It Right -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-check-circle text-success me-2"></i>
+                Users Who Got It Right ({{ total_correct }})
+            </h5>
+
+            {% if correct_responses %}
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>User</th>
+                            <th>Answer</th>
+                            <th>Points</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for response in correct_responses %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'admin_dashboard:user_detail' response.user.id %}"
+                                   class="text-decoration-none">
+                                    <strong>{{ response.user.username }}</strong>
+                                </a>
+                                {% if response.user.email %}
+                                <br><small class="text-muted">{{ response.user.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ response.selected_choice.text|truncatechars:30 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">+{{ response.points_earned }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ response.answered_at|date:"M d, Y H:i" }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+                No correct answers yet
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Users Who Got It Wrong -->
+    <div class="col-md-6 mb-4">
+        <div class="stat-card">
+            <h5 class="mb-3">
+                <i class="fas fa-times-circle text-danger me-2"></i>
+                Users Who Got It Wrong ({{ total_incorrect }})
+            </h5>
+
+            {% if incorrect_responses %}
+            <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>User</th>
+                            <th>Their Answer</th>
+                            <th>Points</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for response in incorrect_responses %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'admin_dashboard:user_detail' response.user.id %}"
+                                   class="text-decoration-none">
+                                    <strong>{{ response.user.username }}</strong>
+                                </a>
+                                {% if response.user.email %}
+                                <br><small class="text-muted">{{ response.user.email }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-danger">{{ response.selected_choice.text|truncatechars:30 }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ response.points_earned }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ response.answered_at|date:"M d, Y H:i" }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-smile fa-3x mb-3 d-block"></i>
+                No incorrect answers - everyone got it right!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}

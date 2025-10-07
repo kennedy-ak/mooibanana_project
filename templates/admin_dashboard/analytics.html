@@ -1,400 +1,867 @@
 {% extends 'admin_dashboard/base_admin.html' %}
 
-{% block title %}Analytics - Admin Dashboard{% endblock %}
-{% block page_title %}Platform Analytics{% endblock %}
-{% block page_subtitle %}Detailed insights and trends{% endblock %}
+{% block title %}Comprehensive Analytics{% endblock %}
+{% block page_title %}Comprehensive Platform Analytics{% endblock %}
 
 {% block content %}
-<!-- Time Range Selector -->
-<div class="row mb-4">
+<!-- Time Selector -->
+<div class="row mb-3">
     <div class="col-12">
-        <div class="stat-card">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label for="days" class="form-label">Time Period</label>
-                    <select class="form-select" id="days" name="days" onchange="this.form.submit()">
+        <div class="stat-card p-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <form method="get" class="d-flex gap-2 align-items-center">
+                    <label class="mb-0 me-2"><i class="fas fa-calendar-alt"></i> Time Period:</label>
+                    <select class="form-select form-select-sm" name="days" onchange="this.form.submit()" style="width: 150px;">
                         <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
                         <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
-                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 3 months</option>
-                        <option value="365" {% if days == 365 %}selected{% endif %}>Last year</option>
+                        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+                        <option value="365" {% if days == 365 %}selected{% endif %}>Last Year</option>
                     </select>
+                </form>
+                <div class="text-muted small">
+                    <i class="fas fa-info-circle"></i> Navigate between tabs to view different metrics
                 </div>
-                <div class="col-md-3">
-                    <div class="d-flex gap-2">
-                        <a href="{% url 'admin_dashboard:export_data' %}?type=users" class="btn btn-success">
-                            <i class="fas fa-download"></i> Export Users
-                        </a>
-                        <a href="{% url 'admin_dashboard:export_data' %}?type=matches" class="btn btn-info">
-                            <i class="fas fa-download"></i> Export Matches
-                        </a>
-                    </div>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Key Metrics -->
+<!-- KPIs Overview -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="stat-card text-center">
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
             <div class="stat-icon bg-primary-gradient mx-auto mb-2">
                 <i class="fas fa-users"></i>
             </div>
-            <h3>{{ active_users }}</h3>
-            <p class="text-muted mb-0">Active Users</p>
-            <small class="text-muted">Last {{ days }} days</small>
+            <h4 class="mb-0">{{ total_users }}</h4>
+            <small class="text-muted">Total Users</small>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="stat-card text-center">
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
             <div class="stat-icon bg-success-gradient mx-auto mb-2">
-                <i class="fas fa-user-plus"></i>
+                <i class="fas fa-user-check"></i>
             </div>
-            <h3>{{ user_registrations|length }}</h3>
-            <p class="text-muted mb-0">New Registrations</p>
-            <small class="text-muted">Last {{ days }} days</small>
+            <h4 class="mb-0">{{ mau }}</h4>
+            <small class="text-muted">Monthly Active</small>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="stat-card text-center">
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
             <div class="stat-icon bg-warning-gradient mx-auto mb-2">
+                <i class="fas fa-dollar-sign"></i>
+            </div>
+            <h4 class="mb-0">${{ total_revenue|floatformat:0 }}</h4>
+            <small class="text-muted">Total Revenue</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
+            <div class="stat-icon bg-danger-gradient mx-auto mb-2">
                 <i class="fas fa-heart"></i>
             </div>
-            <h3>{{ matches_over_time|length }}</h3>
-            <p class="text-muted mb-0">New Matches</p>
-            <small class="text-muted">Last {{ days }} days</small>
+            <h4 class="mb-0">{{ total_likes }}</h4>
+            <small class="text-muted">Total Likes</small>
         </div>
     </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="stat-card text-center">
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
             <div class="stat-icon bg-info-gradient mx-auto mb-2">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <h4 class="mb-0">{{ completion_rate }}%</h4>
+            <small class="text-muted">Profile Complete</small>
+        </div>
+    </div>
+    <div class="col-6 col-md-2 mb-2">
+        <div class="stat-card p-3 text-center">
+            <div class="stat-icon {% if wow_growth > 0 %}bg-success-gradient{% else %}bg-danger-gradient{% endif %} mx-auto mb-2">
                 <i class="fas fa-chart-line"></i>
             </div>
-            <h3>
-                {% if user_registrations %}
-                    {{ user_registrations|length|floatformat:0 }}
-                {% else %}
-                    0
-                {% endif %}
-            </h3>
-            <p class="text-muted mb-0">Growth Rate</p>
-            <small class="text-muted">Daily average</small>
+            <h4 class="mb-0 {% if wow_growth > 0 %}text-success{% else %}text-danger{% endif %}">
+                {% if wow_growth > 0 %}+{% endif %}{{ wow_growth }}%
+            </h4>
+            <small class="text-muted">WoW Growth</small>
         </div>
     </div>
 </div>
 
-<!-- Charts -->
-<div class="row mb-4">
-    <!-- User Registrations Chart -->
-    <div class="col-md-6 mb-4">
-        <div class="stat-card">
-            <h5 class="mb-3">
-                <i class="fas fa-chart-line text-primary me-2"></i>
-                User Registrations Over Time
-            </h5>
-            <div class="chart-container">
-                <canvas id="registrationsChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Matches Chart -->
-    <div class="col-md-6 mb-4">
-        <div class="stat-card">
-            <h5 class="mb-3">
-                <i class="fas fa-heart text-danger me-2"></i>
-                Matches Over Time
-            </h5>
-            <div class="chart-container">
-                <canvas id="matchesChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Tabbed Navigation -->
+<ul class="nav nav-tabs mb-4" id="analyticsTab" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button">
+            <i class="fas fa-users"></i> Users
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="profiles-tab" data-bs-toggle="tab" data-bs-target="#profiles" type="button">
+            <i class="fas fa-id-card"></i> Profiles
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="engagement-tab" data-bs-toggle="tab" data-bs-target="#engagement" type="button">
+            <i class="fas fa-heart"></i> Engagement
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="revenue-tab" data-bs-toggle="tab" data-bs-target="#revenue" type="button">
+            <i class="fas fa-dollar-sign"></i> Revenue
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz" type="button">
+            <i class="fas fa-brain"></i> Quiz
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="funnel-tab" data-bs-toggle="tab" data-bs-target="#funnel" type="button">
+            <i class="fas fa-filter"></i> Funnel
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="other-tab" data-bs-toggle="tab" data-bs-target="#other" type="button">
+            <i class="fas fa-ellipsis-h"></i> Other
+        </button>
+    </li>
+</ul>
 
-<!-- Study Fields Distribution -->
-<div class="row mb-4">
-    <div class="col-md-8 mb-4">
-        <div class="stat-card">
-            <h5 class="mb-3">
-                <i class="fas fa-graduation-cap text-success me-2"></i>
-                Most Popular Study Fields
-            </h5>
-            <div class="chart-container-large">
-                <canvas id="studyFieldsChart"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="stat-card">
-            <h5 class="mb-3">
-                <i class="fas fa-list text-info me-2"></i>
-                Study Fields Ranking
-            </h5>
-            <div class="list-group list-group-flush">
-                {% for field in popular_fields %}
-                <div class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                        <strong>{{ field.study_field|capfirst }}</strong>
-                        <br>
-                        <small class="text-muted">{{ field.count }} students</small>
+<!-- Tab Content -->
+<div class="tab-content" id="analyticsTabContent">
+    <!-- Users Tab -->
+    <div class="tab-pane fade show active" id="users" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-users text-primary"></i> User Analytics</h5>
+
+        <div class="row mb-3">
+            <div class="col-md-8 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">User Registrations Over Time</h6>
+                    <div class="chart-container">
+                        <canvas id="registrationsChart"></canvas>
                     </div>
-                    <span class="badge bg-primary rounded-pill">{{ field.count }}</span>
                 </div>
-                {% empty %}
-                <div class="list-group-item text-center text-muted">
-                    No data available
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Retention Metrics</h6>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span><i class="fas fa-calendar-day"></i> Day 1</span>
+                        <strong class="text-primary">{{ day1_retention }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span><i class="fas fa-calendar-week"></i> Day 7</span>
+                        <strong class="text-info">{{ day7_retention }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span><i class="fas fa-calendar-alt"></i> Day 30</span>
+                        <strong class="text-success">{{ day30_retention }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span><i class="fas fa-user-times"></i> Churn Rate</span>
+                        <strong class="text-danger">{{ churn_rate }}%</strong>
+                    </div>
                 </div>
-                {% endfor %}
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Activity Metrics</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Daily Active (DAU)</span>
+                        <strong>{{ dau }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Weekly Active (WAU)</span>
+                        <strong>{{ wau }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Monthly Active (MAU)</span>
+                        <strong>{{ mau }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Students</span>
+                        <strong>{{ students_count }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Verified Users</span>
+                        <strong>{{ verified_count }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Age Distribution</h6>
+                    {% for range, count in age_ranges.items %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ range }} years</span>
+                        <strong>{{ count }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Gender Distribution</h6>
+                    {% for item in gender_distribution %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ item.gender|title }}</span>
+                        <strong>{{ item.count }}</strong>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No gender data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Top Universities</h6>
+                    {% for uni in university_distribution|slice:":8" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>{{ uni.school_name|truncatechars:30 }}</small>
+                        <span class="badge bg-primary">{{ uni.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No university data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">User Acquisition</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-user-plus"></i> Organic Users</span>
+                        <strong class="text-success">{{ organic_users }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span><i class="fas fa-share-alt"></i> Referred Users</span>
+                        <strong class="text-info">{{ referred_users }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>New Users (This Week)</span>
+                        <strong>{{ users_this_week }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>New Users (This Month)</span>
+                        <strong>{{ users_this_month }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profiles Tab -->
+    <div class="tab-pane fade" id="profiles" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-id-card text-primary"></i> Profile Analytics</h5>
+
+        <div class="row mb-3">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-success">{{ avg_completion_hours }}h</h5>
+                    <small class="text-muted">Avg Completion Time</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-warning">{{ abandonment_rate }}%</h5>
+                    <small class="text-muted">Abandonment Rate</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-primary">{{ complete_profiles }}</h5>
+                    <small class="text-muted">Complete Profiles</small>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-info">{{ profiles_with_photos }}</h5>
+                    <small class="text-muted">With Photos</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Popular Interests</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for interest in popular_interests|slice:":15" %}
+                        <span class="badge bg-secondary">{{ interest.interest }} <span class="badge bg-light text-dark">{{ interest.count }}</span></span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Study Fields</h6>
+                    {% for field in popular_fields %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ field.study_field }}</span>
+                        <strong>{{ field.count }}</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Engagement Tab -->
+    <div class="tab-pane fade" id="engagement" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-heart text-danger"></i> Like & Engagement Analytics</h5>
+
+        <div class="row mb-3">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-success">{{ like_conversion_rate }}%</h5>
+                    <small class="text-muted">Like Conversion</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-primary">{{ mutual_likes }}</h5>
+                    <small class="text-muted">Mutual Likes</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-warning">{{ super_likes }}</h5>
+                    <small class="text-muted">Super Likes</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-danger">{{ total_unlikes }}</h5>
+                    <small class="text-muted">Unlikes</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-8 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Likes Over Time</h6>
+                    <div class="chart-container">
+                        <canvas id="likesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Top Liked Users</h6>
+                    {% for user in top_liked_users|slice:":5" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small><i class="fas fa-user"></i> {{ user.username }}</small>
+                        <span class="badge bg-danger">{{ user.total_received }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Like Statistics</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Regular Likes</span>
+                        <strong>{{ regular_likes }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Avg Likes Sent/User</span>
+                        <strong>{{ avg_likes_sent }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Avg Likes Received/User</span>
+                        <strong>{{ avg_likes_received }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue Tab -->
+    <div class="tab-pane fade" id="revenue" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-dollar-sign text-success"></i> Revenue Analytics</h5>
+
+        <div class="row mb-3">
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-success">${{ rpu|floatformat:0 }}</h5>
+                    <small class="text-muted">Revenue/User</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-info">${{ aov|floatformat:0 }}</h5>
+                    <small class="text-muted">Avg Order Value</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-primary">{{ repeat_purchase_rate }}%</h5>
+                    <small class="text-muted">Repeat Rate</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-warning">{{ conversion_rate }}%</h5>
+                    <small class="text-muted">Conversion</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-danger">{{ failure_rate }}%</h5>
+                    <small class="text-muted">Failure Rate</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-2 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-secondary">{{ failed_count }}</h5>
+                    <small class="text-muted">Failed Txns</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-8 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Revenue Over Time</h6>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Payment Providers</h6>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span><i class="fas fa-credit-card"></i> Paystack</span>
+                        <strong class="text-success">${{ paystack_revenue|floatformat:0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span><i class="fas fa-credit-card"></i> Stripe</span>
+                        <strong class="text-info">${{ stripe_revenue|floatformat:0 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small>Failed (Paystack/Stripe)</small>
+                        <small class="text-danger">{{ paystack_failed }}/{{ stripe_failed }}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Package Sales</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Like Packages</span>
+                        <strong>{{ like_packages_sold }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Dislike Packages</span>
+                        <strong>{{ dislike_packages_sold }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Purchase Overview</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Purchases</span>
+                        <strong>{{ total_purchases }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Total Revenue</span>
+                        <strong class="text-success">${{ total_revenue|floatformat:2 }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Tab -->
+    <div class="tab-pane fade" id="quiz" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-brain text-info"></i> Quiz Analytics</h5>
+
+        <div class="row mb-3">
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-primary">{{ streak_users }}</h5>
+                    <small class="text-muted">3-Day Streaks</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-success">{{ quiz_accuracy }}%</h5>
+                    <small class="text-muted">Accuracy</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-info">{{ participation_rate }}%</h5>
+                    <small class="text-muted">Participation</small>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="stat-card p-3 text-center">
+                    <h5 class="text-warning">{{ total_quiz_responses }}</h5>
+                    <small class="text-muted">Total Responses</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-8 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Quiz Engagement by Hour of Day</h6>
+                    <div class="chart-container">
+                        <canvas id="quizHourChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Category Stats</h6>
+                    {% for cat in category_stats|slice:":5" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>{{ cat.category|title }}</small>
+                        <span class="badge bg-info">{{ cat.total_questions }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Quiz Responses Over Time</h6>
+                    <div class="chart-container">
+                        <canvas id="quizResponsesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Funnel Tab -->
+    <div class="tab-pane fade" id="funnel" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-filter text-primary"></i> Conversion Funnel Analysis</h5>
+
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="stat-card p-4">
+                    <h6 class="mb-4 text-center">User Journey: Registration → Profile → Like → Purchase</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="stat-icon bg-primary-gradient mx-auto mb-3">
+                                    <i class="fas fa-user-plus"></i>
+                                </div>
+                                <h4>{{ funnel_registered }}</h4>
+                                <p class="mb-2">Registered</p>
+                                <div class="badge bg-success">100%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="stat-icon bg-info-gradient mx-auto mb-3">
+                                    <i class="fas fa-id-card"></i>
+                                </div>
+                                <h4>{{ funnel_profile_complete }}</h4>
+                                <p class="mb-2">Complete Profile</p>
+                                <div class="badge {% if funnel_profile_rate > 50 %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ funnel_profile_rate }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="stat-icon bg-danger-gradient mx-auto mb-3">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <h4>{{ funnel_first_like }}</h4>
+                                <p class="mb-2">First Like</p>
+                                <div class="badge {% if funnel_like_rate > 50 %}bg-success{% else %}bg-warning{% endif %}">
+                                    {{ funnel_like_rate }}%
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="border rounded p-3 bg-light">
+                                <div class="stat-icon bg-warning-gradient mx-auto mb-3">
+                                    <i class="fas fa-shopping-cart"></i>
+                                </div>
+                                <h4>{{ funnel_purchased }}</h4>
+                                <p class="mb-2">Purchased</p>
+                                <div class="badge {% if funnel_purchase_rate > 10 %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ funnel_purchase_rate }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Funnel Drop-off Analysis</h6>
+                    <div class="alert alert-info">
+                        <strong>Profile Completion:</strong> {{ funnel_profile_rate }}% of registered users complete their profile
+                    </div>
+                    <div class="alert alert-warning">
+                        <strong>First Like:</strong> {{ funnel_like_rate }}% of users with complete profiles send their first like
+                    </div>
+                    <div class="alert {% if funnel_purchase_rate > 10 %}alert-success{% else %}alert-danger{% endif %}">
+                        <strong>Purchase:</strong> {{ funnel_purchase_rate }}% of engaged users make a purchase
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3">Growth Trends</h6>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span>Week-over-Week Growth</span>
+                        <strong class="{% if wow_growth > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if wow_growth > 0 %}+{% endif %}{{ wow_growth }}%
+                        </strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Month-over-Month Growth</span>
+                        <strong class="{% if mom_growth > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if mom_growth > 0 %}+{% endif %}{{ mom_growth }}%
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Tab -->
+    <div class="tab-pane fade" id="other" role="tabpanel">
+        <h5 class="mb-3"><i class="fas fa-globe text-primary"></i> Geographic & Other Metrics</h5>
+
+        <div class="row mb-3">
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3"><i class="fas fa-city"></i> Top Cities</h6>
+                    {% for city in users_by_city|slice:":8" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>{{ city.city }}</small>
+                        <span class="badge bg-info">{{ city.count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No city data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3"><i class="fas fa-share-alt"></i> Referrals</h6>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span>Total Referrals</span>
+                        <strong>{{ total_referrals }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span>Completed</span>
+                        <strong class="text-success">{{ completed_referrals }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span>Conversion Rate</span>
+                        <strong class="text-primary">{{ referral_conversion_rate }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Points Awarded</span>
+                        <strong class="text-warning">{{ total_referral_points }}</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3"><i class="fas fa-trophy"></i> Rewards & Content</h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Rewards</span>
+                        <strong>{{ total_rewards }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Active Rewards</span>
+                        <strong class="text-success">{{ active_rewards }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Claims</span>
+                        <strong class="text-info">{{ total_claims }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Platform Updates</span>
+                        <strong>{{ total_updates }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Advertisements</span>
+                        <strong>{{ total_ads }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3"><i class="fas fa-flag"></i> Top Countries</h6>
+                    {% for country in users_by_country|slice:":10" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ country.country }}</span>
+                        <strong>{{ country.count }}</strong>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No country data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="stat-card p-3">
+                    <h6 class="mb-3"><i class="fas fa-users"></i> Top Referrers</h6>
+                    {% for referrer in top_referrers|slice:":8" %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <small><i class="fas fa-user-check"></i> {{ referrer.username }}</small>
+                        <span class="badge bg-success">{{ referrer.referral_count }}</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No referral data available</p>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Detailed Statistics Table -->
-<div class="row">
-    <div class="col-12">
-        <div class="stat-card">
-            <h5 class="mb-3">
-                <i class="fas fa-table text-warning me-2"></i>
-                Detailed Statistics
-            </h5>
-            
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Metric</th>
-                            <th>Last 7 Days</th>
-                            <th>Last 30 Days</th>
-                            <th>All Time</th>
-                            <th>Trend</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>User Registrations</strong></td>
-                            <td>{{ user_registrations|length }}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>
-                                <span class="badge bg-success">
-                                    <i class="fas fa-arrow-up"></i> Growing
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>New Matches</strong></td>
-                            <td>{{ matches_over_time|length }}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>
-                                <span class="badge bg-success">
-                                    <i class="fas fa-arrow-up"></i> Growing
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Active Users</strong></td>
-                            <td>{{ active_users }}</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>
-                                <span class="badge bg-info">
-                                    <i class="fas fa-minus"></i> Stable
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><strong>Engagement Rate</strong></td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>-</td>
-                            <td>
-                                <span class="badge bg-warning">
-                                    <i class="fas fa-chart-line"></i> Calculating
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Chart.js default options
+const defaultOptions = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+        legend: {
+            display: false
+        }
+    },
+    scales: {
+        y: {
+            beginAtZero: true
+        }
+    }
+};
+
 // User Registrations Chart
-const regCtx = document.getElementById('registrationsChart').getContext('2d');
-const registrationData = {
-    labels: [
-        {% for reg in user_registrations %}
-        '{{ reg.day }}'{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
-    datasets: [{
-        label: 'New Users',
-        data: [
-            {% for reg in user_registrations %}
-            {{ reg.count }}{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        borderColor: '#667eea',
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4
-    }]
-};
-
-new Chart(regCtx, {
+new Chart(document.getElementById('registrationsChart'), {
     type: 'line',
-    data: registrationData,
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
-        },
-        layout: {
-            padding: 10
-        },
-        interaction: {
-            intersect: false
-        },
-        elements: {
-            point: {
-                radius: 4
-            }
-        }
-    }
+    data: {
+        labels: [{% for r in user_registrations %}'{{ r.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'New Users',
+            data: [{% for r in user_registrations %}{{ r.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102,126,234,0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: defaultOptions
 });
 
-// Matches Chart
-const matchCtx = document.getElementById('matchesChart').getContext('2d');
-const matchData = {
-    labels: [
-        {% for match in matches_over_time %}
-        '{{ match.day }}'{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
-    datasets: [{
-        label: 'New Matches',
-        data: [
-            {% for match in matches_over_time %}
-            {{ match.count }}{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        borderColor: '#f5576c',
-        backgroundColor: 'rgba(245, 87, 108, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4
-    }]
-};
-
-new Chart(matchCtx, {
+// Likes Over Time Chart
+new Chart(document.getElementById('likesChart'), {
     type: 'line',
-    data: matchData,
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            }
-        },
-        layout: {
-            padding: 10
-        },
-        interaction: {
-            intersect: false
-        },
-        elements: {
-            point: {
-                radius: 4
-            }
-        }
-    }
+    data: {
+        labels: [{% for l in likes_over_time %}'{{ l.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Likes',
+            data: [{% for l in likes_over_time %}{{ l.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#f5576c',
+            backgroundColor: 'rgba(245,87,108,0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: defaultOptions
 });
 
-// Study Fields Chart
-const studyCtx = document.getElementById('studyFieldsChart').getContext('2d');
-const studyData = {
-    labels: [
-        {% for field in popular_fields %}
-        '{{ field.study_field|capfirst }}'{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
-    datasets: [{
-        data: [
-            {% for field in popular_fields %}
-            {{ field.count }}{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        ],
-        backgroundColor: [
-            '#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', 
-            '#00f2fe', '#43e97b', '#38f9d7', '#ffecd2', '#fcb69f'
-        ],
-        borderWidth: 0
-    }]
-};
+// Revenue Over Time Chart
+new Chart(document.getElementById('revenueChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for r in revenue_over_time %}'{{ r.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Revenue',
+            data: [{% for r in revenue_over_time %}{{ r.revenue }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40,167,69,0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: defaultOptions
+});
 
-new Chart(studyCtx, {
+// Quiz Engagement by Hour Chart
+new Chart(document.getElementById('quizHourChart'), {
     type: 'bar',
-    data: studyData,
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: false
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    stepSize: 1
-                }
-            },
-            x: {
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 0
-                }
-            }
-        },
-        layout: {
-            padding: 10
-        },
-        interaction: {
-            intersect: false
+    data: {
+        labels: [{% for h in quiz_by_hour %}'{{ h.hour }}:00'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Quiz Responses',
+            data: [{% for h in quiz_by_hour %}{{ h.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#17a2b8'
+        }]
+    },
+    options: defaultOptions
+});
+
+// Quiz Responses Over Time Chart
+new Chart(document.getElementById('quizResponsesChart'), {
+    type: 'line',
+    data: {
+        labels: [{% for q in quiz_responses_over_time %}'{{ q.day }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Quiz Responses',
+            data: [{% for q in quiz_responses_over_time %}{{ q.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            borderColor: '#17a2b8',
+            backgroundColor: 'rgba(23,162,184,0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: defaultOptions
+});
+
+// Save active tab to localStorage
+document.querySelectorAll('#analyticsTab button').forEach(button => {
+    button.addEventListener('shown.bs.tab', function (e) {
+        localStorage.setItem('analyticsActiveTab', e.target.id);
+    });
+});
+
+// Restore active tab from localStorage
+window.addEventListener('DOMContentLoaded', function() {
+    const activeTab = localStorage.getItem('analyticsActiveTab');
+    if (activeTab) {
+        const tabButton = document.getElementById(activeTab);
+        if (tabButton) {
+            const tab = new bootstrap.Tab(tabButton);
+            tab.show();
         }
     }
 });

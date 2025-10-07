@@ -273,7 +273,7 @@
                     <small class="text-muted">{{ notification.created_at|date:"M d, Y H:i" }}</small>
                 </div>
                 <div>
-                    <span class="badge bg-{{ notification.status == 'pending' and 'warning' or notification.status == 'accepted' and 'success' or 'secondary' }}">
+                    <span class="badge {% if notification.status == 'pending' %}bg-warning{% elif notification.status == 'accepted' %}bg-success{% else %}bg-secondary{% endif %}">
                         {{ notification.get_status_display }}
                     </span>
                 </div>
