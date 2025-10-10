@@ -67,14 +67,18 @@ class Profile(models.Model):
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        
-        # Resize image
+
+        # Resize image (only for local storage, Cloudinary handles this via transformations)
         if self.profile_picture:
-            img = Image.open(self.profile_picture.path)
-            if img.height > 300 or img.width > 300:
-                output_size = (300, 300)
-                img.thumbnail(output_size)
-                img.save(self.profile_picture.path)
+            try:
+                img = Image.open(self.profile_picture.path)
+                if img.height > 300 or img.width > 300:
+                    output_size = (300, 300)
+                    img.thumbnail(output_size)
+                    img.save(self.profile_picture.path)
+            except (NotImplementedError, AttributeError):
+                # Cloudinary storage doesn't support .path, skip resize
+                pass
         
         # Check if profile is complete
         self.is_complete = bool(
@@ -152,17 +156,25 @@ class ProfilePhoto(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
 
-        # Resize image
+        # Resize image (only for local storage, Cloudinary handles this via transformations)
         if self.image:
-            img = Image.open(self.image.path)
-            if img.height > 800 or img.width > 800:
-                output_size = (800, 800)
-                img.thumbnail(output_size)
-                img.save(self.image.path)
+            try:
+                img = Image.open(self.image.path)
+                if img.height > 800 or img.width > 800:
+                    output_size = (800, 800)
+                    img.thumbnail(output_size)
+                    img.save(self.image.path)
+            except (NotImplementedError, AttributeError):
+                # Cloudinary storage doesn't support .path, skip resize
+                pass
 
     def delete(self, *args, **kwargs):
-        # Delete the image file when the model instance is deleted
+        # Delete the image file (works for both local and Cloudinary)
         if self.image:
-            if os.path.isfile(self.image.path):
-                os.remove(self.image.path)
+            try:
+                # For Cloudinary storage, use storage delete
+                self.image.delete(save=False)
+            except (NotImplementedError, AttributeError, FileNotFoundError):
+                # If deletion fails, skip
+                pass
         super().delete(*args, **kwargs)

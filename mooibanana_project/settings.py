@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',  # Must be before staticfiles
     'django.contrib.staticfiles',
+    'cloudinary',  # Cloudinary
     'channels',  # WebSocket support
     'crispy_forms',
     'crispy_bootstrap5',
@@ -121,9 +123,8 @@ CHANNEL_LAYERS = {
 
 import dj_database_url
 
-# Database configuration
-DATABASE_URL = config('DATABASE_URL')
-
+# Use Neon PostgreSQL database
+DATABASE_URL = config('DATABASE_URL', default='postgresql://neondb_owner:npg_lFnA0whfRC4c@ep-morning-math-adunwmlm-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
 DATABASES = {
     'default': dj_database_url.parse(DATABASE_URL)
 }
@@ -257,3 +258,23 @@ STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 
 # Custom user model
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# Cloudinary Configuration
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': config('CLOUDINARY_API_KEY'),
+    'API_SECRET': config('CLOUDINARY_API_SECRET'),
+}
+
+# Use Cloudinary for media files (Django 4.2+ uses STORAGES)
+STORAGES = {
+    'default': {
+        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+# Fallback for older Django versions
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'

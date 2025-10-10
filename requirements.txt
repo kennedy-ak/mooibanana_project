@@ -15,3 +15,4 @@ redis  # for production caching (optional)
 django-redis  # Redis cache backend (optional)
 channels==4.0.0  # WebSocket support for real-time notifications
 channels-redis==4.1.0  # Redis channel layer for channels
+django-cloudinary-storage
