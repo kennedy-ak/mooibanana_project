@@ -18,8 +18,7 @@ User = get_user_model()
 def give_like(request, user_id):
     if request.method == 'POST':
         target_user = get_object_or_404(User, id=user_id)
-        like_type = request.POST.get('like_type', 'regular')
-        
+
         # Get the amount from the form (default to 1 if not provided)
         try:
             amount = int(request.POST.get('amount', 1))
@@ -27,30 +26,23 @@ def give_like(request, user_id):
                 amount = 1
         except (ValueError, TypeError):
             amount = 1
-        
-        # Check if user has enough likes based on like type and amount
-        if like_type == 'super':
-            if request.user.super_likes_balance < amount:
-                messages.error(request, f'You need {amount} super likes! You only have {request.user.super_likes_balance}. Buy more likes.')
-                return redirect('payments:packages')
-        else:
-            if request.user.likes_balance < amount:
-                messages.error(request, f'You need {amount} regular likes! You only have {request.user.likes_balance}. Buy more likes.')
-                return redirect('payments:packages')
-        
+
+        # Check if user has enough likes
+        if request.user.likes_balance < amount:
+            messages.error(request, f'You need {amount} likes! You only have {request.user.likes_balance}. Buy more likes.')
+            return redirect('payments:packages')
+
         # Allow multiple likes to the same person - no duplicate check needed
-        
+
         # Create the like with specified amount
         like = Like.objects.create(
             from_user=request.user,
             to_user=target_user,
-            like_type=like_type,
             amount=amount
         )
-        
+
         # Create notification for the user who received the like
-        like_type_display = "Super Like" if like_type == 'super' else "Like"
-        amount_text = f"{amount} {like_type_display}{'s' if amount > 1 else ''}"
+        amount_text = f"{amount} Like{'s' if amount > 1 else ''}"
         Notification.objects.create(
             sender=request.user,
             receiver=target_user,
@@ -58,9 +50,9 @@ def give_like(request, user_id):
             message=f"{request.user.username} gave you {amount_text}!",
             status='read'
         )
-        
+
         # Balance deduction is handled in the Like model save() method
-        
+
         # TEMPORARILY DISABLED - Check for mutual like and create match
         # if like.is_mutual:
         #     match, created = Match.objects.get_or_create(
@@ -79,7 +71,7 @@ def give_like(request, user_id):
             messages.success(request, f'You gave {amount_text} to {target_user.username}!')
 
         return redirect('profiles:discover')
-    
+
     return redirect('profiles:discover')
 
 class MyLikesView(LoginRequiredMixin, ListView):
@@ -112,9 +104,9 @@ def give_unlike(request, user_id):
         except (ValueError, TypeError):
             amount = 1
 
-        # Check if user has enough unlikes
-        if request.user.unlikes_balance < amount:
-            messages.error(request, f'You need {amount} unlikes! You only have {request.user.unlikes_balance}. Buy more unlikes.')
+        # Check if user has enough balance (unlikes now use likes_balance)
+        if request.user.likes_balance < amount:
+            messages.error(request, f'You need {amount} in your balance! You only have {request.user.likes_balance}. Buy more packages.')
             return redirect('payments:packages')
 
         # Check if user has already unliked this person

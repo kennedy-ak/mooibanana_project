@@ -93,7 +93,7 @@ def admin_dashboard(request):
     # Recent activity
     recent_users = User.objects.order_by('-date_joined')[:5]
     recent_matches = Match.objects.select_related('user1', 'user2').order_by('-created_at')[:5] if Match else []
-    recent_purchases = Purchase.objects.select_related('user', 'like_package', 'dislike_package').order_by('-created_at')[:5] if Purchase else []
+    recent_purchases = Purchase.objects.select_related('user', 'package').order_by('-created_at')[:5] if Purchase else []
     
     # Study field distribution
     study_field_stats = Profile.objects.values('study_field').annotate(
@@ -351,8 +351,6 @@ def platform_analytics(request):
 
     # ===== 3. LIKE/UNLIKE ANALYTICS =====
     total_likes = Like.objects.count()
-    regular_likes = Like.objects.filter(like_type='regular').count()
-    super_likes = Like.objects.filter(like_type='super').count()
     mutual_likes = Like.objects.filter(is_mutual=True).count()
 
     total_unlikes = Unlike.objects.count()
@@ -372,7 +370,7 @@ def platform_analytics(request):
 
     # Top liked users
     top_liked_users = User.objects.annotate(
-        total_received=F('received_likes_count') + F('received_super_likes_count')
+        total_received=F('received_likes_count')
     ).order_by('-total_received')[:10]
 
     # Average likes per user
@@ -418,17 +416,12 @@ def platform_analytics(request):
         paystack_failed = failed_purchases.filter(payment_provider='paystack').count()
         stripe_failed = failed_purchases.filter(payment_provider='stripe').count()
 
-        # Package popularity
-        like_packages_sold = completed_purchases.filter(package_type='like').count()
-        dislike_packages_sold = completed_purchases.filter(package_type='dislike').count()
-
         # Conversion metrics
         conversion_rate = round((buyers_count / total_users * 100) if total_users > 0 else 0, 2)
     else:
         total_purchases = total_revenue = aov = rpu = 0
         revenue_over_time = []
         paystack_revenue = stripe_revenue = Decimal('0')
-        like_packages_sold = dislike_packages_sold = 0
         conversion_rate = repeat_purchase_rate = failure_rate = 0
         failed_count = paystack_failed = stripe_failed = 0
 
@@ -604,8 +597,6 @@ def platform_analytics(request):
 
         # Like/Unlike Analytics
         'total_likes': total_likes,
-        'regular_likes': regular_likes,
-        'super_likes': super_likes,
         'mutual_likes': mutual_likes,
         'total_unlikes': total_unlikes,
         'like_conversion_rate': like_conversion_rate,
@@ -628,8 +619,6 @@ def platform_analytics(request):
         'failed_count': failed_count,
         'paystack_failed': paystack_failed,
         'stripe_failed': stripe_failed,
-        'like_packages_sold': like_packages_sold,
-        'dislike_packages_sold': dislike_packages_sold,
         'conversion_rate': conversion_rate,
 
         # Quiz Analytics
@@ -1038,132 +1027,72 @@ def generate_questions(request):
 
 @user_passes_test(is_superuser)
 def packages_management(request):
-    """Manage like and dislike packages"""
-    from payments.models import LikePackage, DislikePackage
+    """Manage packages (unified package system)"""
+    from payments.models import Package
 
-    like_packages = LikePackage.objects.all().order_by('-created_at')
-    dislike_packages = DislikePackage.objects.all().order_by('-created_at')
+    packages = Package.objects.all().order_by('-created_at')
 
     context = {
-        'like_packages': like_packages,
-        'dislike_packages': dislike_packages,
+        'packages': packages,
     }
 
     return render(request, 'admin_dashboard/packages_management.html', context)
 
 
 @user_passes_test(is_superuser)
-def create_like_package(request):
-    """Create a new like package"""
+def create_package(request):
+    """Create a new package"""
     if request.method == 'POST':
-        from payments.models import LikePackage
+        from payments.models import Package
         try:
-            LikePackage.objects.create(
+            Package.objects.create(
                 name=request.POST.get('name'),
                 price=request.POST.get('price'),
-                regular_likes=request.POST.get('regular_likes'),
-                super_likes=request.POST.get('super_likes', 0),
+                likes_count=request.POST.get('likes_count'),
                 boosters=request.POST.get('boosters', 0),
                 description=request.POST.get('description', ''),
                 is_active=request.POST.get('is_active') == 'on'
             )
-            messages.success(request, 'Like package created successfully!')
+            messages.success(request, 'Package created successfully!')
         except Exception as e:
-            messages.error(request, f'Error creating like package: {str(e)}')
+            messages.error(request, f'Error creating package: {str(e)}')
 
     return redirect('admin_dashboard:packages_management')
 
 
 @user_passes_test(is_superuser)
-def create_dislike_package(request):
-    """Create a new dislike package"""
-    if request.method == 'POST':
-        from payments.models import DislikePackage
-        try:
-            DislikePackage.objects.create(
-                name=request.POST.get('name'),
-                price=request.POST.get('price'),
-                unlikes=request.POST.get('unlikes'),
-                description=request.POST.get('description', ''),
-                is_active=request.POST.get('is_active') == 'on'
-            )
-            messages.success(request, 'Dislike package created successfully!')
-        except Exception as e:
-            messages.error(request, f'Error creating dislike package: {str(e)}')
-
-    return redirect('admin_dashboard:packages_management')
-
-
-@user_passes_test(is_superuser)
-def edit_like_package(request, package_id):
-    """Edit a like package"""
-    from payments.models import LikePackage
-    package = get_object_or_404(LikePackage, id=package_id)
+def edit_package(request, package_id):
+    """Edit a package"""
+    from payments.models import Package
+    package = get_object_or_404(Package, id=package_id)
 
     if request.method == 'POST':
         try:
             package.name = request.POST.get('name')
             package.price = request.POST.get('price')
-            package.regular_likes = request.POST.get('regular_likes')
-            package.super_likes = request.POST.get('super_likes', 0)
+            package.likes_count = request.POST.get('likes_count')
             package.boosters = request.POST.get('boosters', 0)
             package.description = request.POST.get('description', '')
             package.is_active = request.POST.get('is_active') == 'on'
             package.save()
-            messages.success(request, 'Like package updated successfully!')
+            messages.success(request, 'Package updated successfully!')
         except Exception as e:
-            messages.error(request, f'Error updating like package: {str(e)}')
+            messages.error(request, f'Error updating package: {str(e)}')
         return redirect('admin_dashboard:packages_management')
 
-    return render(request, 'admin_dashboard/edit_like_package.html', {'package': package})
+    return render(request, 'admin_dashboard/edit_package.html', {'package': package})
 
 
 @user_passes_test(is_superuser)
-def edit_dislike_package(request, package_id):
-    """Edit a dislike package"""
-    from payments.models import DislikePackage
-    package = get_object_or_404(DislikePackage, id=package_id)
-
-    if request.method == 'POST':
-        try:
-            package.name = request.POST.get('name')
-            package.price = request.POST.get('price')
-            package.unlikes = request.POST.get('unlikes')
-            package.description = request.POST.get('description', '')
-            package.is_active = request.POST.get('is_active') == 'on'
-            package.save()
-            messages.success(request, 'Dislike package updated successfully!')
-        except Exception as e:
-            messages.error(request, f'Error updating dislike package: {str(e)}')
-        return redirect('admin_dashboard:packages_management')
-
-    return render(request, 'admin_dashboard/edit_dislike_package.html', {'package': package})
-
-
-@user_passes_test(is_superuser)
-def delete_like_package(request, package_id):
-    """Delete a like package"""
-    from payments.models import LikePackage
-    package = get_object_or_404(LikePackage, id=package_id)
+def delete_package(request, package_id):
+    """Delete a package"""
+    from payments.models import Package
+    package = get_object_or_404(Package, id=package_id)
 
     if request.method == 'POST':
         package_name = package.name
         package.delete()
-        messages.success(request, f'Like package "{package_name}" deleted successfully!')
-
-    return redirect('admin_dashboard:packages_management')
-
-
-@user_passes_test(is_superuser)
-def delete_dislike_package(request, package_id):
-    """Delete a dislike package"""
-    from payments.models import DislikePackage
-    package = get_object_or_404(DislikePackage, id=package_id)
-
-    if request.method == 'POST':
-        package_name = package.name
-        package.delete()
-        messages.success(request, f'Dislike package "{package_name}" deleted successfully!')
+        messages.success(request, f'Package "{package_name}" deleted successfully!')
 
     return redirect('admin_dashboard:packages_management')
 
@@ -1180,7 +1109,7 @@ def purchases_management(request):
     provider_filter = request.GET.get('provider', '')
     search = request.GET.get('search', '').strip()
 
-    purchases = Purchase.objects.select_related('user', 'like_package', 'dislike_package').order_by('-created_at')
+    purchases = Purchase.objects.select_related('user', 'package').order_by('-created_at')
 
     if status_filter:
         purchases = purchases.filter(status=status_filter)
@@ -1231,12 +1160,9 @@ def purchase_detail(request, purchase_id):
 
         elif action == 'refund':
             purchase.status = 'refunded'
-            # Deduct the likes/dislikes from user
-            if purchase.package_type == 'like' and purchase.like_package:
-                purchase.user.likes_balance = max(0, purchase.user.likes_balance - purchase.like_package.regular_likes)
-                purchase.user.super_likes_balance = max(0, purchase.user.super_likes_balance - purchase.like_package.super_likes)
-            elif purchase.package_type == 'dislike' and purchase.dislike_package:
-                purchase.user.unlikes_balance = max(0, purchase.user.unlikes_balance - purchase.dislike_package.unlikes)
+            # Deduct the likes from user balance
+            if purchase.package:
+                purchase.user.likes_balance = max(0, purchase.user.likes_balance - purchase.package.likes_count)
             purchase.user.save()
             purchase.save()
             messages.success(request, 'Purchase refunded successfully!')

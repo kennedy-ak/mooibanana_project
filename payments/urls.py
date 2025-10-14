@@ -10,7 +10,7 @@ urlpatterns = [
     path('packages/', views.PackagesView.as_view(), name='packages'),
     path('api/packages/', views.packages_api, name='packages_api'),
     path('purchase/like/<int:package_id>/', views.purchase_like_package, name='purchase_like'),
-    path('purchase/dislike/<int:package_id>/', views.purchase_dislike_package, name='purchase_dislike'),
+    # Dislike purchase removed - now using unified purchase_package with usage_type parameter
     path('gift/<int:package_id>/<int:recipient_id>/', views.gift_package, name='gift_package'),
     path('callback/', views.paystack_callback, name='paystack_callback'),
     path('stripe/success/', views.stripe_success, name='stripe_success'),

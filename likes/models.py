@@ -7,49 +7,35 @@ from django.dispatch import receiver
 User = get_user_model()
 
 class Like(models.Model):
-    LIKE_TYPES = [
-        ('regular', 'Regular Like'),
-        ('super', 'Super Like'),
-    ]
-    
     from_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes_given')
     to_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='likes_received')
-    like_type = models.CharField(max_length=10, choices=LIKE_TYPES, default='regular')
     amount = models.PositiveIntegerField(default=1, help_text="Number of likes given")
     created_at = models.DateTimeField(auto_now_add=True)
     is_mutual = models.BooleanField(default=False)
-    
+
     class Meta:
         # Remove unique constraint to allow multiple likes to same person
         pass
 
     def __str__(self):
-        return f"{self.from_user.username} gave {self.amount} {self.like_type} like(s) to {self.to_user.username}"
+        return f"{self.from_user.username} gave {self.amount} like(s) to {self.to_user.username}"
 
     def save(self, *args, **kwargs):
         # Check if user has enough bank balance before saving
         if not self.pk:  # Only check on creation
-            if self.like_type == 'regular':
-                if self.from_user.likes_balance < self.amount:
-                    raise ValueError(f"Insufficient likes balance. Required: {self.amount}, Available: {self.from_user.likes_balance}")
-                # Deduct from bank
-                self.from_user.likes_balance -= self.amount
-            else:  # super like
-                if self.from_user.super_likes_balance < self.amount:
-                    raise ValueError(f"Insufficient super likes balance. Required: {self.amount}, Available: {self.from_user.super_likes_balance}")
-                # Deduct from bank
-                self.from_user.super_likes_balance -= self.amount
-            
+            if self.from_user.likes_balance < self.amount:
+                raise ValueError(f"Insufficient likes balance. Required: {self.amount}, Available: {self.from_user.likes_balance}")
+
+            # Deduct from bank
+            self.from_user.likes_balance -= self.amount
+
             # Update receiver's received count
-            if self.like_type == 'regular':
-                self.to_user.received_likes_count += self.amount
-            else:
-                self.to_user.received_super_likes_count += self.amount
-            
+            self.to_user.received_likes_count += self.amount
+
             # Save the users with updated balances
             self.from_user.save()
             self.to_user.save()
-        
+
         # Check if this creates a mutual like (if both users have liked each other)
         if Like.objects.filter(from_user=self.to_user, to_user=self.from_user).exists():
             self.is_mutual = True
@@ -61,22 +47,18 @@ class Like(models.Model):
 @receiver(post_save, sender=Like)
 def award_points_for_like(sender, instance, created, **kwargs):
     if created:
-        # Award points based on like amount - points per like * amount given
-        if instance.like_type == 'regular':
-            sender_points = 5 * instance.amount
-            receiver_points = 10 * instance.amount
-        else:  # super like
-            sender_points = 10 * instance.amount
-            receiver_points = 20 * instance.amount
-        
+        # Award points based on like amount - 5 points per like for sender, 10 for receiver
+        sender_points = 5 * instance.amount
+        receiver_points = 10 * instance.amount
+
         instance.from_user.points_balance += sender_points
         instance.to_user.points_balance += receiver_points
-        
+
         # Bonus for mutual likes (fixed bonus regardless of amount)
         if instance.is_mutual:
             instance.from_user.points_balance += 25
             instance.to_user.points_balance += 25
-        
+
         instance.from_user.save()
         instance.to_user.save()
 
@@ -91,18 +73,19 @@ class Unlike(models.Model):
 
     def save(self, *args, **kwargs):
         # Check if user has enough bank balance before saving
+        # Unlikes now use the same likes_balance
         if not self.pk:  # Only check on creation
-            if self.from_user.unlikes_balance < self.amount:
-                raise ValueError(f"Insufficient unlikes balance. Required: {self.amount}, Available: {self.from_user.unlikes_balance}")
-            
-            # Deduct from bank and update receiver's count
-            self.from_user.unlikes_balance -= self.amount
+            if self.from_user.likes_balance < self.amount:
+                raise ValueError(f"Insufficient balance. Required: {self.amount}, Available: {self.from_user.likes_balance}")
+
+            # Deduct from likes bank and update receiver's count
+            self.from_user.likes_balance -= self.amount
             self.to_user.received_unlikes_count += self.amount
-            
+
             # Save the users with updated balances
             self.from_user.save()
             self.to_user.save()
-        
+
         super().save(*args, **kwargs)
 
     def __str__(self):

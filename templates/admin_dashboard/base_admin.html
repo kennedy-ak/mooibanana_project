@@ -21,17 +21,21 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar {
             width: var(--sidebar-width);
-            min-height: 100vh;
+            height: 100vh;
             background: var(--primary-color);
             position: fixed;
             left: 0;
             top: 0;
             z-index: 1000;
             transition: all 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .sidebar-brand {
@@ -72,7 +76,9 @@
             margin-left: var(--sidebar-width);
             background-color: #f8f9fa;
             min-height: 100vh;
+            width: calc(100% - var(--sidebar-width));
             transition: all 0.3s ease;
+            overflow-y: auto;
         }
 
         @media (max-width: 768px) {
@@ -84,6 +90,7 @@
             }
             .main-content {
                 margin-left: 0;
+                width: 100%;
             }
         }
         .stat-card {

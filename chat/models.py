@@ -58,7 +58,7 @@ class Purchase(models.Model):
     ]
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_purchases')
-    package = models.ForeignKey('payments.LikePackage', on_delete=models.CASCADE, related_name='chat_purchases')
+    package = models.ForeignKey('payments.Package', on_delete=models.CASCADE, related_name='chat_purchases')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     stripe_payment_intent_id = models.CharField(max_length=200, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')

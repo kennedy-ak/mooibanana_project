@@ -26,12 +26,9 @@ urlpatterns = [
 
     # Payment Packages Management
     path('packages/', views.packages_management, name='packages_management'),
-    path('packages/like/create/', views.create_like_package, name='create_like_package'),
-    path('packages/like/<int:package_id>/edit/', views.edit_like_package, name='edit_like_package'),
-    path('packages/like/<int:package_id>/delete/', views.delete_like_package, name='delete_like_package'),
-    path('packages/dislike/create/', views.create_dislike_package, name='create_dislike_package'),
-    path('packages/dislike/<int:package_id>/edit/', views.edit_dislike_package, name='edit_dislike_package'),
-    path('packages/dislike/<int:package_id>/delete/', views.delete_dislike_package, name='delete_dislike_package'),
+    path('packages/create/', views.create_package, name='create_package'),
+    path('packages/<int:package_id>/edit/', views.edit_package, name='edit_package'),
+    path('packages/<int:package_id>/delete/', views.delete_package, name='delete_package'),
 
     # Purchases Management
     path('purchases/', views.purchases_management, name='purchases_management'),

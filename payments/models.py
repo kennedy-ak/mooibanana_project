@@ -6,29 +6,29 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-class LikePackage(models.Model):
-    name = models.CharField(max_length=100)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    regular_likes = models.IntegerField()
-    super_likes = models.IntegerField(default=0)
-    boosters = models.IntegerField(default=0)
-    description = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.name} - €{self.price}"
+class Package(models.Model):
+    """Unified package that can be used for either likes or dislikes"""
+    CURRENCY_CHOICES = [
+        ('EUR', 'Euro (€)'),
+        ('GHS', 'Ghana Cedis (GH₵)'),
+    ]
 
-class DislikePackage(models.Model):
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    unlikes = models.IntegerField()
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='EUR')
+    likes_count = models.IntegerField(help_text="Number of likes included in this package")
+    boosters = models.IntegerField(default=0)
+    points_reward = models.IntegerField(default=0, help_text="Points awarded when this package is purchased")
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
-        return f"{self.name} - €{self.price}"
+        currency_symbol = '€' if self.currency == 'EUR' else 'GH₵'
+        return f"{self.name} - {currency_symbol}{self.price}"
+
+# Keep old model names as aliases for backward compatibility during migration
+LikePackage = Package
 
 class Purchase(models.Model):
     STATUS_CHOICES = [
@@ -38,9 +38,9 @@ class Purchase(models.Model):
         ('refunded', 'Refunded'),
     ]
 
-    PACKAGE_TYPE_CHOICES = [
-        ('like', 'Like Package'),
-        ('dislike', 'Dislike Package'),
+    USAGE_TYPE_CHOICES = [
+        ('likes', 'For Giving Likes'),
+        ('dislikes', 'For Giving Dislikes'),
     ]
 
     PAYMENT_PROVIDER_CHOICES = [
@@ -49,9 +49,9 @@ class Purchase(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_purchases')
-    package_type = models.CharField(max_length=10, choices=PACKAGE_TYPE_CHOICES)
-    like_package = models.ForeignKey(LikePackage, on_delete=models.CASCADE, related_name='purchases', null=True, blank=True)
-    dislike_package = models.ForeignKey(DislikePackage, on_delete=models.CASCADE, related_name='purchases', null=True, blank=True)
+    package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name='purchases', null=True, blank=True)
+    usage_type = models.CharField(max_length=10, choices=USAGE_TYPE_CHOICES, default='likes',
+                                   help_text="Whether user will use these for likes or dislikes")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_provider = models.CharField(max_length=20, choices=PAYMENT_PROVIDER_CHOICES, default='paystack')
     paystack_reference = models.CharField(max_length=200, blank=True, null=True)
@@ -59,19 +59,10 @@ class Purchase(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
-    
-    @property
-    def package(self):
-        """Get the actual package object"""
-        if self.package_type == 'like':
-            return self.like_package
-        elif self.package_type == 'dislike':
-            return self.dislike_package
-        return None
-    
+
     def __str__(self):
         package_name = self.package.name if self.package else "Unknown Package"
-        return f"{self.user.username} - {package_name} - €{self.amount}"
+        return f"{self.user.username} - {package_name} ({self.get_usage_type_display()}) - €{self.amount}"
 
 # Disabled - likes are now handled in the payment views to support gift purchases
 # @receiver(post_save, sender=Purchase)

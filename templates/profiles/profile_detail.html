@@ -167,20 +167,17 @@
                     {% if user.is_authenticated and user != profile.user %}
                         <div class="card mt-4 border-0 shadow-sm">
                             <div class="card-header bg-transparent border-0 text-center">
-                                <h6 class="card-title mb-0">Your Available Balances</h6>
+                                <h6 class="card-title mb-0">Your Available Balance</h6>
                             </div>
                             <div class="card-body text-center py-3">
                                 <div class="row g-2">
                                     <div class="col-12">
                                         <div class="d-flex justify-content-center align-items-center flex-wrap gap-2">
                                             <span class="badge bg-success fs-6 px-3 py-2">
-                                                <i class="fas fa-heart me-1"></i> {{ user.likes_balance }} likes
+                                                <i class="fas fa-heart me-1"></i> {{ user.likes_balance }} balance
                                             </span>
-                                            <span class="badge bg-warning fs-6 px-3 py-2">
-                                                <i class="fas fa-star me-1"></i> {{ user.super_likes_balance }} super likes
-                                            </span>
-                                            <span class="badge bg-danger fs-6 px-3 py-2">
-                                                <i class="fas fa-times-circle me-1"></i> {{ user.unlikes_balance }} unlikes
+                                            <span class="badge bg-primary fs-6 px-3 py-2">
+                                                <i class="fas fa-coins me-1"></i> {{ user.points_balance }} points
                                             </span>
                                         </div>
                                     </div>
@@ -425,17 +422,9 @@
                 <div class="modal-body">
                     <div class="text-center mb-4">
                         <p class="lead">How many likes do you want to give?</p>
-                        <p class="text-muted">You have <strong>{{ user.likes_balance }} regular likes</strong> and <strong>{{ user.super_likes_balance }} super likes</strong> available.</p>
+                        <p class="text-muted">You have <strong>{{ user.likes_balance }} likes</strong> available.</p>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label for="like_type" class="form-label">Like Type:</label>
-                        <select name="like_type" id="like_type" class="form-select" onchange="updateLikeBalanceDisplay()">
-                            <option value="regular">Regular Like</option>
-                            <option value="super">Super Like</option>
-                        </select>
-                    </div>
-                    
+
                     <div class="mb-3">
                         <label for="amount" class="form-label">Number of Likes:</label>
                         <div class="input-group">
@@ -444,10 +433,10 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="incrementAmount('like')">+</button>
                         </div>
                         <div class="form-text">
-                            <span id="like_balance_text">Available: {{ user.likes_balance }} regular likes</span>
+                            <span id="like_balance_text">Available: {{ user.likes_balance }} likes</span>
                         </div>
                     </div>
-                    
+
                     <div class="range-input mb-3">
                         <input type="range" id="like_range" class="form-range" min="1" max="{{ user.likes_balance }}" value="1" onchange="updateLikeAmountFromRange()">
                         <div class="d-flex justify-content-between">
@@ -482,24 +471,24 @@
                 <div class="modal-body">
                     <div class="text-center mb-4">
                         <p class="lead">How many dislikes do you want to give?</p>
-                        <p class="text-muted">You have <strong>{{ user.unlikes_balance }} dislikes</strong> available.</p>
+                        <p class="text-muted">You have <strong>{{ user.likes_balance }} in your balance</strong> available.</p>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="dislike_amount" class="form-label">Number of Dislikes:</label>
                         <div class="input-group">
                             <button type="button" class="btn btn-outline-secondary" onclick="decrementAmount('dislike')">-</button>
-                            <input type="number" name="amount" id="dislike_amount" class="form-control text-center" value="1" min="1" max="{{ user.unlikes_balance }}" onchange="validateDislikeAmount()">
+                            <input type="number" name="amount" id="dislike_amount" class="form-control text-center" value="1" min="1" max="{{ user.likes_balance }}" onchange="validateDislikeAmount()">
                             <button type="button" class="btn btn-outline-secondary" onclick="incrementAmount('dislike')">+</button>
                         </div>
-                        <div class="form-text">Available: {{ user.unlikes_balance }} dislikes</div>
+                        <div class="form-text">Available: {{ user.likes_balance }} balance</div>
                     </div>
-                    
+
                     <div class="range-input mb-3">
-                        <input type="range" id="dislike_range" class="form-range" min="1" max="{{ user.unlikes_balance }}" value="1" onchange="updateDislikeAmountFromRange()">
+                        <input type="range" id="dislike_range" class="form-range" min="1" max="{{ user.likes_balance }}" value="1" onchange="updateDislikeAmountFromRange()">
                         <div class="d-flex justify-content-between">
                             <span>1</span>
-                            <span>{{ user.unlikes_balance }}</span>
+                            <span>{{ user.likes_balance }}</span>
                         </div>
                     </div>
                 </div>
@@ -772,11 +761,8 @@
 
     function validateLikeAmount() {
         const input = document.getElementById('like_amount');
-        const likeType = document.getElementById('like_type').value;
-        const regularBalance = {{ user.likes_balance }};
-        const superBalance = {{ user.super_likes_balance }};
-        const maxBalance = likeType === 'super' ? superBalance : regularBalance;
-        
+        const maxBalance = {{ user.likes_balance }};
+
         let amount = parseInt(input.value);
         if (amount > maxBalance) {
             amount = maxBalance;
@@ -786,9 +772,9 @@
             amount = 1;
             input.value = amount;
         }
-        
+
         document.getElementById('like_amount_display').textContent = amount;
-        
+
         // Enable/disable submit button
         const submitBtn = document.getElementById('give_likes_btn');
         submitBtn.disabled = amount <= 0 || amount > maxBalance;
@@ -796,8 +782,8 @@
 
     function validateDislikeAmount() {
         const input = document.getElementById('dislike_amount');
-        const maxBalance = {{ user.unlikes_balance }};
-        
+        const maxBalance = {{ user.likes_balance }};
+
         let amount = parseInt(input.value);
         if (amount > maxBalance) {
             amount = maxBalance;
@@ -807,30 +793,12 @@
             amount = 1;
             input.value = amount;
         }
-        
+
         document.getElementById('dislike_amount_display').textContent = amount;
-        
+
         // Enable/disable submit button
         const submitBtn = document.getElementById('give_dislikes_btn');
         submitBtn.disabled = amount <= 0 || amount > maxBalance;
-    }
-
-    function updateLikeBalanceDisplay() {
-        const likeType = document.getElementById('like_type').value;
-        const regularBalance = {{ user.likes_balance }};
-        const superBalance = {{ user.super_likes_balance }};
-        const balance = likeType === 'super' ? superBalance : regularBalance;
-        const typeName = likeType === 'super' ? 'super likes' : 'regular likes';
-        
-        document.getElementById('like_balance_text').textContent = `Available: ${balance} ${typeName}`;
-        document.getElementById('like_amount').setAttribute('max', balance);
-        document.getElementById('like_range').setAttribute('max', balance);
-        document.getElementById('like_max_value').textContent = balance;
-        
-        // Reset amount to 1 and validate
-        document.getElementById('like_amount').value = 1;
-        document.getElementById('like_range').value = 1;
-        validateLikeAmount();
     }
 
     function updateLikeAmountFromRange() {
@@ -861,7 +829,7 @@
 
     // Initialize controls when modals open
     document.getElementById('giveLikesModal').addEventListener('show.bs.modal', function () {
-        updateLikeBalanceDisplay();
+        validateLikeAmount();
     });
 
     document.getElementById('giveDislikesModal').addEventListener('show.bs.modal', function () {

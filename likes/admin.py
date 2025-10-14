@@ -5,8 +5,8 @@ from .models import Like, Unlike
 
 @admin.register(Like)
 class LikeAdmin(admin.ModelAdmin):
-    list_display = ['from_user', 'to_user', 'like_type', 'is_mutual', 'created_at']
-    list_filter = ['like_type', 'is_mutual', 'created_at']
+    list_display = ['from_user', 'to_user', 'amount', 'is_mutual', 'created_at']
+    list_filter = ['is_mutual', 'created_at']
     search_fields = ['from_user__username', 'to_user__username']
     readonly_fields = ['created_at']
 

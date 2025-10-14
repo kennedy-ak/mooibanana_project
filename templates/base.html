@@ -862,7 +862,7 @@
                                 <i class="fas fa-crown"></i> Admin
                             </a>
                         </li>
-                        {% endif %}
+                        {% else %}
                         <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">Discover</a>
                         </li>
@@ -890,12 +890,14 @@
                                 <i class="fas fa-users"></i> Referrals
                             </a>
                         </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
                 
                 <ul class="navbar-nav">
 
                     {% if user.is_authenticated %}
+                        {% if not user.is_superuser %}
                         <li class="nav-item me-3">
                             <span class="likes-balance">
                                 <i class="fas fa-heart"></i> {{ user.likes_balance }} likes
@@ -907,11 +909,21 @@
                                 <i class="fas fa-star"></i> {{ user.points_balance }} points
                             </span>
                         </li>
+                        {% endif %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 {{ user.username }}
                             </a>
                             <ul class="dropdown-menu">
+                                {% if user.is_superuser %}
+                                <li><a class="dropdown-item" href="{% url 'admin_dashboard:dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin:index' %}">
+                                    <i class="fas fa-cogs me-2"></i>Django Admin
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                {% else %}
                                 <li><a class="dropdown-item" href="{% url 'profiles:my_profile' %}">My Profile</a></li>
                                 <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=likes">Buy Likes</a></li>
                                 <li><a class="dropdown-item" href="{% url 'payments:packages' %}?type=dislikes">Buy Dislikes</a></li>
@@ -920,6 +932,7 @@
                                     <i class="fas fa-users"></i> Referrals
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
+                                {% endif %}
                                 <li>
                                     <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
                                         {% csrf_token %}
@@ -1010,51 +1023,63 @@
                                     
                                     <!-- Authenticated user actions -->
                                     {% if user.is_authenticated %}
-                                    <li>
-                                        <a href="{% url 'profiles:discover' %}" class="dropdown-item">
-                                            <i class="fas fa-search me-2"></i>Discover Profiles
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{% url 'profiles:my_profile' %}" class="dropdown-item">
-                                            <i class="fas fa-user me-2"></i>My Profile
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{% url 'notifications:list' %}" class="dropdown-item position-relative">
-                                            <i class="fas fa-bell me-2"></i>Notifications
-                                            <span id="quick-notification-count-mobile" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;"></span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <button class="dropdown-item border-0 bg-transparent text-start w-100" onclick="toggleUpdatesSidebar(event)">
-                                            <i class="fas fa-comments me-2"></i>Live Updates
-                                        </button>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <!-- Additional Quick Actions -->
-                                    {% block quick_actions_mobile %}
-                                    {% if user.is_authenticated and profile and user != profile.user %}
-                                    <li>
-                                        <a href="{% url 'likes:give_like' profile.user.id %}" class="dropdown-item text-success">
-                                            <i class="fas fa-heart me-2"></i>Give Like
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{% url 'likes:give_unlike' profile.user.id %}" class="dropdown-item text-danger">
-                                            <i class="fas fa-times-circle me-2"></i>Give Dislike
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    {% endif %}
-                                    {% endblock %}
-                                    {% endif %}
-                                    {% if user.is_authenticated %}
-                                    <li>
-                                        <a href="{% url 'payments:packages' %}" class="dropdown-item">
-                                            <i class="fas fa-shopping-cart me-2"></i>Buy Packages
-                                        </a>
-                                    </li>
+                                        {% if user.is_superuser %}
+                                        <li>
+                                            <a href="{% url 'admin_dashboard:dashboard' %}" class="dropdown-item">
+                                                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'admin:index' %}" class="dropdown-item">
+                                                <i class="fas fa-cogs me-2"></i>Django Admin
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% else %}
+                                        <li>
+                                            <a href="{% url 'profiles:discover' %}" class="dropdown-item">
+                                                <i class="fas fa-search me-2"></i>Discover Profiles
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'profiles:my_profile' %}" class="dropdown-item">
+                                                <i class="fas fa-user me-2"></i>My Profile
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'notifications:list' %}" class="dropdown-item position-relative">
+                                                <i class="fas fa-bell me-2"></i>Notifications
+                                                <span id="quick-notification-count-mobile" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;"></span>
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item border-0 bg-transparent text-start w-100" onclick="toggleUpdatesSidebar(event)">
+                                                <i class="fas fa-comments me-2"></i>Live Updates
+                                            </button>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <!-- Additional Quick Actions -->
+                                        {% block quick_actions_mobile %}
+                                        {% if user.is_authenticated and profile and user != profile.user %}
+                                        <li>
+                                            <a href="{% url 'likes:give_like' profile.user.id %}" class="dropdown-item text-success">
+                                                <i class="fas fa-heart me-2"></i>Give Like
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="{% url 'likes:give_unlike' profile.user.id %}" class="dropdown-item text-danger">
+                                                <i class="fas fa-times-circle me-2"></i>Give Dislike
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        {% endblock %}
+                                        <li>
+                                            <a href="{% url 'payments:packages' %}" class="dropdown-item">
+                                                <i class="fas fa-shopping-cart me-2"></i>Buy Packages
+                                            </a>
+                                        </li>
+                                        {% endif %}
                                     {% else %}
                                     <li>
                                         <a href="{% url 'accounts:register' %}" class="dropdown-item">

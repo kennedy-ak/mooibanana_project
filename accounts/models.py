@@ -51,13 +51,11 @@ class CustomUser(AbstractUser):
     country = models.CharField(max_length=2, choices=COUNTRY_CHOICES, blank=True, null=True)
 
     # Like/Dislike Bank (what users can spend)
-    likes_balance = models.IntegerField(default=0)
-    super_likes_balance = models.IntegerField(default=0)
-    unlikes_balance = models.IntegerField(default=0)
+    # Single balance for both likes and dislikes
+    likes_balance = models.IntegerField(default=100)  # New users get 100 free likes
 
     # Received counts (what others gave them)
     received_likes_count = models.IntegerField(default=0)
-    received_super_likes_count = models.IntegerField(default=0)
     received_unlikes_count = models.IntegerField(default=0)
 
     points_balance = models.IntegerField(default=0)
@@ -124,7 +122,7 @@ def award_referral_points(sender, instance, created, **kwargs):
             )
 
             # Award points to referrer
-            points_to_award = 50  # 50 points for successful referral
+            points_to_award = 15  # 15 points for successful referral
             referral.referrer.points_balance += points_to_award
             referral.referrer.referral_points_earned += points_to_award
             referral.referrer.save()
@@ -138,7 +136,7 @@ def award_referral_points(sender, instance, created, **kwargs):
         except Referral.DoesNotExist:
             # Create referral record if it doesn't exist
             if instance.user.referred_by:
-                points_to_award = 50
+                points_to_award = 15
                 instance.user.referred_by.points_balance += points_to_award
                 instance.user.referred_by.referral_points_earned += points_to_award
                 instance.user.referred_by.save()
