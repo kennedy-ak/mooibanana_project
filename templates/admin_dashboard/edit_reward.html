@@ -1,0 +1,84 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Edit Reward - Admin Dashboard{% endblock %}
+{% block page_title %}Edit Reward{% endblock %}
+{% block page_subtitle %}Update reward details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Reward</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Reward Name*</label>
+                            <input type="text" class="form-control" name="name" value="{{ reward.name }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Reward Type*</label>
+                            <select class="form-select" name="reward_type" required>
+                                {% for value, label in reward_types %}
+                                    <option value="{{ value }}" {% if reward.reward_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Points Cost*</label>
+                            <input type="number" class="form-control" name="points_cost" value="{{ reward.points_cost }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Stock Quantity*</label>
+                            <input type="number" class="form-control" name="stock_quantity" value="{{ reward.stock_quantity }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Reward Image</label>
+                            {% if reward.image %}
+                                <div class="mb-2">
+                                    <img src="{{ reward.image.url }}" alt="{{ reward.name }}"
+                                         style="max-width: 100px; height: auto; border-radius: 8px;">
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" name="image" accept="image/*">
+                            <small class="text-muted">Leave empty to keep current image</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description*</label>
+                        <textarea class="form-control" name="description" rows="5" required>{{ reward.description }}</textarea>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" name="is_active" id="is_active" {% if reward.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            Active (visible to users)
+                        </label>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin_dashboard:rewards_management' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Update Reward
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

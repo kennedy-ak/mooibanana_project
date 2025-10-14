@@ -1032,3 +1032,560 @@ def generate_questions(request):
         return JsonResponse({'success': False, 'error': f'API request failed: {str(e)}'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+# ===== PAYMENT PACKAGES MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def packages_management(request):
+    """Manage like and dislike packages"""
+    from payments.models import LikePackage, DislikePackage
+
+    like_packages = LikePackage.objects.all().order_by('-created_at')
+    dislike_packages = DislikePackage.objects.all().order_by('-created_at')
+
+    context = {
+        'like_packages': like_packages,
+        'dislike_packages': dislike_packages,
+    }
+
+    return render(request, 'admin_dashboard/packages_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def create_like_package(request):
+    """Create a new like package"""
+    if request.method == 'POST':
+        from payments.models import LikePackage
+        try:
+            LikePackage.objects.create(
+                name=request.POST.get('name'),
+                price=request.POST.get('price'),
+                regular_likes=request.POST.get('regular_likes'),
+                super_likes=request.POST.get('super_likes', 0),
+                boosters=request.POST.get('boosters', 0),
+                description=request.POST.get('description', ''),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Like package created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating like package: {str(e)}')
+
+    return redirect('admin_dashboard:packages_management')
+
+
+@user_passes_test(is_superuser)
+def create_dislike_package(request):
+    """Create a new dislike package"""
+    if request.method == 'POST':
+        from payments.models import DislikePackage
+        try:
+            DislikePackage.objects.create(
+                name=request.POST.get('name'),
+                price=request.POST.get('price'),
+                unlikes=request.POST.get('unlikes'),
+                description=request.POST.get('description', ''),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+            messages.success(request, 'Dislike package created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating dislike package: {str(e)}')
+
+    return redirect('admin_dashboard:packages_management')
+
+
+@user_passes_test(is_superuser)
+def edit_like_package(request, package_id):
+    """Edit a like package"""
+    from payments.models import LikePackage
+    package = get_object_or_404(LikePackage, id=package_id)
+
+    if request.method == 'POST':
+        try:
+            package.name = request.POST.get('name')
+            package.price = request.POST.get('price')
+            package.regular_likes = request.POST.get('regular_likes')
+            package.super_likes = request.POST.get('super_likes', 0)
+            package.boosters = request.POST.get('boosters', 0)
+            package.description = request.POST.get('description', '')
+            package.is_active = request.POST.get('is_active') == 'on'
+            package.save()
+            messages.success(request, 'Like package updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating like package: {str(e)}')
+        return redirect('admin_dashboard:packages_management')
+
+    return render(request, 'admin_dashboard/edit_like_package.html', {'package': package})
+
+
+@user_passes_test(is_superuser)
+def edit_dislike_package(request, package_id):
+    """Edit a dislike package"""
+    from payments.models import DislikePackage
+    package = get_object_or_404(DislikePackage, id=package_id)
+
+    if request.method == 'POST':
+        try:
+            package.name = request.POST.get('name')
+            package.price = request.POST.get('price')
+            package.unlikes = request.POST.get('unlikes')
+            package.description = request.POST.get('description', '')
+            package.is_active = request.POST.get('is_active') == 'on'
+            package.save()
+            messages.success(request, 'Dislike package updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating dislike package: {str(e)}')
+        return redirect('admin_dashboard:packages_management')
+
+    return render(request, 'admin_dashboard/edit_dislike_package.html', {'package': package})
+
+
+@user_passes_test(is_superuser)
+def delete_like_package(request, package_id):
+    """Delete a like package"""
+    from payments.models import LikePackage
+    package = get_object_or_404(LikePackage, id=package_id)
+
+    if request.method == 'POST':
+        package_name = package.name
+        package.delete()
+        messages.success(request, f'Like package "{package_name}" deleted successfully!')
+
+    return redirect('admin_dashboard:packages_management')
+
+
+@user_passes_test(is_superuser)
+def delete_dislike_package(request, package_id):
+    """Delete a dislike package"""
+    from payments.models import DislikePackage
+    package = get_object_or_404(DislikePackage, id=package_id)
+
+    if request.method == 'POST':
+        package_name = package.name
+        package.delete()
+        messages.success(request, f'Dislike package "{package_name}" deleted successfully!')
+
+    return redirect('admin_dashboard:packages_management')
+
+
+# ===== PURCHASES MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def purchases_management(request):
+    """View and manage all purchases"""
+    from payments.models import Purchase
+
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    provider_filter = request.GET.get('provider', '')
+    search = request.GET.get('search', '').strip()
+
+    purchases = Purchase.objects.select_related('user', 'like_package', 'dislike_package').order_by('-created_at')
+
+    if status_filter:
+        purchases = purchases.filter(status=status_filter)
+    if provider_filter:
+        purchases = purchases.filter(payment_provider=provider_filter)
+    if search:
+        purchases = purchases.filter(
+            Q(user__username__icontains=search) |
+            Q(user__email__icontains=search) |
+            Q(paystack_reference__icontains=search) |
+            Q(stripe_session_id__icontains=search)
+        )
+
+    # Pagination
+    paginator = Paginator(purchases, 20)
+    page = request.GET.get('page')
+    purchases = paginator.get_page(page)
+
+    context = {
+        'purchases': purchases,
+        'status_filter': status_filter,
+        'provider_filter': provider_filter,
+        'search': search,
+    }
+
+    return render(request, 'admin_dashboard/purchases_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def purchase_detail(request, purchase_id):
+    """View and manage a specific purchase"""
+    from payments.models import Purchase
+    purchase = get_object_or_404(Purchase, id=purchase_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'complete':
+            purchase.status = 'completed'
+            purchase.completed_at = timezone.now()
+            purchase.save()
+            messages.success(request, 'Purchase marked as completed!')
+
+        elif action == 'fail':
+            purchase.status = 'failed'
+            purchase.save()
+            messages.success(request, 'Purchase marked as failed!')
+
+        elif action == 'refund':
+            purchase.status = 'refunded'
+            # Deduct the likes/dislikes from user
+            if purchase.package_type == 'like' and purchase.like_package:
+                purchase.user.likes_balance = max(0, purchase.user.likes_balance - purchase.like_package.regular_likes)
+                purchase.user.super_likes_balance = max(0, purchase.user.super_likes_balance - purchase.like_package.super_likes)
+            elif purchase.package_type == 'dislike' and purchase.dislike_package:
+                purchase.user.unlikes_balance = max(0, purchase.user.unlikes_balance - purchase.dislike_package.unlikes)
+            purchase.user.save()
+            purchase.save()
+            messages.success(request, 'Purchase refunded successfully!')
+
+        return redirect('admin_dashboard:purchase_detail', purchase_id=purchase_id)
+
+    context = {'purchase': purchase}
+    return render(request, 'admin_dashboard/purchase_detail.html', context)
+
+
+# ===== REWARDS MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def rewards_management(request):
+    """Manage rewards"""
+    from rewards.models import Reward
+
+    rewards = Reward.objects.all().order_by('-created_at')
+
+    context = {'rewards': rewards}
+    return render(request, 'admin_dashboard/rewards_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def create_reward(request):
+    """Create a new reward"""
+    from rewards.models import Reward
+
+    if request.method == 'POST':
+        try:
+            reward = Reward.objects.create(
+                name=request.POST.get('name'),
+                description=request.POST.get('description'),
+                points_cost=request.POST.get('points_cost'),
+                reward_type=request.POST.get('reward_type'),
+                stock_quantity=request.POST.get('stock_quantity', 0),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+
+            # Handle image upload
+            if request.FILES.get('image'):
+                reward.image = request.FILES['image']
+                reward.save()
+
+            messages.success(request, 'Reward created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating reward: {str(e)}')
+
+        return redirect('admin_dashboard:rewards_management')
+
+    from rewards.models import Reward
+    reward_types = Reward.REWARD_TYPES
+    return render(request, 'admin_dashboard/create_reward.html', {'reward_types': reward_types})
+
+
+@user_passes_test(is_superuser)
+def edit_reward(request, reward_id):
+    """Edit a reward"""
+    from rewards.models import Reward
+    reward = get_object_or_404(Reward, id=reward_id)
+
+    if request.method == 'POST':
+        try:
+            reward.name = request.POST.get('name')
+            reward.description = request.POST.get('description')
+            reward.points_cost = request.POST.get('points_cost')
+            reward.reward_type = request.POST.get('reward_type')
+            reward.stock_quantity = request.POST.get('stock_quantity', 0)
+            reward.is_active = request.POST.get('is_active') == 'on'
+
+            # Handle image upload
+            if request.FILES.get('image'):
+                reward.image = request.FILES['image']
+
+            reward.save()
+            messages.success(request, 'Reward updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating reward: {str(e)}')
+
+        return redirect('admin_dashboard:rewards_management')
+
+    from rewards.models import Reward
+    reward_types = Reward.REWARD_TYPES
+    context = {'reward': reward, 'reward_types': reward_types}
+    return render(request, 'admin_dashboard/edit_reward.html', context)
+
+
+@user_passes_test(is_superuser)
+def delete_reward(request, reward_id):
+    """Delete a reward"""
+    from rewards.models import Reward
+    reward = get_object_or_404(Reward, id=reward_id)
+
+    if request.method == 'POST':
+        reward_name = reward.name
+        reward.delete()
+        messages.success(request, f'Reward "{reward_name}" deleted successfully!')
+
+    return redirect('admin_dashboard:rewards_management')
+
+
+@user_passes_test(is_superuser)
+def toggle_reward_status(request, reward_id):
+    """Toggle reward active status"""
+    from rewards.models import Reward
+    reward = get_object_or_404(Reward, id=reward_id)
+
+    reward.is_active = not reward.is_active
+    reward.save()
+
+    status = "activated" if reward.is_active else "deactivated"
+    messages.success(request, f'Reward "{reward.name}" {status}!')
+
+    return redirect('admin_dashboard:rewards_management')
+
+
+# ===== REWARD CLAIMS MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def reward_claims_management(request):
+    """Manage reward claims"""
+    from rewards.models import RewardClaim
+
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    claims = RewardClaim.objects.select_related('user', 'reward').order_by('-claimed_at')
+
+    if status_filter:
+        claims = claims.filter(status=status_filter)
+
+    # Pagination
+    paginator = Paginator(claims, 20)
+    page = request.GET.get('page')
+    claims = paginator.get_page(page)
+
+    from rewards.models import RewardClaim
+    status_choices = RewardClaim.STATUS_CHOICES
+
+    context = {
+        'claims': claims,
+        'status_filter': status_filter,
+        'status_choices': status_choices,
+    }
+
+    return render(request, 'admin_dashboard/reward_claims_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def update_reward_claim_status(request, claim_id):
+    """Update reward claim status"""
+    from rewards.models import RewardClaim
+    claim = get_object_or_404(RewardClaim, id=claim_id)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        claim.status = new_status
+        claim.save()
+        messages.success(request, f'Claim status updated to {new_status}!')
+
+    return redirect('admin_dashboard:reward_claims')
+
+
+# ===== ADVERTISEMENTS MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def advertisements_management(request):
+    """Manage advertisements"""
+    from advertisements.models import Advertisement
+
+    advertisements = Advertisement.objects.all().order_by('-display_priority', '-created_at')
+
+    context = {'advertisements': advertisements}
+    return render(request, 'admin_dashboard/advertisements_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def create_advertisement(request):
+    """Create a new advertisement"""
+    from advertisements.models import Advertisement
+
+    if request.method == 'POST':
+        try:
+            ad = Advertisement.objects.create(
+                brand_name=request.POST.get('brand_name'),
+                brand_url=request.POST.get('brand_url', ''),
+                display_priority=request.POST.get('display_priority', 1),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+
+            # Handle image upload
+            if request.FILES.get('flyer_image'):
+                ad.flyer_image = request.FILES['flyer_image']
+                ad.save()
+
+            messages.success(request, 'Advertisement created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating advertisement: {str(e)}')
+
+        return redirect('admin_dashboard:advertisements_management')
+
+    return render(request, 'admin_dashboard/create_advertisement.html')
+
+
+@user_passes_test(is_superuser)
+def edit_advertisement(request, ad_id):
+    """Edit an advertisement"""
+    from advertisements.models import Advertisement
+    ad = get_object_or_404(Advertisement, id=ad_id)
+
+    if request.method == 'POST':
+        try:
+            ad.brand_name = request.POST.get('brand_name')
+            ad.brand_url = request.POST.get('brand_url', '')
+            ad.display_priority = request.POST.get('display_priority', 1)
+            ad.is_active = request.POST.get('is_active') == 'on'
+
+            # Handle image upload
+            if request.FILES.get('flyer_image'):
+                ad.flyer_image = request.FILES['flyer_image']
+
+            ad.save()
+            messages.success(request, 'Advertisement updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating advertisement: {str(e)}')
+
+        return redirect('admin_dashboard:advertisements_management')
+
+    context = {'ad': ad}
+    return render(request, 'admin_dashboard/edit_advertisement.html', context)
+
+
+@user_passes_test(is_superuser)
+def delete_advertisement(request, ad_id):
+    """Delete an advertisement"""
+    from advertisements.models import Advertisement
+    ad = get_object_or_404(Advertisement, id=ad_id)
+
+    if request.method == 'POST':
+        brand_name = ad.brand_name
+        ad.delete()
+        messages.success(request, f'Advertisement "{brand_name}" deleted successfully!')
+
+    return redirect('admin_dashboard:advertisements_management')
+
+
+@user_passes_test(is_superuser)
+def toggle_advertisement_status(request, ad_id):
+    """Toggle advertisement active status"""
+    from advertisements.models import Advertisement
+    ad = get_object_or_404(Advertisement, id=ad_id)
+
+    ad.is_active = not ad.is_active
+    ad.save()
+
+    status = "activated" if ad.is_active else "deactivated"
+    messages.success(request, f'Advertisement "{ad.brand_name}" {status}!')
+
+    return redirect('admin_dashboard:advertisements_management')
+
+
+# ===== REFERRALS MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def referrals_management(request):
+    """View and manage referrals"""
+    from accounts.models import Referral
+
+    # Filter by status
+    status_filter = request.GET.get('status', '')
+    referrals = Referral.objects.select_related('referrer', 'referred_user').order_by('-created_at')
+
+    if status_filter:
+        referrals = referrals.filter(status=status_filter)
+
+    # Pagination
+    paginator = Paginator(referrals, 20)
+    page = request.GET.get('page')
+    referrals = paginator.get_page(page)
+
+    # Top referrers
+    top_referrers = User.objects.annotate(
+        referral_count=Count('referral_activities', filter=Q(referral_activities__status='completed'))
+    ).filter(referral_count__gt=0).order_by('-referral_count')[:10]
+
+    from accounts.models import Referral
+    status_choices = Referral.STATUS_CHOICES
+
+    context = {
+        'referrals': referrals,
+        'top_referrers': top_referrers,
+        'status_filter': status_filter,
+        'status_choices': status_choices,
+    }
+
+    return render(request, 'admin_dashboard/referrals_management.html', context)
+
+
+# ===== PROFILE MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def edit_profile(request, user_id):
+    """Edit a user's profile"""
+    user = get_object_or_404(User, id=user_id)
+    profile = user.profile
+
+    if request.method == 'POST':
+        try:
+            # Update user fields
+            user.username = request.POST.get('username')
+            user.email = request.POST.get('email')
+            user.first_name = request.POST.get('first_name', '')
+            user.last_name = request.POST.get('last_name', '')
+            user.is_student = request.POST.get('is_student') == 'on'
+            user.is_verified = request.POST.get('is_verified') == 'on'
+            user.country = request.POST.get('country', '')
+            user.save()
+
+            # Update profile fields
+            profile.bio = request.POST.get('bio', '')
+            profile.gender = request.POST.get('gender', '')
+            profile.study_field = request.POST.get('study_field', '')
+
+            study_year = request.POST.get('study_year', '')
+            profile.study_year = int(study_year) if study_year else None
+
+            profile.school_name = request.POST.get('school_name', '')
+            profile.interests = request.POST.get('interests', '')
+            profile.city = request.POST.get('city', '')
+            profile.location = request.POST.get('location', '')
+
+            # Handle birth date
+            birth_date = request.POST.get('birth_date', '')
+            if birth_date:
+                from datetime import datetime
+                profile.birth_date = datetime.strptime(birth_date, '%Y-%m-%d').date()
+
+            # Handle profile picture
+            if request.FILES.get('profile_picture'):
+                profile.profile_picture = request.FILES['profile_picture']
+
+            profile.save()
+            messages.success(request, f'Profile for {user.username} updated successfully!')
+            return redirect('admin_dashboard:user_detail', user_id=user_id)
+
+        except Exception as e:
+            messages.error(request, f'Error updating profile: {str(e)}')
+
+    context = {
+        'user_obj': user,
+        'profile': profile,
+    }
+    return render(request, 'admin_dashboard/edit_profile.html', context)

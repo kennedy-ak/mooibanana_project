@@ -1,0 +1,149 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Purchases Management - Admin Dashboard{% endblock %}
+{% block page_title %}Purchases Management{% endblock %}
+{% block page_subtitle %}View and manage all purchases{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>All Purchases</h5>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <form method="get" class="row g-3 mb-4">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="refunded" {% if status_filter == 'refunded' %}selected{% endif %}>Refunded</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Provider</label>
+                <select name="provider" class="form-select">
+                    <option value="">All Providers</option>
+                    <option value="paystack" {% if provider_filter == 'paystack' %}selected{% endif %}>Paystack</option>
+                    <option value="stripe" {% if provider_filter == 'stripe' %}selected{% endif %}>Stripe</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" placeholder="Username, email, reference..." value="{{ search }}">
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter me-2"></i>Filter
+                </button>
+            </div>
+        </form>
+
+        <!-- Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Total Purchases</small>
+                    <h4 class="mb-0">{{ purchases.paginator.count }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchases Table -->
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Package</th>
+                        <th>Amount</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for purchase in purchases %}
+                    <tr>
+                        <td>#{{ purchase.id }}</td>
+                        <td>
+                            <a href="{% url 'admin_dashboard:user_detail' purchase.user.id %}" class="text-decoration-none">
+                                {{ purchase.user.username }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if purchase.package_type == 'like' %}
+                                <span class="badge bg-primary">Like</span>
+                            {% else %}
+                                <span class="badge bg-danger">Dislike</span>
+                            {% endif %}
+                            {{ purchase.package.name }}
+                        </td>
+                        <td>€{{ purchase.amount }}</td>
+                        <td>
+                            {% if purchase.payment_provider == 'paystack' %}
+                                <i class="fas fa-credit-card text-success"></i> Paystack
+                            {% else %}
+                                <i class="fab fa-stripe text-primary"></i> Stripe
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if purchase.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif purchase.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif purchase.status == 'failed' %}
+                                <span class="badge bg-danger">Failed</span>
+                            {% elif purchase.status == 'refunded' %}
+                                <span class="badge bg-info">Refunded</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ purchase.created_at|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'admin_dashboard:purchase_detail' purchase.id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted">No purchases found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if purchases.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if purchases.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ purchases.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if provider_filter %}&provider={{ provider_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+
+                {% for num in purchases.paginator.page_range %}
+                    {% if purchases.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                    {% elif num > purchases.number|add:'-3' and num < purchases.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if provider_filter %}&provider={{ provider_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if purchases.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ purchases.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if provider_filter %}&provider={{ provider_filter }}{% endif %}{% if search %}&search={{ search }}{% endif %}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

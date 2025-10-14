@@ -272,19 +272,45 @@
 
                         <div class="nav-section mb-2">
                             <small class="text-white-50 text-uppercase px-3">Management</small>
-                            <a class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}" 
+                            <a class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}"
                                href="{% url 'admin_dashboard:user_management' %}">
                                 <i class="fas fa-users"></i>
-                                User Management
+                                Users
                             </a>
-                            <a class="nav-link {% if request.resolver_match.url_name == 'quiz_management' %}active{% endif %}" 
+                            <a class="nav-link {% if 'quiz' in request.resolver_match.url_name %}active{% endif %}"
                                href="{% url 'admin_dashboard:quiz_management' %}">
                                 <i class="fas fa-brain"></i>
-                                Quiz Management
+                                Quiz
                             </a>
-                            <a class="nav-link" href="{% url 'admin:index' %}">
-                                <i class="fas fa-cogs"></i>
-                                Advanced Settings
+                            <a class="nav-link {% if 'package' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:packages_management' %}">
+                                <i class="fas fa-box"></i>
+                                Packages
+                            </a>
+                            <a class="nav-link {% if 'purchase' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:purchases_management' %}">
+                                <i class="fas fa-shopping-cart"></i>
+                                Purchases
+                            </a>
+                            <a class="nav-link {% if 'reward' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:rewards_management' %}">
+                                <i class="fas fa-gift"></i>
+                                Rewards
+                            </a>
+                            <a class="nav-link {% if 'claim' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:reward_claims' %}">
+                                <i class="fas fa-trophy"></i>
+                                Claims
+                            </a>
+                            <a class="nav-link {% if 'advertisement' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:advertisements_management' %}">
+                                <i class="fas fa-ad"></i>
+                                Ads
+                            </a>
+                            <a class="nav-link {% if 'referral' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:referrals_management' %}">
+                                <i class="fas fa-user-plus"></i>
+                                Referrals
                             </a>
                         </div>
 

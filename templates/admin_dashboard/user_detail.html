@@ -45,12 +45,16 @@
             
             <div class="d-grid gap-2">
                 {% if user_obj.profile %}
-                    <a href="{% url 'profiles:profile_detail' user_obj.profile.id %}" 
+                    <a href="{% url 'profiles:profile_detail' user_obj.profile.id %}"
                        class="btn btn-primary" target="_blank">
                         <i class="fas fa-eye"></i> View Public Profile
                     </a>
+                    <a href="{% url 'admin_dashboard:edit_profile' user_obj.id %}"
+                       class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Profile
+                    </a>
                 {% endif %}
-                <a href="{% url 'admin_dashboard:delete_user' user_obj.id %}" 
+                <a href="{% url 'admin_dashboard:delete_user' user_obj.id %}"
                    class="btn btn-outline-danger"
                    onclick="return confirmDelete('Are you sure you want to delete {{ user_obj.username }}?')">
                     <i class="fas fa-trash"></i> Delete User

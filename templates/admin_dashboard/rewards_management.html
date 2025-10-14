@@ -1,0 +1,117 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Rewards Management - Admin Dashboard{% endblock %}
+{% block page_title %}Rewards Management{% endblock %}
+{% block page_subtitle %}Manage platform rewards{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-gift me-2"></i>Platform Rewards</h5>
+        <a href="{% url 'admin_dashboard:create_reward' %}" class="btn btn-sm btn-dark">
+            <i class="fas fa-plus me-2"></i>Create New Reward
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Total Rewards</small>
+                    <h4 class="mb-0">{{ rewards.count }}</h4>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Active Rewards</small>
+                    <h4 class="mb-0 text-success">{{ rewards|length }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Points Cost</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reward in rewards %}
+                    <tr>
+                        <td>
+                            {% if reward.image %}
+                                <img src="{{ reward.image.url }}" alt="{{ reward.name }}"
+                                     style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                                <div style="width: 50px; height: 50px; background: #e9ecef; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-gift text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ reward.name }}</strong></td>
+                        <td>
+                            {% if reward.reward_type == 'physical' %}
+                                <span class="badge bg-info">Physical Item</span>
+                            {% elif reward.reward_type == 'digital' %}
+                                <span class="badge bg-primary">Digital Item</span>
+                            {% elif reward.reward_type == 'discount' %}
+                                <span class="badge bg-success">Discount Voucher</span>
+                            {% elif reward.reward_type == 'experience' %}
+                                <span class="badge bg-warning">Experience</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ reward.points_cost }}</strong> pts</td>
+                        <td>
+                            {% if reward.stock_quantity > 0 %}
+                                <span class="text-success">{{ reward.stock_quantity }}</span>
+                            {% else %}
+                                <span class="text-danger">Out of Stock</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if reward.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'admin_dashboard:edit_reward' reward.id %}"
+                                   class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="post" action="{% url 'admin_dashboard:toggle_reward_status' reward.id %}"
+                                      style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-info">
+                                        <i class="fas fa-toggle-{% if reward.is_active %}on{% else %}off{% endif %}"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'admin_dashboard:delete_reward' reward.id %}"
+                                      style="display:inline;" onsubmit="return confirmDelete('Delete this reward?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No rewards found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

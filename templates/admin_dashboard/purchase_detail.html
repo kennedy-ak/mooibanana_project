@@ -1,0 +1,261 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Purchase Details - Admin Dashboard{% endblock %}
+{% block page_title %}Purchase #{{ purchase.id }}{% endblock %}
+{% block page_subtitle %}Manage purchase details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-receipt me-2"></i>Purchase Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Purchase ID:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        #{{ purchase.id }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>User:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <a href="{% url 'admin_dashboard:user_detail' purchase.user.id %}" class="text-decoration-none">
+                            {{ purchase.user.username }} ({{ purchase.user.email }})
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Package Type:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {% if purchase.package_type == 'like' %}
+                            <span class="badge bg-primary">Like Package</span>
+                        {% else %}
+                            <span class="badge bg-danger">Dislike Package</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Package:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ purchase.package.name }}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Amount:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <strong class="text-success">€{{ purchase.amount }}</strong>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Payment Provider:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {% if purchase.payment_provider == 'paystack' %}
+                            <i class="fas fa-credit-card text-success"></i> Paystack
+                        {% else %}
+                            <i class="fab fa-stripe text-primary"></i> Stripe
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if purchase.paystack_reference %}
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Paystack Reference:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <code>{{ purchase.paystack_reference }}</code>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if purchase.stripe_session_id %}
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Stripe Session ID:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <code>{{ purchase.stripe_session_id }}</code>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Status:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {% if purchase.status == 'completed' %}
+                            <span class="badge bg-success">Completed</span>
+                        {% elif purchase.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                        {% elif purchase.status == 'failed' %}
+                            <span class="badge bg-danger">Failed</span>
+                        {% elif purchase.status == 'refunded' %}
+                            <span class="badge bg-info">Refunded</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Created At:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ purchase.created_at|date:"F d, Y H:i:s" }}
+                    </div>
+                </div>
+
+                {% if purchase.completed_at %}
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Completed At:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        {{ purchase.completed_at|date:"F d, Y H:i:s" }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Package Details -->
+        {% if purchase.package %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-box me-2"></i>Package Details</h5>
+            </div>
+            <div class="card-body">
+                {% if purchase.package_type == 'like' %}
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Regular Likes:</strong>
+                        </div>
+                        <div class="col-md-6">
+                            {{ purchase.like_package.regular_likes }}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Super Likes:</strong>
+                        </div>
+                        <div class="col-md-6">
+                            {{ purchase.like_package.super_likes }}
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Boosters:</strong>
+                        </div>
+                        <div class="col-md-6">
+                            {{ purchase.like_package.boosters }}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <strong>Unlikes:</strong>
+                        </div>
+                        <div class="col-md-6">
+                            {{ purchase.dislike_package.unlikes }}
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <strong>Description:</strong>
+                        <p class="mb-0 mt-2">{{ purchase.package.description|default:"No description" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Actions</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if purchase.status == 'pending' %}
+                    <button type="submit" name="action" value="complete" class="btn btn-success w-100 mb-2"
+                            onclick="return confirm('Mark this purchase as completed?')">
+                        <i class="fas fa-check me-2"></i>Mark as Completed
+                    </button>
+                    <button type="submit" name="action" value="fail" class="btn btn-danger w-100 mb-2"
+                            onclick="return confirm('Mark this purchase as failed?')">
+                        <i class="fas fa-times me-2"></i>Mark as Failed
+                    </button>
+                    {% endif %}
+
+                    {% if purchase.status == 'completed' %}
+                    <button type="submit" name="action" value="refund" class="btn btn-warning w-100 mb-2"
+                            onclick="return confirm('Refund this purchase? This will deduct the likes/unlikes from the user.')">
+                        <i class="fas fa-undo me-2"></i>Process Refund
+                    </button>
+                    {% endif %}
+
+                    <a href="{% url 'admin_dashboard:purchases_management' %}" class="btn btn-secondary w-100">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Purchases
+                    </a>
+                </form>
+            </div>
+        </div>
+
+        <!-- User Balance Info -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>User Balance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-8">
+                        <strong>Likes:</strong>
+                    </div>
+                    <div class="col-4 text-end">
+                        {{ purchase.user.likes_balance }}
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-8">
+                        <strong>Super Likes:</strong>
+                    </div>
+                    <div class="col-4 text-end">
+                        {{ purchase.user.super_likes_balance }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-8">
+                        <strong>Unlikes:</strong>
+                    </div>
+                    <div class="col-4 text-end">
+                        {{ purchase.user.unlikes_balance }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
