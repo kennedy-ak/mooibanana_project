@@ -86,12 +86,12 @@ def get_payment_provider(user):
     if user.country == 'GH':
         return 'paystack'
 
-    # European countries use Stripe
+    # European countries use Viva Wallet
     european_countries = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR',
                          'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL',
                          'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE']
     if user.country in european_countries:
-        return 'stripe'
+        return 'viva'
 
     return 'paystack'  # Default
 
@@ -118,7 +118,9 @@ def purchase_package(request, package_id):
     # Determine payment provider
     payment_provider = get_payment_provider(request.user)
 
-    if payment_provider == 'stripe':
+    if payment_provider == 'viva':
+        return purchase_package_viva(request, package, usage_type)
+    elif payment_provider == 'stripe':
         return purchase_package_stripe(request, package, usage_type)
     else:
         return purchase_package_paystack(request, package, usage_type)
@@ -246,6 +248,97 @@ def purchase_package_stripe(request, package, usage_type='likes'):
     except Exception as e:
         messages.error(request, f'Payment error: {str(e)}')
         print(f"Stripe Exception: {e}")  # Debug print
+        return redirect('payments:packages')
+
+@login_required
+def purchase_package_viva(request, package, usage_type='likes'):
+    """Handle Viva Wallet payment for packages"""
+    try:
+        # Create purchase record
+        purchase = Purchase.objects.create(
+            user=request.user,
+            package=package,
+            amount=package.price,
+            payment_provider='viva',
+            status='pending',
+            usage_type=usage_type
+        )
+
+        # Get Viva Wallet API base URL based on environment
+        api_base = 'https://api.vivapayments.com' if settings.VIVA_ENVIRONMENT == 'production' else 'https://demo-api.vivapayments.com'
+
+        # Prepare order data for Viva Wallet
+        order_data = {
+            'amount': int(package.price * 100),  # Convert to cents
+            'customerTrns': f'{package.name} - {usage_type}',
+            'customer': {
+                'email': request.user.email,
+                'fullName': f'{request.user.first_name} {request.user.last_name}' if request.user.first_name else request.user.username,
+            },
+            'paymentTimeout': 1800,  # 30 minutes
+            'preauth': False,
+            'allowRecurring': False,
+            'maxInstallments': 0,
+            'paymentNotification': True,
+            'tipAmount': 0,
+            'disableExactAmount': False,
+            'disableCash': True,
+            'disableWallet': False,
+            'sourceCode': settings.VIVA_SOURCE_CODE if settings.VIVA_SOURCE_CODE else None,
+            'merchantTrns': f'Purchase #{purchase.id}',
+            'tags': [
+                f'user_id:{request.user.id}',
+                f'package_id:{package.id}',
+                f'purchase_id:{purchase.id}',
+                f'usage_type:{usage_type}',
+                'purchase_type:self',
+            ]
+        }
+
+        # Remove sourceCode if empty
+        if not order_data['sourceCode']:
+            del order_data['sourceCode']
+
+        # Create payment order with Viva Wallet API
+        headers = {
+            'Authorization': f'Bearer {settings.VIVA_API_KEY}',
+            'Content-Type': 'application/json',
+        }
+
+        response = requests.post(
+            f'{api_base}/checkout/v2/orders',
+            json=order_data,
+            headers=headers,
+            auth=(settings.VIVA_MERCHANT_ID, settings.VIVA_API_KEY)
+        )
+
+        if response.status_code == 200:
+            viva_response = response.json()
+            order_code = viva_response.get('orderCode')
+
+            if order_code:
+                # Store order code in purchase
+                purchase.viva_order_code = order_code
+                purchase.save()
+
+                # Construct checkout URL
+                checkout_url = f'https://www.vivapayments.com/web/checkout?ref={order_code}' if settings.VIVA_ENVIRONMENT == 'production' else f'https://demo.vivapayments.com/web/checkout?ref={order_code}'
+
+                # Redirect to Viva Wallet checkout page
+                return redirect(checkout_url)
+            else:
+                messages.error(request, 'Payment initialization failed')
+                purchase.delete()
+                return redirect('payments:packages')
+        else:
+            error_msg = response.json().get('message', 'Payment initialization failed')
+            messages.error(request, f'Payment failed: {error_msg}')
+            purchase.delete()
+            return redirect('payments:packages')
+
+    except Exception as e:
+        messages.error(request, f'Payment error: {str(e)}')
+        print(f"Viva Wallet Exception: {e}")  # Debug print
         return redirect('payments:packages')
 
 # Deleted functions: purchase_dislike_package, purchase_dislike_package_paystack, purchase_dislike_package_stripe

@@ -1,0 +1,688 @@
+================================================================================
+                    MOOIBANANA POINTS & LIKES SYSTEM
+                        Complete Documentation
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Point System Overview
+2. Ways to Earn Points
+3. Ways to Spend Points
+4. Buying Likes System
+5. Question-Answering System
+6. Integration Between Systems
+
+
+================================================================================
+1. POINT SYSTEM OVERVIEW
+================================================================================
+
+The point system is a reward mechanism that allows users to earn points through
+various activities on the platform. Points can be accumulated and spent on
+rewards.
+
+STORAGE LOCATION:
+- User Model: accounts/models.py:61
+- Field: points_balance (Integer, starts at 0 for new users)
+
+DISPLAY:
+- Users can view their points balance in their profile
+- Admin can view/edit points in the user admin panel
+- Quiz stats page shows total points earned
+
+
+================================================================================
+2. WAYS TO EARN POINTS
+================================================================================
+
+Users can earn points through four main activities:
+
+--------------------------------------------------------------------------------
+2.1 ANSWERING QUIZ QUESTIONS (Daily Quiz System)
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- One new quiz question is available each day
+- Users get one chance to answer each question
+- Points are awarded ONLY for correct answers
+- Cannot answer the same question twice
+
+POINT VALUES BY DIFFICULTY:
+- Easy Questions:   1 point
+- Medium Questions: 3 points
+- Hard Questions:   5 points
+
+IMPLEMENTATION:
+- Location: quiz/models.py:75-90
+- Points are automatically added to user's balance upon correct answer
+- Wrong answers earn 0 points (no penalty)
+
+QUESTION CATEGORIES:
+- General Knowledge
+- Science
+- History
+- Sports
+- Entertainment
+- Geography
+- Literature
+- Technology
+
+--------------------------------------------------------------------------------
+2.2 GIVING LIKES
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- When you send likes to another user, BOTH users earn points
+- Points scale with the number of likes sent
+- Mutual likes (when both users like each other) earn bonus points
+
+POINT AWARDS:
+- Sender earns:   5 points × number of likes sent
+- Receiver earns: 10 points × number of likes received
+- Mutual Bonus:   +25 points to BOTH users (fixed bonus)
+
+EXAMPLE:
+- You send 3 likes to User A:
+  * You earn: 3 × 5 = 15 points
+  * User A earns: 3 × 10 = 30 points
+
+- If User A also liked you (mutual like):
+  * You ALSO earn: +25 bonus points
+  * User A ALSO earns: +25 bonus points
+
+IMPLEMENTATION:
+- Location: likes/models.py:47-63
+- Signal: award_points_for_like (automatic on like creation)
+
+--------------------------------------------------------------------------------
+2.3 REFERRAL PROGRAM
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- Each user has a unique referral code
+- Share your code with friends
+- When they sign up AND complete their profile, you earn points
+
+POINT AWARD:
+- 15 points per successful referral
+
+REQUIREMENTS FOR POINTS:
+- Referred user must use your referral code during signup
+- Referred user must complete their profile
+- Points are tracked separately in 'referral_points_earned' field
+
+IMPLEMENTATION:
+- Location: accounts/models.py:112-150
+- Referral code generated automatically on user creation
+
+--------------------------------------------------------------------------------
+2.4 PURCHASING LIKE PACKAGES
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- Some like packages include bonus points
+- Points are awarded when payment is successfully completed
+- Check package details for points_reward value
+
+EXAMPLE BONUS:
+- If a package has "points_reward: 50"
+- You receive 50 bonus points when you complete the purchase
+
+IMPLEMENTATION:
+- Location: payments/views.py:471-502
+- Points added automatically after payment verification
+
+
+================================================================================
+3. WAYS TO SPEND POINTS
+================================================================================
+
+--------------------------------------------------------------------------------
+3.1 CLAIMING REWARDS
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- Browse available rewards in the rewards catalog
+- Each reward has a points_cost value
+- Claim rewards by spending your accumulated points
+
+REWARD TYPES:
+- Physical: Shipped to your address
+- Digital: Delivered electronically
+- Discount: Coupons for platform purchases
+- Experience: Special platform features or privileges
+
+CLAIMING PROCESS:
+1. View available rewards
+2. Check if you have enough points (points_balance >= points_cost)
+3. Click "Claim Reward"
+4. Points are deducted immediately
+5. Reward claim is created and processed
+
+IMPLEMENTATION:
+- Location: rewards/views.py:18-45
+- Points are checked before claim is allowed
+- Insufficient points show error message
+
+REWARD AVAILABILITY:
+- Rewards may have limited stock
+- Stock decreases with each claim
+- Check is_available status before claiming
+
+
+================================================================================
+4. BUYING LIKES SYSTEM
+================================================================================
+
+--------------------------------------------------------------------------------
+4.1 WHY BUY LIKES?
+--------------------------------------------------------------------------------
+
+INITIAL BALANCE:
+- New users start with 100 free likes
+
+SPENDING LIKES:
+- Likes are spent when you send likes to other users
+- Each like sent reduces your likes_balance by 1
+- When balance is low, purchase more likes
+
+--------------------------------------------------------------------------------
+4.2 LIKE PACKAGES
+--------------------------------------------------------------------------------
+
+PACKAGE STRUCTURE:
+Each package includes:
+- Name: Package identifier (e.g., "Starter Pack", "Premium Pack")
+- Price: Cost in EUR or GHS (Ghana Cedis)
+- Likes Count: Number of likes you receive
+- Points Reward: Bonus points included (optional)
+- Boosters: Special features or multipliers (optional)
+- Description: Details about the package
+
+PAYMENT CURRENCIES:
+- EUR: European users
+- GHS: Ghana users
+
+--------------------------------------------------------------------------------
+4.3 PAYMENT PROVIDERS
+--------------------------------------------------------------------------------
+
+The system automatically selects payment provider based on your country:
+
+PAYSTACK:
+- Used for: Ghana and default countries
+- Currency: GHS or USD
+- Process: Redirects to Paystack payment page
+
+STRIPE:
+- Used for: International users (when configured)
+- Currency: EUR, USD
+- Process: Redirects to Stripe checkout
+
+VIVA WALLET:
+- Used for: European users
+- Currency: EUR
+- Process: Redirects to Viva payment page
+
+--------------------------------------------------------------------------------
+4.4 PURCHASE FLOW
+--------------------------------------------------------------------------------
+
+STEP 1: SELECT PACKAGE
+- Browse available packages
+- View pricing page or packages list
+- Choose package that fits your needs
+
+STEP 2: INITIATE PURCHASE
+- Click "Buy Now" or "Purchase"
+- System creates pending purchase record
+- Redirects to payment provider
+
+STEP 3: COMPLETE PAYMENT
+- Enter payment details on provider's secure page
+- Complete payment transaction
+- Provider redirects back to platform
+
+STEP 4: VERIFICATION
+- System verifies payment with provider
+- Checks transaction was successful
+- Updates purchase status to "completed"
+
+STEP 5: DELIVERY
+- Likes are added to your likes_balance
+- Bonus points (if any) added to points_balance
+- You can immediately use your new likes
+
+IMPLEMENTATION:
+- Main flow: payments/views.py:98-342
+- Callbacks: payments/views.py:419-699
+- Security: Payment verification with provider APIs
+- Webhooks: Real-time payment notifications
+
+--------------------------------------------------------------------------------
+4.5 GIFTING LIKES
+--------------------------------------------------------------------------------
+
+SPECIAL FEATURE: Gift likes to other users!
+
+HOW IT WORKS:
+1. Select a package
+2. Choose "Gift" option
+3. Select recipient user
+4. Complete payment
+5. Recipient receives the likes
+6. YOU receive the bonus points (if package has points_reward)
+
+RESTRICTIONS:
+- Cannot gift to yourself
+- Must select valid user as recipient
+
+BENEFITS:
+- Show appreciation to other users
+- Help friends get more likes
+- Still earn bonus points from the package
+
+IMPLEMENTATION:
+- Location: payments/views.py:347-417
+- Notification sent to recipient when gift is delivered( with sms or email)
+
+--------------------------------------------------------------------------------
+4.6 PURCHASE STATUSES
+--------------------------------------------------------------------------------
+
+PENDING:
+- Payment initiated but not yet completed
+- Waiting for payment provider confirmation
+
+COMPLETED:
+- Payment successful
+- Likes and points delivered to user
+
+FAILED:
+- Payment was declined or error occurred
+- No likes or points delivered
+- Can try again with new purchase
+
+REFUNDED:
+- Payment was refunded by admin
+- Likes and points removed from account
+
+
+================================================================================
+5. QUESTION-ANSWERING SYSTEM
+================================================================================
+
+--------------------------------------------------------------------------------
+5.1 DAILY QUIZ CONCEPT
+--------------------------------------------------------------------------------
+
+HOW IT WORKS:
+- One new question is available each day
+- Question is randomly selected from active question pool
+- All users see the same question for that day
+- You have one chance to answer (cannot retry)
+
+DAILY QUIZ MODEL:
+- Location: quiz/models.py:95-113
+- Tracks: date, question, total_responses, correct_responses
+- Calculates: accuracy_percentage for that day's quiz
+
+--------------------------------------------------------------------------------
+5.2 QUESTION STRUCTURE
+--------------------------------------------------------------------------------
+
+QUESTION MODEL (quiz/models.py:7-48):
+- Text: The question being asked
+- Category: One of 8 categories (General, Science, History, etc.)
+- Difficulty: Easy, Medium, or Hard
+- Points Value: 1-10 (auto-calculated, typically 1/3/5 based on difficulty)
+- Is Active: Must be true to appear in daily quiz
+- Created By: Admin or staff member who created question
+- Created At / Updated At: Timestamps
+
+CHOICE MODEL (quiz/models.py:50-61):
+- Each question has 2-4 multiple choice options
+- One choice is marked as is_correct = True
+- Choices have display order (1-4)
+
+VALIDATION:
+- Maximum 4 choices per question
+- At least 1 choice must be marked correct
+
+--------------------------------------------------------------------------------
+5.3 ANSWERING QUESTIONS - USER WORKFLOW
+--------------------------------------------------------------------------------
+
+STEP 1: GET TODAY'S QUIZ
+Endpoint: get_daily_quiz()
+- Check if you've already answered today
+- If not answered: Shows question with 4 choices
+- If already answered: Shows your response + correct answer
+
+STEP 2: SUBMIT ANSWER
+Endpoint: submit_quiz_answer()
+Required Data:
+{
+  "question_id": [ID of the question],
+  "choice_id": [ID of your selected choice]
+}
+
+STEP 3: INSTANT FEEDBACK
+Response includes:
+- is_correct: Whether your answer was right
+- points_earned: How many points you got (0 if wrong)
+- correct_choice_text: The correct answer
+- user_points_balance: Your new total points
+
+STEP 4: POINTS AWARDED
+If correct:
+- Points automatically added to your points_balance
+- Amount based on difficulty (1, 3, or 5 points)
+- Cannot answer same question again
+
+If incorrect:
+- No points awarded
+- No penalty applied
+- Cannot retry same question
+
+--------------------------------------------------------------------------------
+5.4 POINT CALCULATION LOGIC
+--------------------------------------------------------------------------------
+
+IMPLEMENTATION (quiz/models.py:75-90):
+
+When you submit an answer:
+1. System creates UserQuizResponse record
+2. Checks if your selected choice is_correct
+3. If correct:
+   - Easy question: points_earned = 1
+   - Medium question: points_earned = 3
+   - Hard question: points_earned = 5
+4. Adds points to user.points_balance
+5. Saves both UserQuizResponse and User
+
+UNIQUE CONSTRAINT:
+- One response per user per question
+- Database enforces this (Line 72: unique_together)
+- Prevents duplicate answers and point farming
+
+--------------------------------------------------------------------------------
+5.5 QUIZ STATISTICS
+--------------------------------------------------------------------------------
+
+VIEW YOUR PERFORMANCE:
+Endpoint: quiz_stats()
+
+STATISTICS RETURNED:
+- total_answered: How many questions you've answered (all time)
+- correct_answers: How many you got right
+- accuracy_percentage: (correct / total) × 100
+- total_points_earned: Sum of all points from quizzes
+- current_points_balance: Your overall points balance
+
+USE CASES:
+- Track your quiz performance over time
+- See how much you've earned from quizzes
+- Compare against other earning methods
+
+IMPLEMENTATION:
+- Location: quiz/views.py:117-134
+- Queries all your UserQuizResponse records
+- Sums points_earned field for quiz total
+
+--------------------------------------------------------------------------------
+5.6 QUESTION CATEGORIES EXPLAINED
+--------------------------------------------------------------------------------
+
+GENERAL KNOWLEDGE:
+- Wide range of topics
+- Common knowledge questions
+- Mix of difficulties
+
+SCIENCE:
+- Biology, Chemistry, Physics
+- Scientific discoveries and principles
+- Medical and technology science
+
+HISTORY:
+- World history events
+- Historical figures
+- Dates and periods
+
+SPORTS:
+- Various sports and athletes
+- Championships and records
+- Sports rules and trivia
+
+ENTERTAINMENT:
+- Movies, TV shows, music
+- Celebrities and pop culture
+- Awards and productions
+
+GEOGRAPHY:
+- Countries, capitals, landmarks
+- Physical geography
+- Cultural geography
+
+LITERATURE:
+- Books and authors
+- Literary movements
+- Famous quotes and works
+
+TECHNOLOGY:
+- Computing and internet
+- Innovations and inventions
+- Tech companies and products
+
+--------------------------------------------------------------------------------
+5.7 ADMIN QUESTION MANAGEMENT
+--------------------------------------------------------------------------------
+
+HOW QUESTIONS ARE ADDED:
+- Admin/staff create questions via admin panel
+- Location: quiz/admin.py:10-26
+- Must add question text, category, difficulty
+- Must add 2-4 choices (one marked correct)
+- Can mark questions active/inactive
+
+AUTOMATIC FEATURES:
+- Points value auto-calculated from difficulty
+- Questions shuffled randomly for daily quiz
+- Statistics tracked automatically per question
+
+QUALITY CONTROL:
+- Only active questions appear in daily quiz
+- Admin can review response statistics
+- Deactivate poorly performing questions
+
+
+================================================================================
+6. INTEGRATION BETWEEN SYSTEMS
+================================================================================
+
+The three systems work together to create a comprehensive economy:
+
+--------------------------------------------------------------------------------
+6.1 EARN → SPEND CYCLE
+--------------------------------------------------------------------------------
+
+EARNING PHASE:
+1. Answer daily quiz → Earn 1-5 points
+2. Give likes to users → Earn 5 points per like + mutual bonus
+3. Refer friends → Earn 15 points per referral
+4. Buy like packages → Get bonus points
+
+SPENDING PHASE:
+1. Accumulate points over time
+2. Browse rewards catalog
+3. Spend points on desired rewards
+4. Claim physical items, digital goods, or discounts
+
+--------------------------------------------------------------------------------
+6.2 LIKES ECONOMY
+--------------------------------------------------------------------------------
+
+FREE LIKES:
+- Start with 100 free likes
+- Spend on giving likes (which earns you points!)
+- Run out of likes eventually
+
+PURCHASE LIKES:
+- Buy packages when balance is low
+- Packages include bonus points
+- Use new likes to earn more points by giving likes
+
+CIRCULAR BENEFIT:
+- Buying likes → Get bonus points
+- Giving likes → Earn more points
+- Points → Claim rewards
+
+--------------------------------------------------------------------------------
+6.3 MUTUAL BENEFITS
+--------------------------------------------------------------------------------
+
+GIVING LIKES:
+- You spend 1 like from balance
+- You earn 5 points
+- Recipient earns 10 points
+- Both may get +25 mutual bonus
+
+GIFTING PACKAGES:
+- You pay for package
+- Recipient gets the likes
+- You get the bonus points
+- Win-win for both users
+
+QUIZ PARTICIPATION:
+- Free to participate
+- Earn points for correct answers
+- No likes required
+- Daily engagement encouraged
+
+--------------------------------------------------------------------------------
+6.4 BALANCE TRACKING
+--------------------------------------------------------------------------------
+
+EACH USER HAS THREE KEY BALANCES:
+
+likes_balance:
+- Initial: 100 (new users)
+- Decreases: When giving likes
+- Increases: When buying packages or receiving gifts
+
+points_balance:
+- Initial: 0 (new users)
+- Increases: Quizzes, likes, referrals, package bonuses
+- Decreases: Claiming rewards
+
+referral_points_earned:
+- Initial: 0
+- Increases: Only from successful referrals
+- Tracks: Separate from main points_balance
+
+ALL VISIBLE IN:
+- User profile
+- Admin panel
+- Quiz statistics page
+
+
+================================================================================
+TECHNICAL IMPLEMENTATION SUMMARY
+================================================================================
+
+KEY FILES:
+----------
+Points System:
+  - accounts/models.py: CustomUser.points_balance
+  - quiz/models.py: Question, Choice, UserQuizResponse, DailyQuiz
+  - quiz/views.py: get_daily_quiz, submit_quiz_answer, quiz_stats
+  - rewards/models.py: Reward, RewardClaim
+  - rewards/views.py: claim_reward
+  - likes/models.py: award_points_for_like signal
+
+Likes Buying:
+  - payments/models.py: Package, Purchase
+  - payments/views.py: purchase flows, callbacks, webhooks
+  - accounts/models.py: CustomUser.likes_balance
+
+Question System:
+  - quiz/models.py: All quiz models
+  - quiz/views.py: All quiz endpoints
+  - quiz/admin.py: Admin interfaces
+
+DATABASE MODELS:
+---------------
+- CustomUser: points_balance, likes_balance, referral_points_earned
+- Question: text, category, difficulty, points_value
+- Choice: text, is_correct, order
+- UserQuizResponse: user, question, choice, is_correct, points_earned
+- DailyQuiz: date, question, statistics
+- Package: name, price, likes_count, points_reward
+- Purchase: user, package, amount, status
+- Reward: name, points_cost, type
+- RewardClaim: user, reward, points_spent
+
+SECURITY FEATURES:
+-----------------
+- Payment verification with provider APIs
+- Webhook signature validation (HMAC SHA-512)
+- Unique constraints prevent duplicate quiz answers
+- Balance checks before purchases/claims
+- CSRF protection on payment endpoints
+
+
+================================================================================
+FREQUENTLY ASKED QUESTIONS
+================================================================================
+
+Q: Can I answer the same quiz question multiple times?
+A: No, you get one chance per question. The database enforces this with a
+   unique constraint on (user, question).
+
+Q: Do I lose points for wrong quiz answers?
+A: No, wrong answers simply earn 0 points. There's no penalty.
+
+Q: Can I transfer points to another user?
+A: Not directly. You can gift them a like package (they get likes, you get
+   the bonus points), but points themselves cannot be transferred.
+
+Q: What happens if my payment fails?
+A: The purchase is marked as "failed" and no likes or points are delivered.
+   You can try again with a new purchase.
+
+Q: Do likes expire?
+A: No, your likes_balance does not expire. Same with points_balance.
+
+Q: How are daily quiz questions selected?
+A: Randomly from the pool of active questions. All users see the same
+   question each day.
+
+Q: Can I see which questions I've answered before?
+A: Yes, through the quiz_stats endpoint or in the admin panel (if you have
+   admin access). All your UserQuizResponse records are tracked.
+
+Q: What's the maximum points I can earn per day?
+A: There's no hard limit. You can:
+   - Answer daily quiz: 1-5 points
+   - Give unlimited likes (if you have balance): 5 points each
+   - Receive unlimited likes: 10 points each
+   - Mutual bonuses: 25 points each
+   - Complete referrals: 15 points each
+
+Q: Are there different prices for different countries?
+A: Yes, packages can be priced in EUR (Europe) or GHS (Ghana). The system
+   shows appropriate currency based on your country.
+
+Q: Can admins manually adjust my points?
+A: Yes, admins can view and edit points_balance directly in the admin panel.
+
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================
+
+For technical support or questions, contact the development team.
+For feature requests, please submit through the appropriate channels.
+
+Last Updated: 2025-10-18
+Version: 1.0

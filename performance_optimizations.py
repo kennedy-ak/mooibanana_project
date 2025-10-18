@@ -43,6 +43,42 @@ def async_view(view_func):
     return async_wrapper
 
 
+def run_async_tasks(*tasks):
+    """
+    Run multiple async tasks concurrently
+    Usage: results = run_async_tasks(task1(), task2(), task3())
+    """
+    async def gather_tasks():
+        return await asyncio.gather(*tasks)
+
+    loop = asyncio.get_event_loop()
+    return loop.run_until_complete(gather_tasks())
+
+
+class AsyncHelper:
+    """
+    Helper class for async operations
+    """
+
+    @staticmethod
+    async def run_in_parallel(*coroutines):
+        """
+        Run multiple coroutines in parallel
+        """
+        return await asyncio.gather(*coroutines)
+
+    @staticmethod
+    async def run_with_timeout(coroutine, timeout_seconds=30):
+        """
+        Run a coroutine with a timeout
+        """
+        try:
+            return await asyncio.wait_for(coroutine, timeout=timeout_seconds)
+        except asyncio.TimeoutError:
+            print(f"Operation timed out after {timeout_seconds} seconds")
+            return None
+
+
 class DatabaseOptimizer:
     """
     Database optimization utilities
@@ -85,7 +121,7 @@ class ConcurrentProcessor:
     """
     Handle concurrent operations for better performance
     """
-    
+
     @staticmethod
     def process_multiple_profiles(profile_ids, processing_func, max_workers=4):
         """
@@ -93,10 +129,10 @@ class ConcurrentProcessor:
         """
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(processing_func, profile_id): profile_id 
+                executor.submit(processing_func, profile_id): profile_id
                 for profile_id in profile_ids
             }
-            
+
             results = {}
             for future in concurrent.futures.as_completed(futures):
                 profile_id = futures[future]
@@ -105,7 +141,31 @@ class ConcurrentProcessor:
                 except Exception as exc:
                     print(f'Profile {profile_id} generated an exception: {exc}')
                     results[profile_id] = None
-            
+
+            return results
+
+    @staticmethod
+    def process_items_concurrent(items, processing_func, max_workers=10):
+        """
+        Generic concurrent processor for any list of items
+        Returns list of results maintaining order
+        """
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            results = list(executor.map(processing_func, items))
+            return results
+
+    @staticmethod
+    def process_bulk_notifications(notification_data_list):
+        """
+        Create multiple notifications concurrently
+        """
+        from notifications.models import Notification
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            def create_notification(data):
+                return Notification.objects.create(**data)
+
+            results = list(executor.map(create_notification, notification_data_list))
             return results
     
     @staticmethod
@@ -260,17 +320,23 @@ PERFORMANCE OPTIMIZATION GUIDELINES:
    - Use prefetch_related() for ManyToMany and reverse ForeignKey
    - Add database indexes for frequently queried fields
    - Use bulk operations for multiple database writes
+   - Enable connection pooling with CONN_MAX_AGE
 
 2. CACHING STRATEGIES:
    - Cache expensive database queries
    - Cache template fragments for static content
-   - Use Redis for production caching
+   - Use Redis for production caching (configure in settings)
    - Implement cache invalidation strategies
 
 3. ASYNC/CONCURRENT PROCESSING:
    - Use async views for I/O-bound operations
    - Process multiple items concurrently with ThreadPoolExecutor
    - Avoid blocking operations in the main thread
+   - Use sync_to_async for database operations in async views
+   - Examples:
+     * Distance calculations: Use calculate_distance_concurrent()
+     * Bulk notifications: Use ConcurrentProcessor.process_bulk_notifications()
+     * Async views: Decorated with @login_required async def view(request)
 
 4. IMAGE OPTIMIZATION:
    - Resize images on upload
@@ -289,4 +355,12 @@ PERFORMANCE OPTIMIZATION GUIDELINES:
    - Monitor memory usage
    - Track response times
    - Use Django Debug Toolbar in development
+
+7. IMPLEMENTED OPTIMIZATIONS:
+   - ✓ Concurrent distance calculations in DiscoverView
+   - ✓ Async like/unlike operations
+   - ✓ Async notification retrieval
+   - ✓ ThreadPoolExecutor for batch processing
+   - ✓ Connection pooling (CONN_MAX_AGE)
+   - ✓ Select/prefetch related optimizations
 """

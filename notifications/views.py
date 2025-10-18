@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Notification
 from .utils import broadcast_notification
+from asgiref.sync import sync_to_async
+import asyncio
 
 User = get_user_model()
 
@@ -82,24 +84,30 @@ def respond_to_match_request(request, notification_id):
     return JsonResponse({'success': False})
 
 @login_required
-def get_notifications(request):
-    """Get user's notifications as JSON"""
-    notifications = Notification.objects.filter(
-        receiver=request.user,
-        is_read=False
-    ).select_related('sender')[:10]
+async def get_notifications(request):
+    """Get user's notifications as JSON (async for better performance)"""
+    # Use sync_to_async for database query
+    @sync_to_async
+    def get_notifications_data():
+        notifications = Notification.objects.filter(
+            receiver=request.user,
+            is_read=False
+        ).select_related('sender')[:10]
 
-    notification_data = []
-    for notification in notifications:
-        notification_data.append({
-            'id': notification.id,
-            'sender': notification.sender.username,
-            'sender_id': notification.sender.id,
-            'type': notification.notification_type,
-            'message': notification.message,
-            'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),
-            'status': notification.status
-        })
+        notification_data = []
+        for notification in notifications:
+            notification_data.append({
+                'id': notification.id,
+                'sender': notification.sender.username,
+                'sender_id': notification.sender.id,
+                'type': notification.notification_type,
+                'message': notification.message,
+                'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),
+                'status': notification.status
+            })
+        return notification_data
+
+    notification_data = await get_notifications_data()
 
     return JsonResponse({
         'notifications': notification_data,

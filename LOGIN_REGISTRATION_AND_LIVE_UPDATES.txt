@@ -1,0 +1,860 @@
+================================================================================
+MOOIBANANA - LOGIN/REGISTRATION FLOW & LIVE UPDATES DOCUMENTATION
+================================================================================
+
+This document contains the complete implementation details for:
+1. User Authentication Flow (Login & Registration)
+2. Live Updates Feature (Real-time Social Feed)
+
+================================================================================
+PART 1: USER AUTHENTICATION SYSTEM
+================================================================================
+
+================================================================================
+1.1 REGISTRATION FLOW
+================================================================================
+
+PAGE LAYOUT:
+------------
+- Centered card layout (col-md-6)
+- White card with rounded corners (border-radius: 15px)
+- Card header with title and subtitle
+
+HEADER:
+-------
+Title: "Create an Account"
+Subtitle: "Use your student email to register"
+Text Color: text-muted for subtitle
+
+FORM FIELDS (In Order):
+-----------------------
+1. Username
+   - Type: Text input
+   - Required: Yes
+   - Class: form-control
+   - Auto-generated from email if desired
+
+2. Email
+   - Type: Email input
+   - Required: Yes
+   - Validation: Must be unique, valid email format
+   - Help Text: "Please use your student email address"
+   - Auto-detection: System checks for student domains (.edu, .ac., student., .uni-)
+
+3. Country Selection
+   - Type: Dropdown select
+   - Required: Yes
+   - Options: Ghana + 27 European countries
+   - Help Text: "Select your country to use the appropriate payment system"
+   - Purpose: Determines payment gateway (Ghana = Paystack, Europe = Stripe)
+   - Countries List:
+     * Ghana (GH)
+     * Austria, Belgium, Bulgaria, Croatia, Cyprus, Czech Republic
+     * Denmark, Estonia, Finland, France, Germany, Greece
+     * Hungary, Ireland, Italy, Latvia, Lithuania, Luxembourg
+     * Malta, Netherlands, Poland, Portugal, Romania
+     * Slovakia, Slovenia, Spain, Sweden
+
+4. Password
+   - Type: Password input
+   - Required: Yes
+   - Validation: Django default password validators
+   - Field Name: password1
+
+5. Password Confirmation
+   - Type: Password input
+   - Required: Yes
+   - Validation: Must match password1
+   - Field Name: password2
+
+6. Referral Code (Optional)
+   - Type: Text input
+   - Required: No
+   - Max Length: 10 characters
+   - Placeholder: "Enter referral code (optional)"
+   - Help Text: "If you have a referral code, enter it here to give your friend points!"
+   - Validation: Code must exist in database (uppercase conversion)
+   - Pre-fill: Can be auto-filled from URL parameter (?ref=CODE)
+
+SUBMIT BUTTON:
+--------------
+- Text: "Register"
+- Class: btn btn-accent w-100
+- Color: #ff9a00 (orange accent)
+- Full width button
+
+FOOTER LINKS:
+-------------
+- "Already have an account? Log in"
+- Link to login page
+- Centered text (text-center mt-3)
+
+FORM STYLING:
+-------------
+- Uses Django Crispy Forms with Bootstrap 5
+- Form rendered with: {{ form|crispy }}
+- CSRF token required: {% csrf_token %}
+
+================================================================================
+1.2 REGISTRATION BACKEND LOGIC
+================================================================================
+
+VALIDATION PROCESS:
+-------------------
+1. Email uniqueness check
+2. Password strength validation (Django defaults)
+3. Referral code validation (if provided)
+   - Converts to uppercase
+   - Checks if code exists
+   - Validates against CustomUser.referral_code
+
+4. Country validation (must be in COUNTRY_CHOICES)
+
+POST-REGISTRATION ACTIONS:
+--------------------------
+1. User account created with:
+   - Initial likes_balance: 100 (free likes for new users)
+   - Initial points_balance: 0
+   - Auto-generated referral_code (8 chars, uppercase + digits)
+   - is_student: Auto-detected from email domain
+   - referred_by: Set if valid referral code provided
+
+2. User automatically logged in
+
+3. Redirect to profile creation page (profiles:create_profile)
+
+4. Success message displayed:
+   - With referral: "Account created successfully! You were referred by {username}.
+                     Complete your profile to give them referral points!"
+   - Without referral: "Account created successfully! Please complete your profile."
+
+REFERRAL SYSTEM:
+----------------
+- Referrer gets 15 points when referred user completes profile
+- Referral status tracked: pending → completed
+- Points only awarded once per referral
+- Referral link format: /accounts/register/?ref={REFERRAL_CODE}
+
+================================================================================
+1.3 LOGIN FLOW
+================================================================================
+
+PAGE LAYOUT:
+------------
+- Centered card layout (col-md-6)
+- White card with rounded corners
+- Card header with greeting
+
+HEADER:
+-------
+Title: "Login"
+Subtitle: "Welcome back!"
+Text Color: text-muted for subtitle
+
+FORM FIELDS:
+------------
+1. Email (labeled as "Email")
+   - Field name: username (for Django compatibility)
+   - Type: Email input
+   - Required: Yes
+   - Class: form-control
+
+2. Password
+   - Field name: password
+   - Type: Password input
+   - Required: Yes
+   - Class: form-control
+
+ERROR HANDLING:
+---------------
+- Form errors display in red alert box at top
+- Icon: fas fa-exclamation-circle
+- Message: "Login Failed - Please check your email and password and try again."
+- Alert class: alert alert-danger
+
+SUBMIT BUTTON:
+--------------
+- Text: "Login"
+- Class: btn btn-primary w-100
+- Color: #4e54c8 (primary purple-blue)
+- Full width button
+
+FOOTER LINKS:
+-------------
+1. "Forgot password?" - Links to password reset
+2. "Don't have an account? Register here" - Links to registration
+- Centered text (text-center mt-3)
+
+POST-LOGIN REDIRECT:
+--------------------
+- Default: User's intended page (or home)
+- First-time users: Directed to profile creation
+
+================================================================================
+1.4 PASSWORD RESET FLOW
+================================================================================
+
+FEATURES:
+---------
+1. Email validation before sending reset link
+2. Error message if email doesn't exist:
+   "No account found with this email address. Please check your email or create a new account."
+
+3. Custom email templates:
+   - Plain text: password_reset_email.txt
+   - HTML version: password_reset_email.html
+   - Subject: Custom subject template
+
+4. Fallback to console output for development/testing
+
+5. Success page after email sent
+
+================================================================================
+1.5 USER MODEL STRUCTURE
+================================================================================
+
+CustomUser extends AbstractUser with:
+
+AUTHENTICATION FIELDS:
+----------------------
+- email: Unique, required (used as USERNAME_FIELD)
+- username: Required but email is primary login
+- password: Hashed
+
+PROFILE FIELDS:
+---------------
+- is_student: Boolean (auto-detected from email)
+- university: CharField (optional)
+- student_id: CharField (optional)
+- country: Choice field (2-letter code)
+
+BALANCE FIELDS:
+---------------
+- likes_balance: Integer (default 100)
+  * Single balance for spending on both likes and dislikes
+- received_likes_count: Integer (default 0)
+  * Count of likes received from others
+- received_unlikes_count: Integer (default 0)
+  * Count of dislikes received from others
+- points_balance: Integer (default 0)
+  * Redeemable points for prizes
+
+REFERRAL FIELDS:
+----------------
+- referral_code: Unique 8-character code (auto-generated)
+- referred_by: ForeignKey to CustomUser (nullable)
+- referral_points_earned: Integer (default 0)
+
+METADATA:
+---------
+- date_joined: Auto timestamp
+- is_verified: Boolean (for email verification)
+
+================================================================================
+1.6 USER SETTINGS
+================================================================================
+
+EDITABLE SETTINGS:
+------------------
+- Country selection (affects payment gateway)
+
+SETTINGS PAGE:
+--------------
+- Form class: UserSettingsForm
+- Template: accounts/settings.html
+- Success message: "Your settings have been updated successfully!"
+- Redirect: Back to settings page
+
+================================================================================
+PART 2: LIVE UPDATES FEATURE
+================================================================================
+
+The Live Updates feature is a real-time social feed where users can share
+short text updates (like Twitter/X) that appear in a sliding sidebar.
+
+================================================================================
+2.1 LIVE UPDATES OVERVIEW
+================================================================================
+
+CONCEPT:
+--------
+- Twitter-like status updates (max 280 characters)
+- Real-time sliding feed in sidebar
+- Customizable background and text colors
+- Auto-refresh every 30 seconds
+- Auto-deletion after 7 days
+- Only shows updates from last 24 hours
+
+VISUAL DISPLAY:
+---------------
+- Fixed sidebar on right side of screen
+- Animated sliding cards
+- Floating animation effect
+- Mobile: Sliding panel with FAB (Floating Action Button)
+
+================================================================================
+2.2 UPDATES SIDEBAR STRUCTURE
+================================================================================
+
+DESKTOP LAYOUT (>768px):
+------------------------
+Position: Fixed right sidebar
+Width: 320px
+Height: Full viewport height (minus navbar)
+Background: rgba(255, 255, 255, 0.95)
+Backdrop-filter: blur(10px)
+Z-index: 1000
+
+COMPONENTS:
+-----------
+1. Header Section
+   - Background: var(--primary) = #4e54c8
+   - Text: "Live Updates" with comment icon
+   - "Post Update" button (+)
+   - Click-to-close functionality
+   - Animated progress bar effect
+
+2. Feed Section
+   - Scrollable area with updates
+   - Auto-refreshing every 30 seconds
+   - Shows 3 updates initially
+   - Slides to next update every 4 seconds
+
+MOBILE LAYOUT (<768px):
+-----------------------
+- Hidden by default
+- Full-width sliding panel
+- Triggered by FAB (Floating Action Button)
+- Position: Fixed bottom-right
+- FAB: 56px circle, primary color
+- Transform: translateX(100%) when hidden
+
+FLOATING ACTION BUTTON (Mobile):
+---------------------------------
+Position: Fixed bottom-right (20px from bottom, 20px from right)
+Size: 56px × 56px circle
+Background: var(--primary) = #4e54c8
+Icon: fas fa-comments
+Color: White
+Shadow: 0 4px 12px rgba(0, 0, 0, 0.3)
+Behavior: Rotates 45° when sidebar open (becomes X icon)
+
+================================================================================
+2.3 UPDATE CARD DESIGN
+================================================================================
+
+CARD STYLING:
+-------------
+Background: Customizable (user-selected color)
+Text Color: Customizable (user-selected color)
+Border-radius: 15px
+Padding: 1rem
+Margin-bottom: 1rem
+Font-size: 0.9rem
+Box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15)
+
+DEFAULT COLORS:
+---------------
+Background: #007bff (Bootstrap primary blue)
+Text: #ffffff (white)
+
+CARD STRUCTURE:
+---------------
+1. Author Section (.update-author)
+   - Profile picture (24px circle) OR user icon
+   - Username
+   - Display: flex with gap
+
+2. Content Section (.update-content)
+   - Update text (max 280 characters)
+   - Line-height: 1.4
+   - Margin-bottom: 0.5rem
+
+3. Timestamp Section (.update-time)
+   - Font-size: 0.75rem
+   - Opacity: 0.8
+   - Format: "Xd ago", "Xh ago", "Xm ago", or "Just now"
+
+ANIMATIONS:
+-----------
+1. Slide In (Entry):
+   - Transform: translateX(100%) → translateX(0)
+   - Duration: 0.5s ease forwards
+   - Stagger: 0.1s delay between cards
+
+2. Float Motion (Continuous):
+   - Subtle vertical movement (±2px)
+   - Duration: 3s ease-in-out infinite
+   - Creates gentle floating effect
+
+3. Slide Out (Exit):
+   - Transform: translateX(0) → translateX(100%)
+   - Duration: 0.5s ease forwards
+   - Opacity: 1 → 0
+
+================================================================================
+2.4 POST UPDATE MODAL
+================================================================================
+
+MODAL STRUCTURE:
+----------------
+Bootstrap 5 modal, centered on screen
+
+HEADER:
+-------
+Title: "Share Update" with comments icon
+Close button (X)
+
+FORM FIELDS:
+------------
+1. Content Textarea
+   - Label: "What's on your mind?"
+   - Max length: 280 characters
+   - Rows: 3
+   - Placeholder: "Share your thoughts..."
+   - Live character counter: "X/280 characters"
+   - Counter turns red when > 250 characters
+
+2. Background Color Picker
+   - Label: "Background"
+   - Type: color input
+   - Default: #007bff
+   - Class: form-control form-control-color
+
+3. Text Color Picker
+   - Label: "Text"
+   - Type: color input
+   - Default: #ffffff
+   - Class: form-control form-control-color
+
+FORM LAYOUT:
+------------
+- Textarea: Full width
+- Color pickers: Side by side (col-6 each)
+
+BUTTONS:
+--------
+1. Cancel (Secondary)
+   - Class: btn btn-secondary
+   - Action: Close modal
+
+2. Post Update (Primary)
+   - Class: btn btn-primary
+   - Action: Submit form via AJAX
+
+================================================================================
+2.5 BACKEND IMPLEMENTATION
+================================================================================
+
+DATABASE MODEL (TextUpdate):
+----------------------------
+Fields:
+- user: ForeignKey to CustomUser
+- content: TextField (max 280 chars)
+- created_at: DateTime (auto)
+- is_active: Boolean (default True)
+- background_color: CharField (7 chars, hex color)
+- text_color: CharField (7 chars, hex color)
+
+Indexing:
+- Composite index on (created_at DESC, is_active)
+
+Auto-cleanup:
+- Updates older than 7 days → is_active = False
+
+PROPERTIES:
+-----------
+1. is_recent
+   - Returns: True if within last 24 hours
+
+2. time_ago
+   - Returns human-readable time:
+     * "Xd ago" if > 1 day
+     * "Xh ago" if > 1 hour
+     * "Xm ago" if > 1 minute
+     * "Just now" if < 1 minute
+
+================================================================================
+2.6 API ENDPOINTS
+================================================================================
+
+1. GET /updates/feed/
+   Purpose: Fetch updates for display
+   Response: JSON array of updates
+   Filters:
+     - is_active = True
+     - created_at >= 24 hours ago
+     - Limit: 20 updates
+     - Order: Most recent first
+
+   Response Format:
+   {
+     "updates": [
+       {
+         "id": 123,
+         "user": "username",
+         "content": "Update text...",
+         "time_ago": "5m ago",
+         "background_color": "#007bff",
+         "text_color": "#ffffff",
+         "profile_pic": "url or null"
+       }
+     ]
+   }
+
+2. POST /updates/post/
+   Purpose: Create new update
+   Method: POST (AJAX, CSRF exempt for logged-in users)
+   Content-Type: application/json
+
+   Request Body:
+   {
+     "content": "Update text...",
+     "background_color": "#007bff",
+     "text_color": "#ffffff"
+   }
+
+   Validation:
+   - Content required
+   - Max 280 characters
+   - User must be authenticated
+
+   Response (Success):
+   {
+     "success": true,
+     "update": { ...update object... }
+   }
+
+   Response (Error):
+   {
+     "error": "Error message",
+     "status": 400/500
+   }
+
+3. POST /updates/delete/<update_id>/
+   Purpose: Delete user's own update
+   Method: POST
+   Auth: Required (must be update owner)
+
+   Response:
+   {
+     "success": true
+   }
+
+================================================================================
+2.7 JAVASCRIPT IMPLEMENTATION
+================================================================================
+
+INITIALIZATION:
+---------------
+On DOMContentLoaded:
+1. Load initial updates
+2. Setup update form
+3. Start auto-slide (every 4 seconds)
+4. Setup auto-refresh (every 30 seconds)
+5. Add event listeners
+
+MAIN FUNCTIONS:
+---------------
+
+1. loadUpdates()
+   - Fetches updates from /updates/feed/
+   - Calls displayUpdates() on success
+   - Calls showErrorState() on failure
+   - Runs every 30 seconds
+
+2. displayUpdates()
+   - Clears feed
+   - Shows first 3 updates
+   - Starts auto-slide cycle
+   - Staggers animation delays (0.1s apart)
+
+3. createUpdateElement(update)
+   - Builds DOM for single update card
+   - Applies custom colors
+   - Includes profile picture or default icon
+   - Returns HTML element
+
+4. startAutoSlide()
+   - Clears existing interval
+   - Sets new interval (4 seconds)
+   - Calls slideToNext() repeatedly
+
+5. slideToNext()
+   - Removes oldest visible update
+   - Adds next update from data array
+   - Cycles through all updates
+   - Smooth slide animations
+
+6. setupUpdateForm()
+   - Character counter functionality
+   - Form submission handler
+   - AJAX post to /updates/post/
+   - Modal close on success
+   - Success toast notification
+
+7. toggleUpdatesSidebar(event) [Mobile]
+   - Shows/hides sidebar
+   - Updates FAB icon (comments ↔ X)
+   - Prevents rapid toggling
+   - Loads updates when opening
+
+HELPER FUNCTIONS:
+-----------------
+
+1. showEmptyState()
+   - Displays when no updates exist
+   - "No Updates Yet" message
+   - "Post Update" button
+
+2. showErrorState()
+   - Displays on API failure
+   - "Unable to Load Updates" message
+   - "Try Again" button
+
+3. showToast(message, type)
+   - Success/error notifications
+   - Auto-dismiss after 5 seconds
+   - Position: top-right
+   - Bootstrap alert styling
+
+EVENT LISTENERS:
+----------------
+
+1. Character Counter
+   - Updates on every keypress
+   - Shows count: X/280
+   - Turns red when > 250
+
+2. Form Submit
+   - Prevents default submission
+   - Validates content not empty
+   - Posts via AJAX
+   - Handles success/error
+
+3. Sidebar Click-to-Close
+   - Desktop: Click sidebar header or feed area
+   - Mobile: Click outside sidebar
+   - Smooth transition
+
+4. FAB Click (Mobile)
+   - Toggles sidebar visibility
+   - Rotates icon 45°
+   - Changes icon (comments ↔ X)
+
+5. Outside Click (Mobile)
+   - Closes sidebar when clicking outside
+   - Only on mobile viewport
+
+================================================================================
+2.8 RESPONSIVE DESIGN
+================================================================================
+
+DESKTOP (>768px):
+-----------------
+- Fixed right sidebar (320px wide)
+- Always visible
+- Main content has margin-right: 320px
+- Click header to collapse sidebar
+
+TABLET (768px - 1024px):
+------------------------
+- Narrower sidebar (280px)
+- Hamburger menu integration
+- Touch-friendly buttons
+
+MOBILE (<768px):
+----------------
+- Hidden sidebar by default
+- Full-width sliding panel
+- FAB for toggle
+- Smooth slide-in animation
+- Close on outside click
+- Transform: translateX(100%) when hidden
+
+================================================================================
+2.9 STYLING DETAILS
+================================================================================
+
+SIDEBAR HEADER:
+---------------
+Background: var(--primary) = #4e54c8
+Color: white
+Padding: 1rem
+Border-bottom: 1px solid rgba(0, 0, 0, 0.1)
+Cursor: pointer (clickable to close)
+
+Hover Effect:
+- Background: rgba(78, 84, 200, 0.9)
+
+Animated Progress Bar:
+- Position: Absolute bottom
+- Height: 2px
+- Linear gradient shimmer
+- Animation: 4s infinite
+
+Live Pulse Animation:
+- H6 title pulses opacity
+- 2s ease-in-out infinite alternate
+- Creates "live" feeling
+
+UPDATE FEED:
+------------
+Flex: 1 (takes remaining space)
+Overflow-y: auto
+Padding: 0.5rem
+Cursor: pointer
+
+Hover Effect:
+- Background: rgba(0, 0, 0, 0.02)
+
+UPDATE CARD VARIATIONS:
+-----------------------
+Users can choose any hex color combination:
+- Dark background + light text
+- Light background + dark text
+- Any custom brand colors
+- Default: Blue (#007bff) + White (#ffffff)
+
+SCROLLBAR STYLING:
+------------------
+Custom scrollbar for modern look (optional):
+- Width: 6px
+- Track: Transparent
+- Thumb: rgba(78, 84, 200, 0.3)
+- Thumb hover: rgba(78, 84, 200, 0.5)
+
+================================================================================
+2.10 PERFORMANCE OPTIMIZATIONS
+================================================================================
+
+1. DATABASE QUERIES:
+   - Index on (created_at, is_active)
+   - Limit to 20 updates max
+   - Filter to last 24 hours only
+   - Auto-cleanup after 7 days
+
+2. JAVASCRIPT:
+   - Single setInterval for auto-slide
+   - Debounced click handlers
+   - Efficient DOM manipulation
+   - Minimal reflows
+
+3. ANIMATIONS:
+   - CSS transforms (GPU accelerated)
+   - Will-change hints for performance
+   - RequestAnimationFrame where applicable
+
+4. NETWORK:
+   - 30-second refresh interval (not too frequent)
+   - Cached profile pictures
+   - Gzipped JSON responses
+
+================================================================================
+2.11 USER EXPERIENCE FEATURES
+================================================================================
+
+1. VISUAL FEEDBACK:
+   - Loading spinner while fetching
+   - Success toast on post
+   - Error messages with retry option
+   - Character counter with color coding
+
+2. ANIMATIONS:
+   - Smooth slide transitions
+   - Floating card effect
+   - FAB rotation (mobile)
+   - Progress bar shimmer
+
+3. ACCESSIBILITY:
+   - Keyboard shortcuts supported
+   - ARIA labels
+   - Focus management
+   - Color contrast compliance
+
+4. MOBILE OPTIMIZATIONS:
+   - Touch-friendly targets (44px min)
+   - Swipe gestures (optional)
+   - No accidental clicks
+   - Smooth scrolling
+
+================================================================================
+2.12 SECURITY CONSIDERATIONS
+================================================================================
+
+1. AUTHENTICATION:
+   - Login required to post
+   - User can only delete own updates
+   - CSRF protection on forms
+
+2. VALIDATION:
+   - Content max length enforced
+   - XSS prevention (escape HTML)
+   - SQL injection prevention (ORM)
+   - Color code validation
+
+3. RATE LIMITING:
+   - Consider implementing to prevent spam
+   - Suggested: Max 10 updates per hour per user
+
+4. CONTENT MODERATION:
+   - Admin can view/delete any update
+   - Report functionality (optional)
+   - Profanity filter (optional)
+
+================================================================================
+IMPLEMENTATION CHECKLIST
+================================================================================
+
+AUTHENTICATION SYSTEM:
+----------------------
+☑ Custom user model with email login
+☑ Registration form with crispy forms
+☑ Country selection for payment routing
+☑ Referral code system
+☑ Password reset flow
+☑ Email validation
+☑ Auto-login after registration
+☑ Profile completion tracking
+☑ Referral points awarding
+
+LIVE UPDATES:
+-------------
+☑ TextUpdate model with colors
+☑ API endpoints (feed, post, delete)
+☑ Sliding sidebar UI
+☑ Post update modal
+☑ Auto-refresh mechanism
+☑ Auto-slide functionality
+☑ Mobile FAB + sliding panel
+☑ Character counter
+☑ Color customization
+☑ Toast notifications
+☑ Empty/error states
+☑ Responsive design
+
+================================================================================
+FUTURE ENHANCEMENTS (Optional)
+================================================================================
+
+1. AUTHENTICATION:
+   - Social login (Google, Facebook)
+   - Two-factor authentication
+   - Email verification requirement
+   - Remember me functionality
+
+2. LIVE UPDATES:
+   - WebSocket for true real-time updates
+   - Update reactions (like, love, etc.)
+   - Reply/comment functionality
+   - User mentions (@username)
+   - Hashtags support
+   - Image uploads
+   - Update pinning
+   - User blocking/muting
+   - Trending updates
+   - Update analytics
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================

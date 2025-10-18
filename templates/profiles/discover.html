@@ -151,6 +151,30 @@
         <!-- 2x2 Grid Layout for larger screens, single column for mobile -->
         <div class="row">
             {% for profile in profiles %}
+            {% if forloop.counter|divisibleby:6 and show_in_grid_ad %}
+            <div class="col-12 col-lg-6 mb-4">
+                <div class="card h-100 overflow-hidden profile-card">
+                    <div class="row g-0 h-100">
+                        <div class="col-6 profile-image-container" style="background-color: #f0f0f0;">
+                            <div class="h-100 d-flex align-items-center justify-content-center">
+                                <h5 class="text-muted">Advertisement</h5>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card-body h-100 d-flex flex-column p-3">
+                                <h6 class="mb-1 fw-bold">Your Ad Here</h6>
+                                <p class="small mb-1 text-truncate">Promote your brand to students.</p>
+                                <div class="mt-auto">
+                                    <a href="#" class="btn btn-primary btn-sm w-100">
+                                        <i class="fas fa-bullhorn me-1"></i> Learn More
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             <div class="col-12 col-lg-6 mb-4">
                 <div class="card h-100 overflow-hidden profile-card">
                     <div class="row g-0 h-100">
@@ -242,11 +266,20 @@
                                     {% endif %}
                                 </div>
 
-                                <!-- Action Button -->
-                                <div class="mt-auto">
-                                    <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-primary btn-sm w-100">
+                                <!-- Action Buttons -->
+                                <div class="mt-auto btn-group w-100">
+                                    <a href="{% url 'profiles:profile_detail' profile.id %}" class="btn btn-primary btn-sm">
                                         <i class="fas fa-eye me-1"></i> View
                                     </a>
+                                    {% if profile.user.id in following_ids %}
+                                        <button class="btn btn-outline-secondary btn-sm follow-btn" data-user-id="{{ profile.user.id }}" data-action="unfollow">
+                                            <i class="fas fa-user-minus me-1"></i> Unfollow
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-outline-success btn-sm follow-btn" data-user-id="{{ profile.user.id }}" data-action="follow">
+                                            <i class="fas fa-user-plus me-1"></i> Follow
+                                        </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -308,6 +341,51 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+// Follow/Unfollow functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = getCookie('csrftoken');
+
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const action = this.dataset.action;
+            const url = `/social/${action}/${userId}/`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (action === 'follow') {
+                        this.dataset.action = 'unfollow';
+                        this.classList.remove('btn-outline-success');
+                        this.classList.add('btn-outline-secondary');
+                        this.innerHTML = '<i class="fas fa-user-minus me-1"></i> Unfollow';
+                    } else {
+                        this.dataset.action = 'follow';
+                        this.classList.remove('btn-outline-secondary');
+                        this.classList.add('btn-outline-success');
+                        this.innerHTML = '<i class="fas fa-user-plus me-1"></i> Follow';
+                    }
+                } else {
+                    alert(data.error || 'An error occurred.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred.');
+            });
+        });
+    });
+});
+</script>
+{{ block.super }}
 <script>
 // Global quiz functions will be defined in DOMContentLoaded
 

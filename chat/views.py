@@ -7,6 +7,8 @@ from django.views.generic import ListView, DetailView
 from django.http import JsonResponse
 from django.db.models import Q
 from .models import ChatRoom, Message, Match
+from asgiref.sync import sync_to_async
+import asyncio
 
 class ChatListView(LoginRequiredMixin, ListView):
     template_name = 'chat/list.html'
@@ -48,32 +50,47 @@ class ChatRoomView(LoginRequiredMixin, DetailView):
         return context
 
 @login_required
-def send_message(request):
+async def send_message(request):
+    """Async version of send_message for better performance"""
     if request.method == 'POST':
         room_id = request.POST.get('room_id')
         content = request.POST.get('content')
 
-        room = get_object_or_404(ChatRoom, id=room_id, participants=request.user)
+        @sync_to_async
+        def get_chat_room(room_id, user):
+            return get_object_or_404(ChatRoom, id=room_id, participants=user)
 
-        if content.strip():
+        @sync_to_async
+        def create_message_and_notifications(room, user, content):
             message = Message.objects.create(
                 room=room,
-                sender=request.user,
+                sender=user,
                 content=content.strip()
             )
 
             # Create notification for other participants
             from notifications.models import Notification
-            other_participants = room.participants.exclude(id=request.user.id)
+            other_participants = room.participants.exclude(id=user.id)
 
-            for participant in other_participants:
-                Notification.objects.create(
-                    sender=request.user,
+            # Create notifications concurrently using bulk_create
+            notifications = [
+                Notification(
+                    sender=user,
                     receiver=participant,
                     notification_type='new_message',
-                    message=f"New message from {request.user.username}: {content[:50]}{'...' if len(content) > 50 else ''}",
+                    message=f"New message from {user.username}: {content[:50]}{'...' if len(content) > 50 else ''}",
                     status='read'  # Message notifications are auto-read
                 )
+                for participant in other_participants
+            ]
+            Notification.objects.bulk_create(notifications)
+
+            return message
+
+        room = await get_chat_room(room_id, request.user)
+
+        if content.strip():
+            message = await create_message_and_notifications(room, request.user, content)
 
             return JsonResponse({
                 'success': True,

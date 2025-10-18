@@ -1,0 +1,457 @@
+<!-- templates/social/post_detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}Post by {{ post.author.username }} - Mooibanana{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'social:feed' %}" class="text-decoration-none"><i class="fas fa-home"></i> Feed</a></li>
+<li class="breadcrumb-item active" aria-current="page">Post Detail</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Post Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!-- Post Header -->
+                    <div class="d-flex align-items-center mb-3">
+                        {% if post.author.profile.profile_picture %}
+                            <img src="{{ post.author.profile.profile_picture.url }}" class="rounded-circle me-3" width="60" height="60" style="object-fit: cover;" alt="{{ post.author.username }}">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user text-white fa-2x"></i>
+                            </div>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <h5 class="mb-0">
+                                <a href="{% url 'profiles:profile_detail' post.author.profile.id %}" class="text-decoration-none text-dark fw-bold">
+                                    {{ post.author.username }}
+                                </a>
+                            </h5>
+                            <small class="text-muted">{{ post.created_at|date:"F d, Y \a\t h:i A" }}</small>
+                        </div>
+                        <div>
+                            {% if user != post.author %}
+                                {% if is_following %}
+                                    <button class="btn btn-sm btn-outline-secondary follow-btn" data-user-id="{{ post.author.id }}" data-action="unfollow">
+                                        <i class="fas fa-user-minus me-1"></i> Unfollow
+                                    </button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-primary follow-btn" data-user-id="{{ post.author.id }}" data-action="follow">
+                                        <i class="fas fa-user-plus me-1"></i> Follow
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Post Content -->
+                    <p class="mb-3" style="font-size: 1.1rem;">{{ post.content|linebreaks }}</p>
+
+                    <!-- Post Image -->
+                    {% if post.image %}
+                    <div class="mb-3">
+                        <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 600px; width: auto; max-width: 100%;" alt="Post image">
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Stats -->
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                        <div>
+                            <i class="fas fa-heart text-danger"></i>
+                            <span id="postLikes">{{ post.likes_count }}</span> likes
+                        </div>
+                        <div>
+                            <i class="fas fa-comment text-primary"></i>
+                            <span id="commentsCount">{{ post.comments_count }}</span> comments
+                        </div>
+                    </div>
+
+                    <!-- Like Action -->
+                    <div class="mb-3">
+                        <div class="d-flex gap-2 align-items-center">
+                            <input type="number" class="form-control form-control-sm" id="likeAmount" min="1" value="1" style="max-width: 100px;" placeholder="Amount">
+                            <button class="btn btn-danger flex-fill" id="likePostBtn" data-post-id="{{ post.id }}">
+                                <i class="fas fa-heart me-1"></i> Send <span id="likeAmountText">1</span> Like(s)
+                            </button>
+                            <span class="text-muted small">
+                                Balance: <span id="likesBalance">{{ user_likes_balance }}</span> likes
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if show_post_banner_ad %}
+            <div class="card mb-4">
+                <div class="card-body text-center">
+                    <div style="background-color: #f0f0f0; padding: 20px; border-radius: 10px;">
+                        <h5>Advertisement</h5>
+                        <p>This is a banner ad placeholder.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Comments Section -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Comments
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Add Comment Form -->
+                    {% if post.allow_comments %}
+                    <form id="commentForm" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <textarea class="form-control" id="commentContent" rows="3" placeholder="Write a comment..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Post Comment
+                        </button>
+                    </form>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>Comments are disabled for this post.
+                    </div>
+                    {% endif %}
+
+                    <!-- Comments List -->
+                    <div id="commentsList">
+                        {% for comment in comments %}
+                        <div class="comment-item border-bottom pb-3 mb-3" data-comment-id="{{ comment.id }}">
+                            <div class="d-flex">
+                                {% if comment.author.profile.profile_picture %}
+                                    <img src="{{ comment.author.profile.profile_picture.url }}" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;" alt="{{ comment.author.username }}">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; min-width: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <div class="bg-light rounded p-3 mb-2">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0">
+                                                <a href="{% url 'profiles:profile_detail' comment.author.profile.id %}" class="text-decoration-none text-dark">
+                                                    {{ comment.author.username }}
+                                                </a>
+                                            </h6>
+                                            <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                                        </div>
+                                        <p class="mb-0">{{ comment.content|linebreaks }}</p>
+                                    </div>
+                                    <div class="d-flex gap-3 align-items-center">
+                                        <button class="btn btn-sm btn-link text-danger p-0 like-comment-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="fas fa-heart me-1"></i>
+                                            <span class="comment-likes-{{ comment.id }}">{{ comment.likes_count }}</span> likes
+                                        </button>
+                                        <button class="btn btn-sm btn-link text-primary p-0 reply-comment-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="fas fa-reply me-1"></i> Reply
+                                        </button>
+                                        {% if comment.author == user %}
+                                        <button class="btn btn-sm btn-link text-danger p-0 delete-comment-btn" data-comment-id="{{ comment.id }}">
+                                            <i class="fas fa-trash me-1"></i> Delete
+                                        </button>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Reply Form (hidden by default) -->
+                                    <div class="reply-form mt-3 d-none" id="replyForm{{ comment.id }}">
+                                        <form class="reply-submit-form">
+                                            <textarea class="form-control mb-2" rows="2" placeholder="Write a reply..." required></textarea>
+                                            <button type="submit" class="btn btn-sm btn-primary" data-parent-id="{{ comment.id }}">Reply</button>
+                                            <button type="button" class="btn btn-sm btn-secondary cancel-reply-btn">Cancel</button>
+                                        </form>
+                                    </div>
+
+                                    <!-- Replies -->
+                                    {% if comment.replies.all %}
+                                    <div class="replies mt-3">
+                                        {% for reply in comment.replies.all %}
+                                        <div class="d-flex mb-3" data-comment-id="{{ reply.id }}">
+                                            {% if reply.author.profile.profile_picture %}
+                                                <img src="{{ reply.author.profile.profile_picture.url }}" class="rounded-circle me-2" width="30" height="30" style="object-fit: cover;" alt="{{ reply.author.username }}">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 30px; height: 30px; min-width: 30px;">
+                                                    <i class="fas fa-user text-white" style="font-size: 0.7rem;"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div class="flex-grow-1">
+                                                <div class="bg-light rounded p-2 mb-1">
+                                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                                        <h6 class="mb-0 small">
+                                                            <a href="{% url 'profiles:profile_detail' reply.author.profile.id %}" class="text-decoration-none text-dark">
+                                                                {{ reply.author.username }}
+                                                            </a>
+                                                        </h6>
+                                                        <small class="text-muted" style="font-size: 0.75rem;">{{ reply.created_at|timesince }} ago</small>
+                                                    </div>
+                                                    <p class="mb-0 small">{{ reply.content|linebreaks }}</p>
+                                                </div>
+                                                <div class="d-flex gap-2">
+                                                    <button class="btn btn-sm btn-link text-danger p-0 like-comment-btn" data-comment-id="{{ reply.id }}" style="font-size: 0.8rem;">
+                                                        <i class="fas fa-heart me-1"></i>
+                                                        <span class="comment-likes-{{ reply.id }}">{{ reply.likes_count }}</span> likes
+                                                    </button>
+                                                    {% if reply.author == user %}
+                                                    <button class="btn btn-sm btn-link text-danger p-0 delete-comment-btn" data-comment-id="{{ reply.id }}" style="font-size: 0.8rem;">
+                                                        <i class="fas fa-trash me-1"></i> Delete
+                                                    </button>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted text-center">No comments yet. Be the first to comment!</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = getCookie('csrftoken');
+
+    // Update like amount text
+    const likeAmountInput = document.getElementById('likeAmount');
+    if (likeAmountInput) {
+        likeAmountInput.addEventListener('input', function() {
+            document.getElementById('likeAmountText').textContent = this.value || 1;
+        });
+    }
+
+    // Like post
+    const likePostBtn = document.getElementById('likePostBtn');
+    if (likePostBtn) {
+        likePostBtn.addEventListener('click', function() {
+            const postId = this.dataset.postId;
+            const amount = document.getElementById('likeAmount').value;
+
+            fetch(`/social/post/${postId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `amount=${amount}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('postLikes').textContent = data.post_likes_count;
+                    document.getElementById('likesBalance').textContent = data.new_balance;
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to like post');
+            });
+        });
+    }
+
+    // Add comment
+    const commentForm = document.getElementById('commentForm');
+    if (commentForm) {
+        commentForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const content = document.getElementById('commentContent').value;
+
+            fetch(`/social/post/{{ post.id }}/comment/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `content=${encodeURIComponent(content)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add comment');
+            });
+        });
+    }
+
+    // Like comment
+    document.querySelectorAll('.like-comment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const commentId = this.dataset.commentId;
+            const amount = prompt('How many likes do you want to give? (1-10)', '1');
+
+            if (amount === null) return;
+
+            const amountNum = parseInt(amount);
+            if (isNaN(amountNum) || amountNum < 1) {
+                alert('Please enter a valid number (at least 1)');
+                return;
+            }
+
+            fetch(`/social/comment/${commentId}/like/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `amount=${amountNum}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelector('.comment-likes-' + commentId).textContent = data.comment_likes_count;
+                    document.getElementById('likesBalance').textContent = data.new_balance;
+                    alert(data.message);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to like comment');
+            });
+        });
+    });
+
+    // Reply to comment
+    document.querySelectorAll('.reply-comment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const commentId = this.dataset.commentId;
+            const replyForm = document.getElementById('replyForm' + commentId);
+            replyForm.classList.toggle('d-none');
+        });
+    });
+
+    // Cancel reply
+    document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            this.closest('.reply-form').classList.add('d-none');
+        });
+    });
+
+    // Submit reply
+    document.querySelectorAll('.reply-submit-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const parentId = this.querySelector('button[type="submit"]').dataset.parentId;
+            const content = this.querySelector('textarea').value;
+
+            fetch(`/social/post/{{ post.id }}/comment/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken
+                },
+                body: `content=${encodeURIComponent(content)}&parent_comment_id=${parentId}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add reply');
+            });
+        });
+    });
+
+    // Delete comment
+    document.querySelectorAll('.delete-comment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
+
+            const commentId = this.dataset.commentId;
+
+            fetch(`/social/comment/${commentId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete comment');
+            });
+        });
+    });
+
+    // Follow/unfollow user
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const action = this.dataset.action;
+            const url = action === 'follow' ? `/social/follow/${userId}/` : `/social/unfollow/${userId}/`;
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to ' + action);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+================================================================================
+MOOIBANANA - ADVERTISEMENT PLACEMENTS DOCUMENTATION
+================================================================================
+
+This document explains the different advertisement placements available in the
+Mooibanana application and how to enable or disable them.
+
+Each ad placement is controlled by a context variable in the corresponding view.
+By default, all ads are disabled.
+
+To enable an ad, you need to set the corresponding context variable to `True` in
+the view.
+
+================================================================================
+1. SOCIAL FEED (IN-FEED AD)
+================================================================================
+
+- **Page:** Social Feed
+- **Location:** In the feed, after every 5th post.
+- **Template File:** `templates/social/feed.html`
+- **Context Variable:** `show_in_feed_ad`
+- **View:** `social.views.FeedView`
+
+To enable this ad, set `show_in_feed_ad` to `True` in the `get_context_data`
+method of the `FeedView`.
+
+================================================================================
+2. DISCOVER PAGE (IN-GRID AD)
+================================================================================
+
+- **Page:** Discover Page
+- **Location:** In the profile grid, as a profile card.
+- **Template File:** `templates/profiles/discover.html`
+- **Context Variable:** `show_in_grid_ad`
+- **View:** `profiles.views.DiscoverView`
+
+To enable this ad, set `show_in_grid_ad` to `True` in the `get_context_data`
+method of the `DiscoverView`.
+
+================================================================================
+3. PROFILE DETAIL PAGE (BANNER AD)
+================================================================================
+
+- **Page:** Profile Detail Page
+- **Location:** Below the main profile information.
+- **Template File:** `templates/profiles/profile_detail.html`
+- **Context Variable:** `show_profile_banner_ad`
+- **View:** `profiles.views.ProfileDetailView`
+
+To enable this ad, set `show_profile_banner_ad` to `True` in the
+`get_context_data` method of the `ProfileDetailView`.
+
+================================================================================
+4. POST DETAIL PAGE (BANNER AD)
+================================================================================
+
+- **Page:** Post Detail Page
+- **Location:** Between the post and the comments section.
+- **Template File:** `templates/social/post_detail.html`
+- **Context Variable:** `show_post_banner_ad`
+- **View:** `social.views.PostDetailView`
+
+To enable this ad, set `show_post_banner_ad` to `True` in the `get_context_data`
+method of the `PostDetailView`.
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================

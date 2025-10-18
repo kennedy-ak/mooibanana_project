@@ -1,0 +1,855 @@
+================================================================================
+MOOIBANANA - REFERRAL SYSTEM DOCUMENTATION
+================================================================================
+
+The Referral System allows users to invite friends and earn points when their
+friends complete their profiles. This is a powerful viral growth feature.
+
+================================================================================
+1. REFERRAL DASHBOARD OVERVIEW
+================================================================================
+
+URL: /accounts/referral-dashboard/
+Template: accounts/referral_dashboard.html
+View: ReferralDashboardView (LoginRequiredMixin, TemplateView)
+Authentication: Required
+
+PURPOSE:
+--------
+- Display user's referral statistics
+- Generate and share referral codes/links
+- Track referral history
+- Provide social sharing options
+
+================================================================================
+2. PAGE LAYOUT & STRUCTURE
+================================================================================
+
+HEADER:
+-------
+Card Header:
+- Icon: fas fa-users
+- Title: "Referral Dashboard"
+- Subtitle: "Invite friends and earn points!" (text-muted)
+
+================================================================================
+3. STATISTICS ROW (4 Cards)
+================================================================================
+
+Layout: Row with 4 equal columns (col-md-3 each)
+
+CARD 1 - Successful Referrals:
+-------------------------------
+Background: bg-primary (purple-blue #4e54c8)
+Text: White
+Icon/Number: Large heading (h4) showing count
+Label: "Successful Referrals"
+Source: {{ referral_count }}
+- Counts users who signed up with your code
+
+CARD 2 - Points from Referrals:
+--------------------------------
+Background: bg-success (green)
+Text: White
+Icon/Number: Large heading (h4) showing points
+Label: "Points from Referrals"
+Source: {{ referral_points }}
+- Total points earned from referrals only
+
+CARD 3 - Total Points:
+----------------------
+Background: bg-info (light blue)
+Text: White
+Icon/Number: Large heading (h4) showing total
+Label: "Total Points"
+Source: {{ total_points }}
+- User's overall points balance
+
+CARD 4 - Points per Referral:
+------------------------------
+Background: bg-warning (yellow/orange)
+Text: White
+Icon/Number: "50" (hard-coded)
+Label: "Points per Referral"
+Note: Shows 50 in template but actual award is 15 points
+- DISCREPANCY: Update template to show 15
+
+Styling:
+- All cards: text-center
+- Card body padding: default Bootstrap
+- Margin bottom: mb-4 on row
+
+================================================================================
+4. REFERRAL CODE SECTION
+================================================================================
+
+Layout: Row with 2 equal columns (col-md-6 each)
+
+LEFT CARD - Your Referral Code:
+--------------------------------
+Header:
+- Icon: fas fa-code
+- Title: "Your Referral Code"
+
+Content:
+- Input Group (mb-3):
+  * Text input (readonly)
+  * Value: {{ referral_code }} (8-character code)
+  * Copy button with icon: fas fa-copy
+  * Button text: "Copy"
+  * Button class: btn btn-outline-secondary
+
+- Generate Link Button:
+  * Text: "Generate Shareable Link"
+  * Icon: fas fa-link
+  * Class: btn btn-primary
+  * Action: onclick="generateReferralLink()"
+
+RIGHT CARD - Share Your Link:
+------------------------------
+Header:
+- Icon: fas fa-share-alt
+- Title: "Share Your Link"
+
+Content:
+- Referral Link Input Group (initially hidden):
+  * ID: referralLinkContainer
+  * Style: display: none
+  * Shows after "Generate Shareable Link" clicked
+  * Readonly input with full URL
+  * Copy button (same style as code copy)
+
+- Social Share Buttons (d-grid gap-2):
+  1. WhatsApp Button:
+     * Class: btn btn-success
+     * Icon: fab fa-whatsapp
+     * Text: "Share on WhatsApp"
+     * Action: onclick="shareWhatsApp()"
+
+  2. Twitter Button:
+     * Class: btn btn-info
+     * Icon: fab fa-twitter
+     * Text: "Share on Twitter"
+     * Action: onclick="shareTwitter()"
+
+================================================================================
+5. HOW IT WORKS SECTION
+================================================================================
+
+Layout: Single card with 3 columns (col-md-4 each)
+
+Header:
+- Icon: fas fa-question-circle
+- Title: "How Referrals Work"
+
+STEP 1 - Share Your Code:
+--------------------------
+Icon: fas fa-share fa-3x text-primary (centered)
+Title: "1. Share Your Code"
+Description: "Share your referral code or link with friends"
+
+STEP 2 - Friend Joins:
+-----------------------
+Icon: fas fa-user-plus fa-3x text-success (centered)
+Title: "2. Friend Joins"
+Description: "Your friend signs up using your referral code"
+
+STEP 3 - Earn Points:
+----------------------
+Icon: fas fa-coins fa-3x text-warning (centered)
+Title: "3. Earn Points"
+Description: "Get 50 points when they complete their profile"
+Note: Template shows 50 but actual award is 15 points
+- DISCREPANCY: Update to show 15
+
+Styling:
+- All steps: text-center
+- Icon margin-bottom: mb-3
+- Description: small class
+
+================================================================================
+6. REFERRAL HISTORY TABLE
+================================================================================
+
+Display Condition: {% if referrals %}
+- Only shows if user has any referrals
+
+Header:
+- Icon: fas fa-history
+- Title: "Referral History"
+
+Table Structure:
+----------------
+Class: table table-striped
+Wrapper: table-responsive
+
+Columns:
+1. Friend
+   - Display: {{ referral.referred_user.username }}
+
+2. Date Referred
+   - Display: {{ referral.created_at|date:"M d, Y" }}
+   - Format: "Jan 15, 2025"
+
+3. Status
+   - Completed: <span class="badge bg-success">Completed</span>
+   - Pending: <span class="badge bg-warning">Pending</span>
+   - Other: <span class="badge bg-secondary">{{ referral.status|title }}</span>
+
+4. Points Earned
+   - Display: {{ referral.points_awarded }}
+   - Shows 0 for pending, 15 for completed
+
+Data Source:
+- Loop: {% for referral in referrals %}
+- QuerySet: Referral.objects.filter(referrer=user)
+
+================================================================================
+7. JAVASCRIPT FUNCTIONALITY
+================================================================================
+
+Global Variable:
+----------------
+let currentReferralLink = '';
+- Stores the generated referral link
+
+FUNCTION 1: copyReferralCode()
+-------------------------------
+Purpose: Copy referral code to clipboard
+
+Process:
+1. Get element: document.getElementById('referralCode')
+2. Select text: codeInput.select()
+3. Copy: document.execCommand('copy')
+4. Visual feedback:
+   - Change button to green
+   - Icon: fas fa-check
+   - Text: "Copied!"
+   - Duration: 2 seconds
+5. Restore original state
+
+Button States:
+- Original: btn-outline-secondary with "Copy" text
+- Copied: btn-success with "Copied!" text
+
+FUNCTION 2: generateReferralLink()
+-----------------------------------
+Purpose: Generate shareable referral URL
+
+API Call:
+- Endpoint: /accounts/generate-referral-link/
+- Method: GET
+- Response Format:
+  {
+    "success": true,
+    "referral_link": "http://domain.com/accounts/register/?ref=ABC12345",
+    "referral_code": "ABC12345"
+  }
+
+Process:
+1. Fetch from API
+2. Store in currentReferralLink variable
+3. Populate input: document.getElementById('referralLink').value
+4. Show container: referralLinkContainer.style.display = 'flex'
+5. Error handling: alert on failure
+
+FUNCTION 3: copyReferralLink()
+-------------------------------
+Purpose: Copy generated link to clipboard
+
+Same logic as copyReferralCode() but for the link input
+
+FUNCTION 4: shareWhatsApp()
+----------------------------
+Purpose: Share referral via WhatsApp
+
+Process:
+1. Check if link generated, if not:
+   - Call generateReferralLink()
+   - Wait 1 second
+   - Retry shareWhatsApp()
+
+2. Build message:
+   "Hey! Join me on Mooibanana, the student dating platform!
+    Use my referral code {{ referral_code }} or click this link:
+    ${currentReferralLink}"
+
+3. Open WhatsApp:
+   - URL: https://wa.me/?text=${encodeURIComponent(message)}
+   - Target: _blank (new window)
+
+FUNCTION 5: shareTwitter()
+---------------------------
+Purpose: Share referral via Twitter/X
+
+Process:
+1. Check if link generated (same as WhatsApp)
+
+2. Build message:
+   "Join me on Mooibanana! Use my referral code {{ referral_code }}
+    ${currentReferralLink}"
+
+3. Open Twitter:
+   - URL: https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}
+   - Target: _blank
+
+================================================================================
+8. BACKEND IMPLEMENTATION
+================================================================================
+
+REFERRAL MODEL:
+---------------
+Fields:
+- referrer: ForeignKey to CustomUser (who sent the referral)
+- referred_user: OneToOneField to CustomUser (who was referred)
+- points_awarded: Integer (default 0, becomes 15 when completed)
+- status: CharField with choices:
+  * 'pending' - User signed up but hasn't completed profile
+  * 'completed' - User completed profile, points awarded
+  * 'cancelled' - Referral cancelled
+- created_at: DateTime (auto)
+- completed_at: DateTime (nullable)
+
+Constraints:
+- unique_together: ['referrer', 'referred_user']
+  (Can't refer same person twice)
+
+CUSTOM USER FIELDS:
+-------------------
+- referral_code: Unique 8-char code (auto-generated)
+- referred_by: ForeignKey to self (nullable)
+- referral_points_earned: Integer (total from all referrals)
+
+REFERRAL CODE GENERATION:
+--------------------------
+Method: generate_referral_code()
+
+Process:
+1. Generate random 8-character string
+2. Characters: Uppercase letters + digits
+3. Check uniqueness in database
+4. Retry if collision
+5. Return unique code
+
+Example codes: "A3F9K2L1", "XYZ12345", "QWERTY99"
+
+VIEW: ReferralDashboardView
+----------------------------
+Type: TemplateView with LoginRequiredMixin
+URL: /accounts/referral-dashboard/
+
+Context Data:
+- referral_code: user.referral_code
+- referral_count: user.get_referral_count()
+- referral_points: user.get_referral_points()
+- total_points: user.points_balance
+- referrals: Referral.objects.filter(referrer=user)
+- referred_users: user.referrals.all()
+
+Methods:
+1. get_referral_count():
+   - Returns: self.referrals.count()
+   - Counts successful referrals
+
+2. get_referral_points():
+   - Returns: self.referral_points_earned
+   - Total points from referrals only
+
+API ENDPOINT: generate_referral_link()
+---------------------------------------
+URL: /accounts/generate-referral-link/
+Method: GET (decorated with @login_required)
+
+Process:
+1. Get user's referral code
+2. Build absolute URL to registration
+3. Append code as query parameter (?ref=CODE)
+4. Return JSON response
+
+Response Format:
+{
+  "success": true,
+  "referral_link": "https://domain.com/accounts/register/?ref=ABC12345",
+  "referral_code": "ABC12345"
+}
+
+Error Response:
+{
+  "success": false,
+  "message": "Invalid request method"
+}
+
+================================================================================
+9. POINTS AWARDING SYSTEM
+================================================================================
+
+TRIGGER: Profile Completion
+----------------------------
+Signal: post_save on Profile model
+Condition: instance.is_complete and instance.user.referred_by
+
+Process:
+1. Check if referred user has completed profile
+2. Find or create Referral record
+3. Check status is 'pending'
+4. Award points:
+   - Add 15 to referrer.points_balance
+   - Add 15 to referrer.referral_points_earned
+5. Update Referral record:
+   - points_awarded = 15
+   - status = 'completed'
+   - completed_at = now()
+6. Save referrer user
+7. Save referral record
+
+Points Breakdown:
+- Per Referral: 15 points
+- Awarded Once: When profile completed
+- Not Awarded If: Profile incomplete or already awarded
+
+PROFILE COMPLETION CRITERIA:
+-----------------------------
+is_complete = True when ALL of these exist:
+- bio (not empty)
+- study_field (selected)
+- study_year (selected)
+- interests (not empty)
+- profile_picture (uploaded)
+
+================================================================================
+10. REGISTRATION FLOW WITH REFERRAL
+================================================================================
+
+STEP 1: User Clicks Referral Link
+----------------------------------
+URL: https://domain.com/accounts/register/?ref=ABC12345
+Pre-fill: Referral code input shows "ABC12345"
+
+STEP 2: User Fills Registration Form
+-------------------------------------
+Required Fields:
+- Username
+- Email
+- Country
+- Password (2 fields)
+
+Optional:
+- Referral code (pre-filled from URL)
+
+STEP 3: Form Validation
+------------------------
+1. Email uniqueness
+2. Password strength
+3. Country valid
+4. Referral code validation:
+   - Convert to uppercase
+   - Check exists in database
+   - Raise error if invalid
+
+STEP 4: Account Creation
+-------------------------
+1. Create CustomUser with:
+   - referred_by = User with matching referral code
+   - referral_code = Auto-generated unique code
+   - likes_balance = 100 (free likes)
+   - points_balance = 0
+
+2. Auto-login user
+
+3. Show success message:
+   - With referral: "Account created successfully! You were referred by
+     {username}. Complete your profile to give them referral points!"
+   - Without: "Account created successfully! Please complete your profile."
+
+4. Redirect to profile creation
+
+STEP 5: Profile Completion (Triggers Points)
+---------------------------------------------
+1. User fills profile form
+2. Uploads profile picture
+3. Saves profile
+4. is_complete becomes True
+5. Signal fires → awards points to referrer
+
+================================================================================
+11. REFERRAL TRACKING
+================================================================================
+
+REFERRAL RECORD STATES:
+-----------------------
+1. PENDING:
+   - User signed up with code
+   - Profile not complete yet
+   - Points not awarded
+   - Table shows "Pending" badge (yellow)
+
+2. COMPLETED:
+   - User completed profile
+   - Points awarded (15)
+   - Table shows "Completed" badge (green)
+   - completed_at timestamp set
+
+3. CANCELLED:
+   - Referral invalidated (rare)
+   - No points awarded
+   - Table shows "Cancelled" badge (grey)
+
+REFERRAL ANALYTICS:
+-------------------
+Available Metrics:
+- Total referrals sent
+- Completed referrals (profile done)
+- Pending referrals (not complete)
+- Total points from referrals
+- Conversion rate (completed / total)
+
+Display on Dashboard:
+- Successful Referrals = completed count
+- Points from Referrals = sum of points_awarded
+- History table shows all statuses
+
+================================================================================
+12. SOCIAL SHARING DETAILS
+================================================================================
+
+WHATSAPP INTEGRATION:
+---------------------
+API: WhatsApp URL Scheme
+URL Format: https://wa.me/?text={message}
+Encoding: URI encoding required
+Behavior: Opens WhatsApp app or web
+Mobile: Opens installed app
+Desktop: Opens web.whatsapp.com
+
+Message Template:
+"Hey! Join me on Mooibanana, the student dating platform!
+Use my referral code {CODE} or click this link: {LINK}"
+
+TWITTER INTEGRATION:
+--------------------
+API: Twitter Web Intent
+URL Format: https://twitter.com/intent/tweet?text={message}
+Encoding: URI encoding required
+Behavior: Opens Twitter compose dialog
+Login: Required to tweet
+Pre-fills: Tweet text with code and link
+
+Message Template:
+"Join me on Mooibanana! Use my referral code {CODE} {LINK}"
+
+COPY TO CLIPBOARD:
+------------------
+Method: document.execCommand('copy')
+Fallback: Modern Clipboard API not used for compatibility
+Selection: .select() on input element
+Feedback: Visual button state change (green, checkmark)
+Duration: 2 seconds then restore
+
+================================================================================
+13. SECURITY & VALIDATION
+================================================================================
+
+REFERRAL CODE VALIDATION:
+--------------------------
+1. Format Check:
+   - 8 characters exactly
+   - Uppercase letters + digits only
+   - Auto-convert to uppercase
+
+2. Existence Check:
+   - Query database for matching code
+   - Raise ValidationError if not found
+
+3. Self-Referral Prevention:
+   - Cannot use your own code
+   - Validated at registration
+
+4. Duplicate Prevention:
+   - unique_together on Referral model
+   - Cannot refer same user twice
+
+POINTS MANIPULATION PREVENTION:
+-------------------------------
+1. One-time Award:
+   - Check status = 'pending' before awarding
+   - Update to 'completed' after award
+   - Cannot award twice for same referral
+
+2. Profile Completion Check:
+   - Only award when is_complete = True
+   - Verified by signal handler
+
+3. Database Constraints:
+   - Foreign key integrity
+   - Unique constraints
+   - Non-negative points check (optional)
+
+================================================================================
+14. RESPONSIVE DESIGN
+================================================================================
+
+DESKTOP (>768px):
+-----------------
+- Stats: 4 cards in single row (col-md-3)
+- Code/Share: 2 cards side by side (col-md-6)
+- How It Works: 3 steps in single row (col-md-4)
+- Table: Full width with all columns
+
+TABLET (768px - 1024px):
+------------------------
+- Stats: 2x2 grid (wraps to 2 rows)
+- Code/Share: Stacked or side by side
+- How It Works: May wrap to 2 rows
+- Table: Horizontal scroll if needed
+
+MOBILE (<768px):
+----------------
+- Stats: Stacked (4 rows, full width)
+- Code/Share: Stacked (2 rows, full width)
+- How It Works: Stacked (3 rows, full width)
+- Table: Horizontal scroll in responsive wrapper
+- Buttons: Full width (w-100)
+
+TOUCH OPTIMIZATIONS:
+--------------------
+- Minimum button size: 44px
+- Copy buttons: Easy tap targets
+- Share buttons: Full width on mobile
+- Table: Swipeable on mobile
+
+================================================================================
+15. STYLING DETAILS
+================================================================================
+
+CARD STYLING:
+-------------
+- Border-radius: 15px
+- Box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1)
+- Background: White with 95% opacity
+- Hover: translateY(-5px) with enhanced shadow
+
+BUTTON STYLING:
+---------------
+Primary Button:
+- Background: #4e54c8
+- Border-radius: 8px
+- Transition: all 0.2s ease
+- Hover: translateY(-2px)
+
+Success Button (WhatsApp):
+- Background: Bootstrap green (#28a745)
+- Icon: WhatsApp logo
+- Full width on mobile
+
+Info Button (Twitter):
+- Background: Bootstrap info blue
+- Icon: Twitter logo
+- Full width on mobile
+
+Copy Button States:
+- Default: btn-outline-secondary
+- Copied: btn-success
+- Icon change: fa-copy → fa-check
+
+INPUT GROUP STYLING:
+--------------------
+- Form-control: Readonly inputs
+- Border: 2px solid rgba(78, 84, 200, 0.2)
+- Border-radius: 10px
+- Button attached to right
+
+BADGE STYLING:
+--------------
+- Success: bg-success (green)
+- Warning: bg-warning (yellow)
+- Secondary: bg-secondary (grey)
+- Border-radius: 8px
+- Font-weight: 500
+
+TABLE STYLING:
+--------------
+- Class: table-striped
+- Hover: Row highlight
+- Borders: Light grey
+- Header: Bold text
+- Responsive: Horizontal scroll wrapper
+
+================================================================================
+16. ERROR HANDLING
+================================================================================
+
+API ERRORS:
+-----------
+1. Generate Link Fails:
+   - Alert: "Error generating referral link"
+   - Console log: Error details
+   - User can retry
+
+2. Network Error:
+   - Catch block handles
+   - Alert user
+   - Link container stays hidden
+
+COPY ERRORS:
+------------
+1. Copy Command Fails:
+   - Silent fail (rare)
+   - Button still shows feedback
+   - User can retry
+
+2. Browser Compatibility:
+   - document.execCommand() widely supported
+   - Fallback: User can manually copy
+
+VALIDATION ERRORS:
+------------------
+1. Invalid Referral Code:
+   - Form error: "Invalid referral code."
+   - Display: Red alert on form
+   - Field highlighted
+
+2. Duplicate Referral:
+   - Database constraint prevents
+   - Rare edge case
+   - Admin can resolve
+
+================================================================================
+17. PERFORMANCE OPTIMIZATIONS
+================================================================================
+
+CACHING:
+--------
+- User referral stats: Cache for 5 minutes
+- Referral list: Query once per page load
+- No caching on link generation (always fresh)
+
+DATABASE QUERIES:
+-----------------
+- select_related('referred_user') on Referral query
+- Minimize N+1 queries
+- Index on referrer field
+
+JAVASCRIPT:
+-----------
+- Minimal DOM manipulation
+- Event delegation not needed (few elements)
+- No heavy computations
+
+API CALLS:
+----------
+- GET request for link generation
+- Synchronous (not async)
+- Fast response (simple query)
+
+================================================================================
+18. FUTURE ENHANCEMENTS
+================================================================================
+
+POTENTIAL FEATURES:
+-------------------
+1. Tiered Rewards:
+   - 5 referrals = bonus
+   - 10 referrals = badge
+   - 25 referrals = premium features
+
+2. Leaderboard:
+   - Top referrers ranking
+   - Monthly competitions
+   - Special prizes
+
+3. More Social Platforms:
+   - Facebook sharing
+   - Email invites
+   - Instagram stories
+
+4. Referral Analytics:
+   - Conversion tracking
+   - Time to complete
+   - Source tracking (WhatsApp vs Twitter)
+
+5. Custom Messages:
+   - Personalize share text
+   - Add photos
+   - Video invites
+
+6. Referral Expiry:
+   - Time limit for completion
+   - Expire pending after 30 days
+   - Reminder notifications
+
+7. Double-sided Rewards:
+   - Referred user gets bonus
+   - Both users benefit
+   - Increased conversion
+
+================================================================================
+19. ADMIN FEATURES
+================================================================================
+
+ADMIN DASHBOARD:
+----------------
+Template: admin_dashboard/referrals_management.html
+- View all referrals
+- Filter by status
+- Search by user
+- Edit referral records
+- Award/revoke points manually
+
+ADMIN ACTIONS:
+--------------
+1. Approve pending referral
+2. Cancel fraudulent referral
+3. Adjust points awarded
+4. View referral tree
+5. Export referral data
+
+MONITORING:
+-----------
+- Total referrals count
+- Completion rate
+- Points distributed
+- Top referrers
+- Recent activity
+
+================================================================================
+20. TESTING CHECKLIST
+================================================================================
+
+FUNCTIONAL TESTS:
+-----------------
+☑ Generate referral code on user creation
+☑ Copy code to clipboard
+☑ Generate shareable link
+☑ Copy link to clipboard
+☑ Share via WhatsApp (opens correctly)
+☑ Share via Twitter (opens correctly)
+☑ Register with referral code
+☑ Validate invalid code
+☑ Award points on profile completion
+☑ Prevent duplicate referrals
+☑ Display referral history
+☑ Show correct statistics
+☑ Update counts in real-time
+
+EDGE CASES:
+-----------
+☑ Use own referral code (should fail)
+☑ Invalid code format
+☑ Completed profile before referred
+☑ Multiple referrals same person
+☑ Referrer deletes account
+☑ Referred user deletes account
+☑ Points already awarded
+
+UI/UX TESTS:
+------------
+☑ Responsive on mobile
+☑ Copy button feedback works
+☑ Social share opens new window
+☑ Table scrolls on mobile
+☑ Stats cards display correctly
+☑ Icons load properly
+
+================================================================================
+END OF REFERRAL SYSTEM DOCUMENTATION
+================================================================================

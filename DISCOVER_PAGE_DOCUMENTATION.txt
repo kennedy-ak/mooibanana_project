@@ -1,0 +1,1345 @@
+================================================================================
+MOOIBANANA - DISCOVER PAGE DOCUMENTATION
+================================================================================
+
+The Discover page is the core matching interface where users browse profiles,
+search with advanced filters, and interact with potential matches.
+
+================================================================================
+1. DISCOVER PAGE OVERVIEW
+================================================================================
+
+URL: /profiles/discover/
+Template: profiles/discover.html
+View: DiscoverView (LoginRequiredMixin, ListView)
+Authentication: Required
+
+PURPOSE:
+--------
+- Browse student profiles
+- Advanced search and filtering
+- Profile discovery with pagination
+- Daily quiz for earning points
+- Distance-based matching
+
+================================================================================
+2. PAGE LAYOUT STRUCTURE
+================================================================================
+
+HEADER:
+-------
+- Title: "Discover New Students" (h2, centered, text-white)
+- Margin-bottom: mb-4
+
+MAIN SECTIONS:
+--------------
+1. Search/Filter Card (collapsible)
+2. Daily Quiz Widget (collapsible)
+3. Profile Grid (2x2 on desktop, single column mobile)
+4. Pagination Controls
+
+================================================================================
+3. SEARCH & FILTER SYSTEM
+================================================================================
+
+LAYOUT:
+-------
+Card with collapsible content
+- Card Header: Non-collapsible (always visible)
+- Card Body: Collapsible filters (toggle with hamburger)
+
+CARD HEADER:
+------------
+Left Side:
+- Icon: fas fa-search
+- Title: "Search Profiles"
+- Badge: "Active" (blue, only shows if is_searching)
+
+Right Side:
+- Hamburger Button:
+  * Icon: fas fa-bars (default) or fas fa-times (expanded)
+  * Text: "Filters" (desktop) or hidden (mobile)
+  * Class: btn btn-outline-primary
+  * Toggle Target: #searchFilters
+  * Animation: Icon rotates 90° when expanded
+
+================================================================================
+4. SEARCH FORM FIELDS
+================================================================================
+
+Form Method: GET
+Form ID: searchForm
+Layout: Bootstrap grid with form-floating labels
+
+ROW 1 (4 columns):
+------------------
+
+1. SEARCH QUERY (col-lg-3 col-md-6):
+   - Field: search_query
+   - Label: "Search by name"
+   - Type: Text input
+   - Class: form-floating
+   - Searches: username, first_name, last_name (case-insensitive)
+
+2. STUDY FIELD (col-lg-3 col-md-6):
+   - Field: study_field
+   - Label: "Field of Study"
+   - Type: Select dropdown
+   - Options:
+     * Computer Science
+     * Business
+     * Engineering
+     * Medicine
+     * Law
+     * Arts
+     * Psychology
+     * Other
+   - Auto-submit: Form submits when changed
+
+3. SCHOOL NAME (col-lg-3 col-md-6):
+   - Field: school_name
+   - Label: "School/University"
+   - Type: Text input
+   - Searches: Partial match (icontains)
+
+4. INTERESTS (col-lg-3 col-md-6):
+   - Field: interests
+   - Label: "Interests"
+   - Type: Text input
+   - Format: Comma-separated values
+   - Autocomplete: Datalist with common interests
+   - Searches: Any matching interest
+
+Common Interests Suggestions:
+- Sports: football, basketball, tennis, swimming, running
+- Music: music, guitar, piano, singing, dancing
+- Creative: reading, writing, photography, art, painting
+- Activities: cooking, traveling, hiking, cycling, gaming
+- Entertainment: movies, series, anime
+- Tech: programming, technology
+- Wellness: fitness, yoga, meditation
+- Other: volunteering, languages
+
+ROW 2 (4 columns):
+------------------
+
+1. CITY (col-lg-3 col-md-6):
+   - Field: city
+   - Label: "City"
+   - Type: Text input
+   - Searches: Partial match (icontains)
+
+2. LOCATION (col-lg-3 col-md-6):
+   - Field: location
+   - Label: "Region/Location"
+   - Type: Text input
+   - Searches: General region (icontains)
+
+3. MAX DISTANCE (col-lg-3 col-md-6):
+   - Field: max_distance
+   - Label: "Max Distance (km)"
+   - Type: Number input
+   - Requires: User has latitude/longitude set
+   - Uses: Haversine formula for calculations
+   - Performance: Concurrent processing with ThreadPoolExecutor
+
+4. ACTION BUTTONS (col-lg-3 col-md-6):
+   - Button Group (w-100):
+     * Search Button:
+       - Type: submit
+       - Class: btn btn-primary
+       - Icon: fas fa-search
+       - Text: "Search"
+
+     * Clear Button:
+       - Type: link (anchor)
+       - Class: btn btn-outline-secondary
+       - Icon: fas fa-times
+       - Text: "Clear"
+       - Action: Resets form and redirects
+
+================================================================================
+5. ACTIVE FILTERS DISPLAY
+================================================================================
+
+Condition: {% if is_searching %}
+Position: Below search form
+Class: alert alert-info border-0 mt-3
+
+Format:
+-------
+"Active filters:"
+- Name: "search query value"
+- Study: "Computer Science" (display name)
+- School: "school name"
+- Interests: "interest1, interest2"
+- City: "city name"
+- Region: "location"
+- Max Distance: Xkm
+
+Badge Styling:
+- Class: badge bg-secondary me-1
+- Font-size: 0.75rem
+- Padding: 0.35em 0.65em
+- Margin: 0.1rem
+
+================================================================================
+6. SEARCH BACKEND LOGIC
+================================================================================
+
+QUERYSET FILTERING:
+-------------------
+
+Base Query:
+```python
+Profile.objects.filter(
+    is_complete=True
+).exclude(
+    user=current_user
+).exclude(
+    user_id__in=unliked_user_ids
+).select_related('user')
+```
+
+Exclusions:
+1. Current user's own profile
+2. Users that current user has "disliked" (Unlike model)
+3. Incomplete profiles
+
+SEARCH FILTERS:
+---------------
+
+1. Search Query (OR logic):
+   Q(user__username__icontains=query) |
+   Q(user__first_name__icontains=query) |
+   Q(user__last_name__icontains=query)
+
+2. Study Field (exact match):
+   filter(study_field=value)
+
+3. School Name (partial):
+   filter(school_name__icontains=value)
+
+4. City (partial):
+   filter(city__icontains=value)
+
+5. Interests (OR logic for multiple):
+   - Split by comma
+   - Create Q() for each interest
+   - Combine with | (OR)
+   - filter(interests__icontains=interest1) OR ...
+
+6. Location/Region (partial):
+   filter(location__icontains=value)
+
+7. Age Range:
+   - Convert ages to birth dates
+   - min_age: birth_date <= today - (min_age * 365.25 days)
+   - max_age: birth_date >= today - ((max_age + 1) * 365.25 days)
+
+8. Distance-based (advanced):
+   - Requires user.latitude and user.longitude
+   - Filter profiles with lat/long set
+   - Calculate distances concurrently
+   - Return IDs within max_distance
+   - filter(id__in=nearby_profile_ids)
+
+ORDERING:
+---------
+
+With Search Query:
+- Annotate username_match (1 if matches, 0 if not)
+- Order by: -username_match, user__username
+- Puts exact matches first
+
+Without Filters:
+- order_by('?') - Random order
+- Fresh profiles each time
+
+With Filters (no search query):
+- order_by('user__username') - Alphabetical
+
+PAGINATION:
+-----------
+- Page size: 6 profiles per page
+- Django Paginator
+- Bootstrap pagination UI
+
+================================================================================
+7. DISTANCE CALCULATION SYSTEM
+================================================================================
+
+HAVERSINE FORMULA:
+------------------
+Calculates great-circle distance between two points on Earth
+
+Formula Steps:
+1. Convert lat/long from degrees to radians
+2. Calculate differences: dlat, dlon
+3. Apply Haversine: a = sin²(dlat/2) + cos(lat1) * cos(lat2) * sin²(dlon/2)
+4. Calculate central angle: c = 2 * arcsin(√a)
+5. Multiply by Earth radius: distance = c * 6371 km
+
+Method: profile.calculate_distance_to(other_profile)
+Returns: Distance in kilometers (float) or None
+
+CONCURRENT PROCESSING:
+----------------------
+For performance with many profiles
+
+Function: calculate_distance_concurrent()
+- Uses ThreadPoolExecutor (max 10 workers)
+- Parallel distance calculations
+- Returns list of profile IDs within max_distance
+- Significant performance improvement for 100+ profiles
+
+Example:
+- 100 profiles to check
+- ThreadPoolExecutor with 10 workers
+- ~10x faster than sequential
+
+DISTANCE DISPLAY:
+-----------------
+Shown in profile cards if user has location set
+Format: "City (12.5km)"
+Calculation: Concurrent in get_context_data()
+Rounded: 1 decimal place
+
+================================================================================
+8. DAILY QUIZ WIDGET
+================================================================================
+
+LOCATION: Above profile grid
+STATE: Collapsible (default: expanded)
+
+CARD HEADER:
+------------
+Background: linear-gradient(135deg, #007bff 0%, #0056b3 100%)
+Color: White
+
+Left Side:
+- Icon: fas fa-brain
+- Title: "Daily Knowledge Quiz"
+
+Right Side:
+- Points Badge: Current points (badge bg-light text-primary)
+- Toggle Button: Chevron down/up icon
+
+QUIZ CONTENT:
+-------------
+API Endpoint: /quiz/daily/
+Load: On page load (DOMContentLoaded)
+Method: GET (fetch)
+
+Response States:
+
+1. LOADING:
+   - Spinner: spinner-border text-primary
+   - Text: "Loading quiz..."
+
+2. QUIZ AVAILABLE:
+   - Question: Large heading (h6)
+   - Metadata Badges:
+     * Category badge (bg-secondary)
+     * Difficulty badge (bg-info)
+     * Points value badge (bg-success)
+   - Choices: Buttons for each answer
+   - Button Class: btn btn-outline-primary w-100 mb-2 quiz-choice
+
+3. ALREADY ANSWERED:
+   - Shows result immediately
+   - Success Alert (green) or Danger Alert (red)
+   - Displays:
+     * Correct/Incorrect indicator
+     * Points earned (if correct)
+     * Correct answer
+     * User's answer
+     * Today's accuracy
+     * Total points
+   - Message: "Come back tomorrow for a new question!"
+
+4. ERROR:
+   - Alert: alert-warning or alert-danger
+   - Icon: fas fa-exclamation-triangle
+   - Message: Error details
+   - Retry: Button to reload
+
+QUIZ INTERACTION:
+-----------------
+
+1. User clicks choice button
+2. Button disabled immediately
+3. AJAX POST to /quiz/submit/
+4. Request Body:
+   {
+     "question_id": 123,
+     "choice_id": 456
+   }
+5. CSRF token from meta tag or cookie
+6. Response:
+   {
+     "success": true,
+     "is_correct": true/false,
+     "points_earned": 5,
+     "correct_choice": "Answer text",
+     "user_choice": "User's answer",
+     "accuracy": 75,
+     "total_points": 150
+   }
+7. Update points display
+8. Show result with animation
+
+POINTS SYSTEM:
+--------------
+- Easy questions: 5 points
+- Medium questions: 10 points
+- Hard questions: 15 points
+- Correct only: No points for wrong answers
+- Once per day: Cannot retake same question
+
+QUIZ STYLING:
+-------------
+
+Choice Buttons:
+- Border: 2px solid #dee2e6
+- Border-radius: 8px
+- Padding: 12px 16px
+- Text-align: left
+- Transition: all 0.3s ease
+
+Hover Effect:
+- Background: #007bff
+- Color: white
+- Transform: translateY(-1px)
+- Box-shadow: 0 4px 8px rgba(0,123,255,0.3)
+
+Disabled State:
+- Opacity: 0.6
+- No transform
+- No shadow
+
+Result Animation:
+- @keyframes slideInDown
+- From: opacity 0, translateY(-20px)
+- To: opacity 1, translateY(0)
+- Duration: 0.5s ease-out
+
+================================================================================
+9. PROFILE CARD DESIGN
+================================================================================
+
+GRID LAYOUT:
+------------
+Desktop (>1024px): 2x2 grid (col-lg-6)
+Mobile (<768px): Single column (col-12)
+Pagination: 6 profiles per page
+
+CARD STRUCTURE:
+---------------
+Layout: Row with 2 equal columns (50/50 split)
+Class: card h-100 overflow-hidden profile-card
+Min-height: 280px (desktop), 200px (mobile)
+
+LEFT HALF - Image Section (col-6):
+-----------------------------------
+Height: 280px (desktop), 200px (mobile)
+Class: profile-image-container
+
+Image Carousel:
+- ID: carousel-{{ profile.id }}
+- Class: carousel slide h-100
+- Data attribute: data-bs-ride="false" (manual control)
+- Photo counter: data-photo-count="1/3"
+
+Carousel Items:
+- All photos from profile.get_all_photos()
+- First item: active class
+- Images: d-block w-100 h-100
+- Object-fit: cover
+- Border-radius: 12px 0 0 12px (left side only)
+
+Carousel Controls (if > 1 photo):
+- Previous Button:
+  * Position: Absolute left 10px
+  * Size: 30px circle
+  * Background: rgba(0, 0, 0, 0.6)
+  * Icon: carousel-control-prev-icon (12px)
+  * Opacity: 0 (default), 0.8 (hover)
+  * Transition: opacity 0.3s ease
+
+- Next Button:
+  * Position: Absolute right 10px
+  * Same styling as previous
+  * Icon: carousel-control-next-icon
+
+- Indicators:
+  * Position: Bottom 10px
+  * Buttons: 8px circles
+  * Background: rgba(255, 255, 255, 0.7)
+  * Active: white background
+  * Border: 1px solid rgba(255, 255, 255, 0.9)
+
+Photo Counter Indicator:
+- Position: Top-right corner
+- Background: rgba(0,0,0,0.7)
+- Color: White
+- Padding: 2px 6px
+- Border-radius: 10px
+- Font-size: 10px
+- Content: "1/3" format
+- Updates on slide
+
+Placeholder (no photos):
+- Class: bg-light h-100
+- Icon: fas fa-user fa-4x text-muted (centered)
+- Background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)
+
+RIGHT HALF - Content Section (col-6):
+--------------------------------------
+Class: card-body h-100 d-flex flex-column p-3
+Layout: Flexbox column with spacing
+
+1. PROFILE HEADER (mb-2):
+   - Username: h6 fw-bold
+   - Age: text-muted fw-normal
+   - Format: "JohnDoe, 21"
+
+2. PROFILE DETAILS (flex-grow-1):
+
+   Study Field (if exists):
+   - Icon: fas fa-graduation-cap
+   - Text: study_field display name
+   - Year: " - Y2" (if study_year exists)
+   - Class: small mb-1 text-truncate
+
+   School Name (if exists):
+   - Icon: fas fa-university
+   - Text: school_name
+   - Class: small mb-1 text-truncate
+
+   City + Distance (if exists):
+   - Icon: fas fa-map-marker-alt
+   - Text: city
+   - Distance: "(12.5km)" in text-primary
+   - Class: small mb-1 text-truncate
+   - Condition: User has location set
+
+   Bio (if exists):
+   - Text: Truncated to 12 words
+   - Class: text-muted small mb-2
+   - Font-size: 0.75rem
+   - Line-height: 1.3
+
+   Interests Tags (if exists):
+   - Show: First 2 interests
+   - Badge: bg-secondary
+   - Font-size: 0.65rem
+   - Plus counter: "+3" if more interests
+   - Class: interests-tags mb-2
+
+3. ACTION BUTTON (mt-auto):
+   - Text: "View"
+   - Icon: fas fa-eye
+   - Class: btn btn-primary btn-sm w-100
+   - Link: profile_detail/{{ profile.id }}
+   - Full width button
+
+CARD STYLING:
+-------------
+
+Profile Card:
+- Border-radius: 12px
+- Box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1)
+- Transition: transform 0.2s ease, box-shadow 0.2s ease
+
+Hover Effect:
+- Transform: translateY(-2px)
+- Box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15)
+
+Icons:
+- Color: #007bff (primary blue)
+- Width: 12px (for alignment)
+
+Interests Badges:
+- Background: #6c757d (grey)
+- Border-radius: 10px
+- Padding: 0.25em 0.5em
+
+================================================================================
+10. MOBILE TOUCH FEATURES
+================================================================================
+
+SWIPE NAVIGATION:
+-----------------
+For image carousels on touch devices
+
+Event Listeners:
+1. touchstart: Record startX position
+2. touchend: Record endX position
+3. Calculate difference: startX - endX
+4. Minimum swipe distance: 50px
+
+Actions:
+- Swipe left (diff > 0): carousel.next()
+- Swipe right (diff < 0): carousel.prev()
+- Passive: true (for performance)
+
+Bootstrap Carousel Control:
+- Get instance: bootstrap.Carousel.getOrCreateInstance()
+- Methods: next(), prev()
+
+HAMBURGER TOGGLE:
+-----------------
+Search filter toggle button
+
+States:
+- Collapsed: fa-bars icon, "Filters" text
+- Expanded: fa-times icon, "Hide" text
+- Animation: Icon rotates 90° on toggle
+
+Mobile Optimizations:
+- Min button size: 44px × 44px
+- Text hidden on small screens
+- Larger touch targets
+- Full-width buttons in forms
+
+================================================================================
+11. PAGINATION SYSTEM
+================================================================================
+
+DISPLAY CONDITION:
+------------------
+{% if is_paginated %}
+Only shows when total results > paginate_by (6)
+
+PAGINATION UI:
+--------------
+Class: pagination justify-content-center flex-wrap
+Wrapper: nav aria-label="Profile pagination"
+
+Elements:
+
+1. FIRST PAGE (if has_previous):
+   - Icon: fas fa-angle-double-left
+   - Text: "First"
+   - Link: ?page=1 (preserves other params)
+
+2. PREVIOUS PAGE (if has_previous):
+   - Icon: fas fa-angle-left
+   - Text: "Previous"
+   - Link: ?page={{ previous_page_number }}
+
+3. CURRENT PAGE (always):
+   - Class: page-item active
+   - Text: "X of Y"
+   - Example: "2 of 5"
+   - Not clickable (span, not link)
+
+4. NEXT PAGE (if has_next):
+   - Text: "Next"
+   - Icon: fas fa-angle-right (after text)
+   - Link: ?page={{ next_page_number }}
+
+5. LAST PAGE (if has_next):
+   - Text: "Last"
+   - Icon: fas fa-angle-double-right (after text)
+   - Link: ?page={{ num_pages }}
+
+URL PARAMETER PRESERVATION:
+---------------------------
+Custom template tag: {% url_replace request 'page' X %}
+- Preserves all search parameters
+- Only updates page number
+- Example: ?study_field=computer_science&page=2
+
+PAGINATION STYLING:
+-------------------
+Page Links:
+- Border: none
+- Border-radius: 8px
+- Margin: 0 2px
+- Color: var(--primary)
+- Background: rgba(255, 255, 255, 0.9)
+- Transition: all 0.2s ease
+
+Hover Effect:
+- Background: var(--primary)
+- Color: white
+- Transform: translateY(-2px)
+
+Active Page:
+- Background: var(--accent) (#ff9a00)
+- Border-color: var(--accent)
+- Color: white
+
+Responsive:
+- Flex-wrap on mobile
+- Smaller buttons on phones
+- Icons may hide on very small screens
+
+================================================================================
+12. EMPTY STATE
+================================================================================
+
+Condition: {% empty %} in profile loop
+
+Display:
+- Class: col-12 text-center text-white
+- Heading: "No Profiles Found" (h4)
+- Message: "There are no new profiles to discover. Come back later!"
+- Background: Transparent (shows gradient background)
+
+Reasons for Empty:
+1. All profiles filtered out
+2. User has disliked everyone
+3. No complete profiles exist
+4. Too strict search criteria
+5. All profiles already interacted with
+
+Suggestions to User:
+- Clear search filters
+- Expand search criteria
+- Check back later
+- Complete your profile to match with others
+
+================================================================================
+13. CONTEXT DATA
+================================================================================
+
+Template Variables:
+
+FROM VIEW:
+----------
+- profiles: Paginated queryset of Profile objects
+- page_obj: Pagination object
+- is_paginated: Boolean
+- search_form: ProfileSearchForm instance
+- search_params: Dict of current search values
+- is_searching: Boolean (any filters active)
+- profile_distances: Dict of {profile_id: distance_km}
+
+FROM BASE TEMPLATE:
+-------------------
+- user: Current logged-in user
+- user.points_balance: For quiz display
+- user.likes_balance: For actions
+- user.profile: For distance calculations
+
+CACHED DATA:
+------------
+- likes_count_dict: {user_id: count} - 5 min cache
+- User's given likes per profile
+- Prevents N+1 queries
+
+================================================================================
+14. PERFORMANCE OPTIMIZATIONS
+================================================================================
+
+DATABASE QUERIES:
+-----------------
+1. select_related('user'):
+   - Joins user table in single query
+   - Avoids N+1 for user data
+
+2. Indexes on Profile model:
+   - is_complete
+   - study_field
+   - school_name
+   - city
+   - location
+   - birth_date
+   - created_at
+
+3. Query Filtering:
+   - Filter before pagination
+   - Exclude unliked users early
+   - Only complete profiles
+
+CONCURRENT PROCESSING:
+----------------------
+1. Distance Calculations:
+   - ThreadPoolExecutor with 10 workers
+   - Parallel processing
+   - ~10x faster for 100+ profiles
+
+2. Uses:
+   - Distance-based filtering
+   - Distance display in cards
+
+CACHING:
+--------
+1. User Likes (5 minutes):
+   - Cache key: 'user_likes_{user_id}'
+   - Reduces repeated queries
+   - Updates on new like
+
+2. Profile Query Results:
+   - Not cached (real-time updates needed)
+   - Fresh on each page load
+
+PAGINATION:
+-----------
+- Small page size (6 profiles)
+- Reduces data transfer
+- Faster initial load
+- Better mobile experience
+
+IMAGE OPTIMIZATION:
+-------------------
+- Lazy loading (browser native)
+- Cloudinary transformations
+- Thumbnail generation
+- Progressive JPEG
+
+JAVASCRIPT:
+-----------
+- Minimal DOM manipulation
+- Event delegation where needed
+- Debounced search (on study field)
+- Async quiz loading
+
+================================================================================
+15. RESPONSIVE DESIGN BREAKPOINTS
+================================================================================
+
+DESKTOP (>1024px):
+------------------
+- Profile Grid: 2 columns (col-lg-6)
+- Cards: 280px min-height
+- Search: 4 columns per row
+- Quiz: Full width
+- All elements visible
+- Carousel: Hover to show controls
+
+TABLET (768px - 1024px):
+------------------------
+- Profile Grid: 1-2 columns (adaptive)
+- Cards: 240px min-height
+- Search: 2 columns per row
+- Form inputs: Larger touch targets
+- Carousel: Always show controls
+
+MOBILE (<768px):
+----------------
+- Profile Grid: 1 column (col-12)
+- Cards: 180-200px height
+- Search: 1 column per row
+- Buttons: Full width
+- Text: Smaller fonts
+- Badges: Smaller size
+- Hamburger: Icon only
+
+PHONE (<576px):
+---------------
+- Ultra compact layout
+- Minimal text
+- Icons prioritized
+- Touch-optimized (44px min)
+- Swipe gestures enabled
+
+================================================================================
+16. SEARCH FORM BEHAVIOR
+================================================================================
+
+FORM SUBMISSION:
+----------------
+Method: GET (preserves in URL)
+Action: Same page (discover)
+Validation: Client-side + server-side
+
+AUTO-SUBMIT:
+------------
+Triggers:
+- Study field dropdown change
+- JavaScript: form.submit()
+- Instant filtering
+
+MANUAL SUBMIT:
+--------------
+Trigger: "Search" button click
+Submits all fields together
+
+CLEAR FUNCTIONALITY:
+--------------------
+1. Clear button clicked
+2. Reset all form fields
+3. Collapse search panel (300ms transition)
+4. Redirect to discover page (no params)
+5. Shows all profiles (random order)
+
+PERSISTENCE:
+------------
+- Search params in URL
+- Form repopulated from GET params
+- Can bookmark search
+- Share search URL
+
+================================================================================
+17. FILTERING LOGIC DETAILS
+================================================================================
+
+INTEREST MATCHING:
+------------------
+Input: "music, football, reading"
+Process:
+1. Split by comma: ['music', 'football', 'reading']
+2. Strip whitespace from each
+3. Create Q() for each: Q(interests__icontains='music')
+4. Combine with OR: Q1 | Q2 | Q3
+5. Match any interest
+
+Database Example:
+- Profile A interests: "football, gaming, movies"
+- Profile B interests: "reading, music, art"
+- Search "music, football": Matches both A and B
+
+AGE CALCULATION:
+----------------
+Today: 2025-01-15
+
+Min Age: 21
+- Calculate: today - (21 * 365.25) = 2003-12-31
+- Filter: birth_date <= 2003-12-31
+- Includes: 21 and older
+
+Max Age: 25
+- Calculate: today - (26 * 365.25) = 1999-12-31
+- Filter: birth_date >= 1999-12-31
+- Includes: Up to 25 years old
+
+DISTANCE FILTERING:
+-------------------
+Requirements:
+1. User has lat/long set in profile
+2. Target profile has lat/long
+3. max_distance specified
+
+Process:
+1. Get all profiles with location
+2. Calculate distance concurrently
+3. Keep only within max_distance
+4. Filter queryset by IDs
+
+Example:
+- User in Accra (5.6037° N, 0.1870° W)
+- Max distance: 50km
+- Finds profiles in Accra, Tema, Kasoa
+- Excludes Kumasi (200km away)
+
+COMBINING FILTERS:
+------------------
+Logic: AND for all filters
+- Study field AND city AND interests
+- All conditions must match
+- More filters = fewer results
+
+Example Search:
+- Study: Computer Science
+- City: Accra
+- Interests: gaming, programming
+- Results: CS students in Accra who like gaming OR programming
+
+================================================================================
+18. UNLIKE SYSTEM INTEGRATION
+================================================================================
+
+PURPOSE:
+--------
+Hide profiles that user has "disliked"
+Prevents seeing same rejected profiles repeatedly
+
+IMPLEMENTATION:
+---------------
+Query:
+unliked_user_ids = Unlike.objects.filter(
+    from_user=current_user
+).values_list('to_user_id', flat=True)
+
+Exclusion:
+queryset.exclude(user_id__in=unliked_user_ids)
+
+UNLIKE MODEL:
+-------------
+Fields:
+- from_user: Who gave the dislike
+- to_user: Who received the dislike
+- created_at: Timestamp
+
+Behavior:
+- Once unliked, profile hidden from discover
+- User can view in unlike history
+- Admin can remove unlike
+- No notification sent
+
+REVERSING UNLIKES:
+------------------
+- Delete Unlike record
+- Profile reappears in discover
+- Can be implemented in future
+
+================================================================================
+19. QUIZ INTEGRATION DETAILS
+================================================================================
+
+QUIZ MODEL:
+-----------
+Fields:
+- question: Text
+- category: CharField (e.g., "Science", "History")
+- difficulty: CharField ("easy", "medium", "hard")
+- points_value: Integer (5, 10, or 15)
+- is_active: Boolean
+- created_at: DateTime
+
+CHOICE MODEL:
+-------------
+Fields:
+- question: ForeignKey to Quiz
+- text: Choice text
+- is_correct: Boolean
+- order: Integer
+
+USER ANSWER MODEL:
+------------------
+Fields:
+- user: ForeignKey to CustomUser
+- question: ForeignKey to Quiz
+- choice: ForeignKey to Choice
+- is_correct: Boolean
+- points_earned: Integer
+- answered_at: DateTime
+
+Constraints:
+- unique_together: ['user', 'question', 'answered_at__date']
+- One answer per day per question
+
+QUIZ SELECTION:
+---------------
+Daily quiz algorithm:
+1. Get all active quizzes
+2. Filter out already answered today
+3. Random selection
+4. Cache for 24 hours
+
+ACCURACY CALCULATION:
+---------------------
+Formula:
+today_correct = UserAnswer.objects.filter(
+    user=user,
+    answered_at__date=today,
+    is_correct=True
+).count()
+
+today_total = UserAnswer.objects.filter(
+    user=user,
+    answered_at__date=today
+).count()
+
+accuracy = (today_correct / today_total) * 100
+
+================================================================================
+20. BREADCRUMBS & NAVIGATION
+================================================================================
+
+BREADCRUMB:
+-----------
+Template Block: {% block breadcrumbs %}
+Display: Desktop only (in nav-helper-bar)
+Content:
+- Icon: fas fa-search
+- Text: "Discover"
+- Class: breadcrumb-item active
+- Aria: aria-current="page"
+
+Full Breadcrumb Path:
+Home > Discover (current)
+
+QUICK ACTIONS (Desktop):
+------------------------
+Location: Right side of nav-helper-bar
+Default Action:
+- Button: "Discover"
+- Icon: fas fa-search
+- Class: btn btn-primary btn-sm
+- Link: profiles:discover
+
+Can be overridden in child templates
+
+MOBILE NAVIGATION:
+------------------
+Hamburger menu includes:
+- Discover link
+- My Profile link
+- Notifications
+- Live Updates toggle
+- Buy Packages
+
+================================================================================
+21. PROFILE CARD INTERACTIONS
+================================================================================
+
+CAROUSEL INTERACTION:
+---------------------
+1. Click Image:
+   - No action (view prevents default)
+   - Swipe on mobile to navigate
+
+2. Previous/Next Buttons:
+   - Click to slide
+   - Smooth transition
+   - Updates counter
+
+3. Indicators:
+   - Click to jump to photo
+   - Active indicator highlighted
+
+4. Keyboard:
+   - Left arrow: Previous
+   - Right arrow: Next
+   - Not implemented by default
+
+VIEW BUTTON:
+------------
+Action: Navigate to profile detail page
+URL: /profiles/profile/{{ profile.id }}/
+Method: GET
+Opens: Same tab (not new window)
+
+Profile Detail Includes:
+- Full bio
+- All photos in large carousel
+- Complete interests list
+- Like/Unlike buttons
+- Message button (if matched)
+- Statistics
+
+HOVER EFFECTS:
+--------------
+Desktop Only:
+- Card lifts on hover
+- Shadow expands
+- Carousel controls fade in
+- Smooth transitions
+
+Mobile:
+- No hover effects (touch device)
+- Always visible controls
+- Tap to view
+
+================================================================================
+22. ERROR HANDLING
+================================================================================
+
+QUIZ ERRORS:
+------------
+1. API Fails:
+   - Display: alert-danger
+   - Message: "Failed to load quiz. Please try again later."
+   - Icon: fas fa-exclamation-circle
+   - Action: Retry button
+
+2. Submit Fails:
+   - Alert: Error message
+   - Re-enable: Choice buttons
+   - User can retry
+
+3. CSRF Error:
+   - Specific message
+   - Refresh page prompt
+   - Logging to console
+
+SEARCH ERRORS:
+--------------
+1. Invalid Distance:
+   - Ignored (try-except)
+   - Continues without distance filter
+   - No error shown to user
+
+2. Invalid Age:
+   - Ignored (try-except)
+   - Continues without age filter
+   - No error shown to user
+
+3. Empty Results:
+   - Shows empty state
+   - Suggests clearing filters
+   - No actual error
+
+PAGINATION ERRORS:
+------------------
+1. Invalid Page Number:
+   - Django returns first page
+   - No error message
+
+2. Out of Range:
+   - Django returns last page
+   - Graceful handling
+
+IMAGE ERRORS:
+-------------
+1. Missing Photo:
+   - Shows placeholder
+   - User icon
+   - Grey gradient background
+
+2. Failed Load:
+   - Browser default broken image
+   - Alt text: username
+
+================================================================================
+23. ACCESSIBILITY FEATURES
+================================================================================
+
+ARIA LABELS:
+------------
+- aria-label on icon buttons
+- aria-current="page" on breadcrumb
+- aria-expanded on collapse buttons
+- aria-controls for toggles
+
+KEYBOARD NAVIGATION:
+--------------------
+- Tab through form fields
+- Enter to submit form
+- Space to toggle checkboxes
+- Arrow keys in carousels (native)
+
+SCREEN READERS:
+---------------
+- Visually-hidden text for icons
+- Alt text on images
+- Form labels properly associated
+- Semantic HTML (nav, main, etc.)
+
+COLOR CONTRAST:
+---------------
+- WCAG AA compliance
+- Text readable on backgrounds
+- Link colors distinguishable
+- Button states clear
+
+FOCUS INDICATORS:
+-----------------
+- Visible focus rings
+- Bootstrap default styles
+- Enhanced on form inputs
+- Skip links (could add)
+
+================================================================================
+24. STYLING REFERENCE
+================================================================================
+
+CARD COLORS:
+------------
+- Profile Card: White bg with 95% opacity
+- Search Card: White bg
+- Quiz Card Header: Blue gradient
+- Alert Info: Light blue bg
+- Badges: Various (success, warning, etc.)
+
+SHADOWS:
+--------
+- Card: 0 4px 6px rgba(0, 0, 0, 0.1)
+- Hover: 0 8px 15px rgba(0, 0, 0, 0.15)
+- Quiz: Custom shadow
+- Button: None → hover shadow
+
+TRANSITIONS:
+------------
+- Cards: all 0.2s ease
+- Buttons: all 0.3s ease
+- Carousel: 0.6s ease
+- Collapse: 0.3s ease
+- Quiz result: 0.5s ease-out
+
+ANIMATIONS:
+-----------
+- slideInDown (quiz result)
+- Carousel slide
+- Card hover lift
+- Button hover lift
+- Icon rotations
+
+FONTS:
+------
+- Base: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+- Headings: Inherit
+- Small text: 0.75rem - 0.85rem
+- Badges: 0.65rem - 0.75rem
+
+ICONS:
+------
+Library: Font Awesome 6.4.0
+Usage:
+- Search: fas fa-search
+- Graduation: fas fa-graduation-cap
+- University: fas fa-university
+- Location: fas fa-map-marker-alt
+- Eye: fas fa-eye
+- Brain: fas fa-brain
+- Check: fas fa-check
+- Times: fas fa-times
+
+================================================================================
+25. FUTURE ENHANCEMENTS
+================================================================================
+
+POTENTIAL FEATURES:
+-------------------
+1. Save Searches:
+   - Bookmark favorite searches
+   - Quick access dropdown
+   - Email notifications for new matches
+
+2. Advanced Filters:
+   - Gender preference
+   - Age range slider
+   - Multiple school selection
+   - Language preferences
+
+3. Sorting Options:
+   - Sort by distance
+   - Sort by newest profiles
+   - Sort by most active
+   - Sort by compatibility score
+
+4. Map View:
+   - Show profiles on map
+   - Click to view profile
+   - Cluster nearby profiles
+
+5. Quick Actions:
+   - Like from discover page
+   - Super like button
+   - Quick message
+
+6. Profile Insights:
+   - "Popular in your area"
+   - "Just joined"
+   - "Active now"
+   - "Similar interests"
+
+7. Filter Presets:
+   - "Nearby"
+   - "Same school"
+   - "Same field"
+   - "Similar interests"
+
+8. A/B Testing:
+   - Different layouts
+   - Card designs
+   - Filter options
+
+9. Analytics:
+   - Track popular searches
+   - Filter usage stats
+   - Conversion tracking
+
+10. Machine Learning:
+    - Recommended profiles
+    - Compatibility scoring
+    - Auto-suggest interests
+
+================================================================================
+END OF DISCOVER PAGE DOCUMENTATION
+================================================================================

@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     'updates',
     'advertisements',
     'quiz',
+    'social',
 ]
 
 MIDDLEWARE = [
@@ -252,9 +253,17 @@ EMAIL_TIMEOUT = 60
 PAYSTACK_PUBLIC_KEY = config('PAYSTACK_PUBLIC_KEY')
 PAYSTACK_SECRET_KEY = config('PAYSTACK_SECRET_KEY')
 
-# Stripe settings (for Europe)
+# Stripe settings (for Europe - deprecated, replaced by Viva Wallet)
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+
+# Viva Wallet settings (for European users)
+VIVA_MERCHANT_ID = config('VIVA_MERCHANT_ID', default='')
+VIVA_API_KEY = config('VIVA_API_KEY', default='')
+VIVA_CLIENT_ID = config('VIVA_CLIENT_ID', default='')
+VIVA_CLIENT_SECRET = config('VIVA_CLIENT_SECRET', default='')
+VIVA_SOURCE_CODE = config('VIVA_SOURCE_CODE', default='')
+VIVA_ENVIRONMENT = config('VIVA_ENVIRONMENT', default='demo')  # 'demo' or 'production'
 
 # Custom user model
 AUTH_USER_MODEL = 'accounts.CustomUser'

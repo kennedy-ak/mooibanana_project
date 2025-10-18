@@ -1,0 +1,120 @@
+<!-- templates/social/create_post.html -->
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create Post - Mooibanana{% endblock %}
+
+{% block breadcrumbs %}
+<li class="breadcrumb-item"><a href="{% url 'social:feed' %}" class="text-decoration-none"><i class="fas fa-home"></i> Feed</a></li>
+<li class="breadcrumb-item active" aria-current="page">Create Post</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-pencil-alt me-2"></i>Create a New Post
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.content.id_for_label }}" class="form-label fw-bold">
+                                {{ form.content.label }}
+                            </label>
+                            {{ form.content }}
+                            {% if form.content.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.content.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.image.id_for_label }}" class="form-label fw-bold">
+                                {{ form.image.label }}
+                            </label>
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.image.errors }}
+                                </div>
+                            {% endif %}
+                            <div class="mt-2" id="imagePreview"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                {{ form.allow_comments }}
+                                <label class="form-check-label" for="{{ form.allow_comments.id_for_label }}">
+                                    {{ form.allow_comments.label }}
+                                </label>
+                            </div>
+                            {% if form.allow_comments.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ form.allow_comments.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-1"></i> Publish Post
+                            </button>
+                            <a href="{% url 'social:feed' %}" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Image preview functionality
+    const imageInput = document.getElementById('{{ form.image.id_for_label }}');
+    const imagePreview = document.getElementById('imagePreview');
+
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    imagePreview.innerHTML = `
+                        <div class="position-relative d-inline-block">
+                            <img src="${e.target.result}" class="img-thumbnail" style="max-width: 300px; max-height: 300px;">
+                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" id="removeImage">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    // Add remove functionality
+                    document.getElementById('removeImage').addEventListener('click', function() {
+                        imageInput.value = '';
+                        imagePreview.innerHTML = '';
+                    });
+                };
+
+                reader.readAsDataURL(file);
+            } else {
+                imagePreview.innerHTML = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

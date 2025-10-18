@@ -4,7 +4,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import CreateView, UpdateView, ListView, DetailView, FormView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Sum, Count
+from django.db import models
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
@@ -16,6 +17,30 @@ from notifications.models import Notification
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from asgiref.sync import sync_to_async
+
+# Helper function for concurrent distance calculations
+def calculate_distance_concurrent(user_profile, profiles, max_distance):
+    """
+    Calculate distances concurrently using ThreadPoolExecutor
+    Returns list of profile IDs within max_distance
+    """
+    profiles_with_distance = []
+
+    def calc_distance(profile):
+        distance = user_profile.calculate_distance_to(profile)
+        if distance and distance <= max_distance:
+            return profile.id
+        return None
+
+    # Use ThreadPoolExecutor for concurrent calculations
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = executor.map(calc_distance, profiles)
+        profiles_with_distance = [pid for pid in results if pid is not None]
+
+    return profiles_with_distance
 
 class CreateProfileView(LoginRequiredMixin, CreateView):
     model = Profile
@@ -118,16 +143,19 @@ class DiscoverView(LoginRequiredMixin, ListView):
                 except (ValueError, TypeError):
                     pass
 
-        # Distance-based filtering
+        # Distance-based filtering (using concurrent processing for performance)
         if max_distance and self.request.user.profile.latitude and self.request.user.profile.longitude:
             try:
                 max_distance_int = int(max_distance)
-                # Filter profiles that have location data and calculate distances
-                profiles_with_distance = []
-                for profile in queryset.filter(latitude__isnull=False, longitude__isnull=False):
-                    distance = self.request.user.profile.calculate_distance_to(profile)
-                    if distance and distance <= max_distance_int:
-                        profiles_with_distance.append(profile.id)
+                # Get profiles with location data
+                profiles_to_check = list(queryset.filter(latitude__isnull=False, longitude__isnull=False))
+
+                # Use concurrent processing for distance calculations
+                profiles_with_distance = calculate_distance_concurrent(
+                    self.request.user.profile,
+                    profiles_to_check,
+                    max_distance_int
+                )
 
                 queryset = queryset.filter(id__in=profiles_with_distance)
             except (ValueError, TypeError):
@@ -220,14 +248,32 @@ class DiscoverView(LoginRequiredMixin, ListView):
         # Check if any search is active
         context['is_searching'] = any(context['search_params'].values())
 
-        # Add distance information for each profile if user has location
+        # Add distance information for each profile if user has location (concurrent processing)
         if self.request.user.profile.latitude and self.request.user.profile.longitude:
             profile_distances = {}
-            for profile in context['profiles']:
+            profiles_list = list(context['profiles'])
+
+            def calc_distance_for_display(profile):
                 distance = self.request.user.profile.calculate_distance_to(profile)
                 if distance:
-                    profile_distances[profile.id] = round(distance, 1)
+                    return (profile.id, round(distance, 1))
+                return None
+
+            # Use ThreadPoolExecutor for concurrent distance calculations
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                results = executor.map(calc_distance_for_display, profiles_list)
+                for result in results:
+                    if result:
+                        profile_distances[result[0]] = result[1]
+
             context['profile_distances'] = profile_distances
+
+        # Add following status for each profile
+        from social.models import Follow
+        following_ids = set(Follow.objects.filter(
+            follower=self.request.user
+        ).values_list('following_id', flat=True))
+        context['following_ids'] = following_ids
 
         return context
 
@@ -284,18 +330,44 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         context['incoming_match_request'] = incoming_request
 
         # Add statistics for received likes and dislikes from the user model fields
-        context['received_likes_count'] = self.object.user.received_likes_count + self.object.user.received_super_likes_count
+        context['received_likes_count'] = self.object.user.received_likes_count
         context['received_dislikes_count'] = self.object.user.received_unlikes_count
-        
+
         # Add statistics for given likes and dislikes (what this user has given to others)
         context['given_likes_count'] = self.object.user.likes_given.count()
         context['given_dislikes_count'] = self.object.user.unlikes_given.count()
-        
+
         # Add bank balances if viewing own profile
         if self.request.user == self.object.user:
             context['likes_bank_balance'] = self.object.user.likes_balance
-            context['super_likes_bank_balance'] = self.object.user.super_likes_balance
-            context['unlikes_bank_balance'] = self.object.user.unlikes_balance
+
+        # Add social features: following/followers counts
+        from social.models import Follow, PostLike, CommentLike
+        context['followers_count'] = Follow.objects.filter(following=self.object.user).count()
+        context['following_count'] = Follow.objects.filter(follower=self.object.user).count()
+
+        # Check if current user is following this profile
+        context['is_following'] = Follow.objects.filter(
+            follower=self.request.user,
+            following=self.object.user
+        ).exists() if self.request.user != self.object.user else False
+
+        # Calculate total likes from posts and comments
+        post_likes = PostLike.objects.filter(post__author=self.object.user).aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+
+        comment_likes = CommentLike.objects.filter(comment__author=self.object.user).aggregate(
+            total=models.Sum('amount')
+        )['total'] or 0
+
+        context['total_post_and_comment_likes'] = post_likes + comment_likes
+
+        # Get recent posts by this user
+        from social.models import Post
+        context['recent_posts'] = Post.objects.filter(
+            author=self.object.user
+        ).order_by('-created_at')[:5]
 
         return context
 
@@ -310,20 +382,23 @@ class MyProfileView(LoginRequiredMixin, DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Add statistics for received likes and dislikes from the user model fields
-        context['received_likes_count'] = self.object.user.received_likes_count + self.object.user.received_super_likes_count
+        context['received_likes_count'] = self.object.user.received_likes_count
         context['received_dislikes_count'] = self.object.user.received_unlikes_count
-        
+
         # Add statistics for given likes and dislikes (what user has given to others)
         context['given_likes_count'] = self.object.user.likes_given.count()
         context['given_dislikes_count'] = self.object.user.unlikes_given.count()
-        
+
         # Add bank balances for my profile
         context['likes_bank_balance'] = self.object.user.likes_balance
-        context['super_likes_bank_balance'] = self.object.user.super_likes_balance
-        context['unlikes_bank_balance'] = self.object.user.unlikes_balance
-        
+
+        # Add social features: following/followers counts
+        from social.models import Follow
+        context['followers_count'] = Follow.objects.filter(following=self.object.user).count()
+        context['following_count'] = Follow.objects.filter(follower=self.object.user).count()
+
         return context
 
 class PhotoUploadView(LoginRequiredMixin, FormView):

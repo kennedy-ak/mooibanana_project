@@ -11,13 +11,41 @@ from django.db.models import Q
 from .models import Like, Unlike
 from chat.models import Match, ChatRoom
 from notifications.models import Notification
+from asgiref.sync import sync_to_async
+import asyncio
 
 User = get_user_model()
 
 @login_required
-def give_like(request, user_id):
+async def give_like(request, user_id):
+    """Async version of give_like for better performance"""
     if request.method == 'POST':
-        target_user = get_object_or_404(User, id=user_id)
+        # Async database operations
+        @sync_to_async
+        def get_target_user(user_id):
+            return get_object_or_404(User, id=user_id)
+
+        @sync_to_async
+        def create_like_and_notification(from_user, target_user, amount):
+            # Create the like with specified amount
+            like = Like.objects.create(
+                from_user=from_user,
+                to_user=target_user,
+                amount=amount
+            )
+
+            # Create notification for the user who received the like
+            amount_text = f"{amount} Like{'s' if amount > 1 else ''}"
+            Notification.objects.create(
+                sender=from_user,
+                receiver=target_user,
+                notification_type='like_received',
+                message=f"{from_user.username} gave you {amount_text}!",
+                status='read'
+            )
+            return like
+
+        target_user = await get_target_user(user_id)
 
         # Get the amount from the form (default to 1 if not provided)
         try:
@@ -32,39 +60,13 @@ def give_like(request, user_id):
             messages.error(request, f'You need {amount} likes! You only have {request.user.likes_balance}. Buy more likes.')
             return redirect('payments:packages')
 
-        # Allow multiple likes to the same person - no duplicate check needed
-
-        # Create the like with specified amount
-        like = Like.objects.create(
-            from_user=request.user,
-            to_user=target_user,
-            amount=amount
-        )
-
-        # Create notification for the user who received the like
-        amount_text = f"{amount} Like{'s' if amount > 1 else ''}"
-        Notification.objects.create(
-            sender=request.user,
-            receiver=target_user,
-            notification_type='like_received',
-            message=f"{request.user.username} gave you {amount_text}!",
-            status='read'
-        )
+        # Create like and notification concurrently
+        like = await create_like_and_notification(request.user, target_user, amount)
 
         # Balance deduction is handled in the Like model save() method
 
-        # TEMPORARILY DISABLED - Check for mutual like and create match
-        # if like.is_mutual:
-        #     match, created = Match.objects.get_or_create(
-        #         user1=min(request.user, target_user, key=lambda u: u.id),
-        #         user2=max(request.user, target_user, key=lambda u: u.id)
-        #     )
-        #     messages.success(request, f'It\'s a match! You can now chat with {target_user.username}.')
-        #     return redirect('chat:room', room_id=match.chat_room.id)
-        # else:
-        #     messages.success(request, f'You liked {target_user.username}!')
-
         # For now, just show like success message
+        amount_text = f"{amount} Like{'s' if amount > 1 else ''}"
         if like.is_mutual:
             messages.success(request, f'It\'s a mutual like with {target_user.username}! You gave them {amount_text}. (Chat feature temporarily disabled)')
         else:
@@ -92,9 +94,55 @@ class MyLikesView(LoginRequiredMixin, ListView):
 #         ).select_related('user1__profile', 'user2__profile')
 
 @login_required
-def give_unlike(request, user_id):
+async def give_unlike(request, user_id):
+    """Async version of give_unlike for better performance"""
     if request.method == 'POST':
-        target_user = get_object_or_404(User, id=user_id)
+        # Async database operations
+        @sync_to_async
+        def get_target_user(user_id):
+            return get_object_or_404(User, id=user_id)
+
+        @sync_to_async
+        def process_unlike(from_user, target_user, amount):
+            # Check if user has already unliked this person
+            existing_unlike = Unlike.objects.filter(
+                from_user=from_user,
+                to_user=target_user
+            ).first()
+
+            if existing_unlike:
+                # Update the existing unlike amount
+                existing_unlike.amount += amount
+                existing_unlike.save()
+                return 'updated', existing_unlike.amount
+            else:
+                # Create new unlike
+                Unlike.objects.create(
+                    from_user=from_user,
+                    to_user=target_user,
+                    amount=amount
+                )
+                return 'created', amount
+
+        @sync_to_async
+        def create_notification_and_cleanup(from_user, target_user, amount):
+            # Create notification for the user who received the unlike
+            amount_text = f"{amount} dislike{'s' if amount > 1 else ''}"
+            Notification.objects.create(
+                sender=from_user,
+                receiver=target_user,
+                notification_type='unlike_received',
+                message=f"{from_user.username} sent you {amount_text}.",
+                status='read'
+            )
+
+            # Remove any existing likes between these users
+            Like.objects.filter(
+                from_user=from_user,
+                to_user=target_user
+            ).delete()
+
+        target_user = await get_target_user(user_id)
 
         # Get the amount from the form (default to 1 if not provided)
         try:
@@ -109,45 +157,17 @@ def give_unlike(request, user_id):
             messages.error(request, f'You need {amount} in your balance! You only have {request.user.likes_balance}. Buy more packages.')
             return redirect('payments:packages')
 
-        # Check if user has already unliked this person
-        existing_unlike = Unlike.objects.filter(
-            from_user=request.user,
-            to_user=target_user
-        ).first()
-
-        if existing_unlike:
-            # Update the existing unlike amount
-            existing_unlike.amount += amount
-            existing_unlike.save()
-            amount_text = f"{amount} unlike{'s' if amount > 1 else ''}"
-            messages.success(request, f'You added {amount_text} to {target_user.username}. Total unlikes: {existing_unlike.amount}')
-        else:
-            # Create new unlike
-            Unlike.objects.create(
-                from_user=request.user,
-                to_user=target_user,
-                amount=amount
-            )
-            amount_text = f"{amount} unlike{'s' if amount > 1 else ''}"
-            messages.success(request, f'You gave {amount_text} to {target_user.username}. They will no longer appear in your discover feed.')
-
-        # Create notification for the user who received the unlike
-        amount_text = f"{amount} dislike{'s' if amount > 1 else ''}"
-        Notification.objects.create(
-            sender=request.user,
-            receiver=target_user,
-            notification_type='unlike_received',
-            message=f"{request.user.username} sent you {amount_text}.",
-            status='read'
-        )
+        # Process unlike and create notification concurrently
+        action, total_amount = await process_unlike(request.user, target_user, amount)
+        await create_notification_and_cleanup(request.user, target_user, amount)
 
         # Balance deduction is handled in the Unlike model save() method
 
-        # Remove any existing likes between these users
-        Like.objects.filter(
-            from_user=request.user,
-            to_user=target_user
-        ).delete()
+        amount_text = f"{amount} unlike{'s' if amount > 1 else ''}"
+        if action == 'updated':
+            messages.success(request, f'You added {amount_text} to {target_user.username}. Total unlikes: {total_amount}')
+        else:
+            messages.success(request, f'You gave {amount_text} to {target_user.username}. They will no longer appear in your discover feed.')
 
         return redirect('profiles:discover')
 

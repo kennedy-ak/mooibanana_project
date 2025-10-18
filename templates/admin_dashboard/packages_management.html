@@ -44,11 +44,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'admin_dashboard:edit_like_package' package.id %}"
+                                    <a href="{% url 'admin_dashboard:edit_package' package.id %}"
                                        class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="post" action="{% url 'admin_dashboard:delete_like_package' package.id %}"
+                                    <form method="post" action="{% url 'admin_dashboard:delete_package' package.id %}"
                                           style="display:inline;" onsubmit="return confirmDelete('Delete this package?');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-danger">
@@ -104,11 +104,11 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'admin_dashboard:edit_dislike_package' package.id %}"
+                                    <a href="{% url 'admin_dashboard:edit_package' package.id %}"
                                        class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="post" action="{% url 'admin_dashboard:delete_dislike_package' package.id %}"
+                                    <form method="post" action="{% url 'admin_dashboard:delete_package' package.id %}"
                                           style="display:inline;" onsubmit="return confirmDelete('Delete this package?');">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-danger">
@@ -134,7 +134,7 @@
 <div class="modal fade" id="createLikePackageModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="{% url 'admin_dashboard:create_like_package' %}">
+            <form method="post" action="{% url 'admin_dashboard:create_package' %}">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Create Like Package</h5>
@@ -183,7 +183,7 @@
 <div class="modal fade" id="createDislikePackageModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" action="{% url 'admin_dashboard:create_dislike_package' %}">
+            <form method="post" action="{% url 'admin_dashboard:create_package' %}">
                 {% csrf_token %}
                 <div class="modal-header">
                     <h5 class="modal-title">Create Dislike Package</h5>
