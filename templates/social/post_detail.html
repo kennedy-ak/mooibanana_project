@@ -86,27 +86,51 @@
 
             {% if show_post_banner_ad and banner_ad %}
             <div class="card mb-4">
-                <div class="card-body p-0" style="position: relative;">
+                <!-- Ad Header -->
+                {% if banner_ad.brand_name or banner_ad.description %}
+                <div class="card-header bg-light border-0 py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            {% if banner_ad.brand_name %}
+                            <h6 class="mb-0 fw-bold">{{ banner_ad.brand_name }}</h6>
+                            {% endif %}
+                            {% if banner_ad.description %}
+                            <p class="mb-0 small text-muted">{{ banner_ad.description }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-primary small">Sponsored</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Ad Image -->
+                <div class="card-body p-0">
                     {% if banner_ad.brand_url %}
                     <a href="{{ banner_ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
                     {% endif %}
-                        <div style="position: relative; overflow: hidden; border-radius: 10px;">
+                        <div style="position: relative; overflow: hidden;">
                             {% if banner_ad.flyer_image %}
-                            <img src="{{ banner_ad.flyer_image.url }}" class="img-fluid w-100" alt="{{ banner_ad.brand_name }}" style="max-height: 250px; object-fit: cover;">
+                            <img src="{{ banner_ad.flyer_image.url }}" class="img-fluid w-100" alt="{{ banner_ad.brand_name }}" style="max-height: 250px; object-fit: cover;" loading="lazy">
                             {% else %}
-                            <div class="text-center" style="background-color: #f0f0f0; padding: 40px;">
-                                <h5 class="mb-2">{{ banner_ad.brand_name }}</h5>
-                                <p class="text-muted small mb-0">Advertisement</p>
+                            <div class="text-center" style="background-color: #f0f0f0; padding: 60px;">
+                                <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No image available</p>
                             </div>
                             {% endif %}
-                            <div style="position: absolute; top: 12px; right: 12px;">
-                                <span class="badge bg-light text-dark">Sponsored</span>
-                            </div>
                         </div>
                     {% if banner_ad.brand_url %}
                     </a>
                     {% endif %}
                 </div>
+
+                <!-- Ad Footer -->
+                {% if banner_ad.brand_url %}
+                <div class="card-footer bg-white border-0 py-2">
+                    <a href="{{ banner_ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-external-link-alt me-1"></i> Visit Website
+                    </a>
+                </div>
+                {% endif %}
             </div>
             {% endif %}
 

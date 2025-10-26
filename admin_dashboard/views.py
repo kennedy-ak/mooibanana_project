@@ -1347,6 +1347,7 @@ def create_advertisement(request):
         try:
             ad = Advertisement.objects.create(
                 brand_name=request.POST.get('brand_name'),
+                description=request.POST.get('description', ''),
                 brand_url=request.POST.get('brand_url', ''),
                 display_priority=request.POST.get('display_priority', 1),
                 is_active=request.POST.get('is_active') == 'on'
@@ -1375,6 +1376,7 @@ def edit_advertisement(request, ad_id):
     if request.method == 'POST':
         try:
             ad.brand_name = request.POST.get('brand_name')
+            ad.description = request.POST.get('description', '')
             ad.brand_url = request.POST.get('brand_url', '')
             ad.display_priority = request.POST.get('display_priority', 1)
             ad.is_active = request.POST.get('is_active') == 'on'

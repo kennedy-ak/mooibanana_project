@@ -158,28 +158,35 @@
                         {% with ad=advertisements|random %}
                         <div class="col-6 profile-image-container" style="position: relative;">
                             {% if ad.flyer_image %}
-                            <img src="{{ ad.flyer_image.url }}" class="w-100 h-100" alt="{{ ad.brand_name }}" style="object-fit: cover;">
+                            <img src="{{ ad.flyer_image.url }}" class="w-100 h-100" alt="{{ ad.brand_name }}" style="object-fit: cover;" loading="lazy">
                             {% else %}
                             <div class="h-100 d-flex align-items-center justify-content-center" style="background-color: #f0f0f0;">
-                                <h5 class="text-muted">{{ ad.brand_name }}</h5>
+                                <div class="text-center p-3">
+                                    <i class="fas fa-image fa-2x text-muted mb-2"></i>
+                                    <p class="small text-muted mb-0">{{ ad.brand_name }}</p>
+                                </div>
                             </div>
                             {% endif %}
                             <div style="position: absolute; top: 8px; left: 8px;">
-                                <span class="badge bg-light text-dark small">Sponsored</span>
+                                <span class="badge bg-primary small">Sponsored</span>
                             </div>
                         </div>
                         <div class="col-6">
                             <div class="card-body h-100 d-flex flex-column p-3">
-                                <h6 class="mb-1 fw-bold">{{ ad.brand_name }}</h6>
-                                <p class="small mb-1 text-muted">Advertisement</p>
+                                <h6 class="mb-2 fw-bold">{{ ad.brand_name }}</h6>
+                                {% if ad.description %}
+                                <p class="small mb-2 text-muted flex-grow-1">{{ ad.description|truncatewords:15 }}</p>
+                                {% else %}
+                                <p class="small mb-2 text-muted flex-grow-1">Sponsored Advertisement</p>
+                                {% endif %}
                                 <div class="mt-auto">
                                     {% if ad.brand_url %}
                                     <a href="{{ ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm w-100">
-                                        <i class="fas fa-external-link-alt me-1"></i> Visit Site
+                                        <i class="fas fa-external-link-alt me-1"></i> Visit Website
                                     </a>
                                     {% else %}
-                                    <button class="btn btn-secondary btn-sm w-100" disabled>
-                                        <i class="fas fa-ad me-1"></i> Advertisement
+                                    <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                        <i class="fas fa-info-circle me-1"></i> No Website
                                     </button>
                                     {% endif %}
                                 </div>

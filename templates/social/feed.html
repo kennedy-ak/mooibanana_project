@@ -467,29 +467,53 @@
                 {% if forloop.counter|divisibleby:5 and show_in_feed_ad and advertisements %}
                 <div class="mb-4">
                     <div class="card">
+                        {% with ad=advertisements|random %}
+                        <!-- Ad Header with Brand Name and Description -->
+                        {% if ad.brand_name or ad.description %}
+                        <div class="card-header bg-light border-0 py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% if ad.brand_name %}
+                                    <h6 class="mb-0 fw-bold">{{ ad.brand_name }}</h6>
+                                    {% endif %}
+                                    {% if ad.description %}
+                                    <p class="mb-0 small text-muted">{{ ad.description }}</p>
+                                    {% endif %}
+                                </div>
+                                <span class="badge bg-primary small">Sponsored</span>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Ad Image -->
                         <div class="card-body text-center p-0">
-                            {% with ad=advertisements|random %}
                             {% if ad.brand_url %}
                             <a href="{{ ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
                             {% endif %}
-                                <div style="position: relative; overflow: hidden; border-radius: 10px;">
+                                <div style="position: relative; overflow: hidden;">
                                     {% if ad.flyer_image %}
-                                    <img src="{{ ad.flyer_image.url }}" class="img-fluid w-100" alt="{{ ad.brand_name }}" style="max-height: 400px; object-fit: cover;">
+                                    <img src="{{ ad.flyer_image.url }}" class="img-fluid w-100" alt="{{ ad.brand_name }}" style="max-height: 400px; object-fit: cover;" loading="lazy">
                                     {% else %}
-                                    <div style="background-color: #f0f0f0; padding: 40px;">
-                                        <h5 class="mb-2">{{ ad.brand_name }}</h5>
-                                        <p class="text-muted small mb-0">Advertisement</p>
+                                    <div style="background-color: #f0f0f0; padding: 60px;">
+                                        <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                                        <p class="text-muted mb-0">No image available</p>
                                     </div>
                                     {% endif %}
-                                    <div style="position: absolute; top: 8px; right: 8px;">
-                                        <span class="badge bg-light text-dark small">Sponsored</span>
-                                    </div>
                                 </div>
                             {% if ad.brand_url %}
                             </a>
                             {% endif %}
-                            {% endwith %}
                         </div>
+
+                        <!-- Ad Footer with Action Button -->
+                        {% if ad.brand_url %}
+                        <div class="card-footer bg-white border-0 py-2">
+                            <a href="{{ ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary w-100">
+                                <i class="fas fa-external-link-alt me-1"></i> Visit Website
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
                     </div>
                 </div>
                 {% endif %}
@@ -524,14 +548,16 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Post Content -->
-                            <p class="mb-3">{{ post.content|linebreaks }}</p>
+                            <!-- Post Content (clickable) -->
+                            <a href="{% url 'social:post_detail' post.id %}" class="text-decoration-none text-dark" style="cursor: pointer;">
+                                <p class="mb-3">{{ post.content|linebreaks }}</p>
+                            </a>
 
-                            <!-- Post Image -->
+                            <!-- Post Image (clickable) -->
                             {% if post.image %}
-                            <div class="mb-3">
-                                <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 500px; width: auto; max-width: 100%;" alt="Post image">
-                            </div>
+                            <a href="{% url 'social:post_detail' post.id %}" class="d-block mb-3">
+                                <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 500px; width: auto; max-width: 100%; cursor: pointer;" alt="Post image" loading="lazy">
+                            </a>
                             {% endif %}
 
                             <!-- Post Stats -->
@@ -603,6 +629,26 @@
         <div class="right-sidebar-spacer"></div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Post content hover effect */
+.card-body a[href*="post_detail"]:hover p {
+    background-color: rgba(0, 0, 0, 0.02);
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    padding: 8px;
+    margin: -8px;
+}
+
+/* Post image hover effect */
+.card-body a[href*="post_detail"] img:hover {
+    opacity: 0.9;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+</style>
 {% endblock %}
 
 {% block scripts %}

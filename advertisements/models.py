@@ -5,8 +5,9 @@ from django.core.cache import cache
 
 class Advertisement(models.Model):
     brand_name = models.CharField(max_length=100)
+    description = models.CharField(max_length=200, blank=True, help_text="Short description to display with the ad")
     flyer_image = models.ImageField(upload_to='advertisements/')
-    brand_url = models.URLField(blank=True, null=True, validators=[URLValidator()])
+    brand_url = models.URLField(blank=True, null=True, validators=[URLValidator()], help_text="Website URL (optional)")
     is_active = models.BooleanField(default=True)
     display_priority = models.PositiveIntegerField(default=1, help_text="Higher numbers display first")
     created_at = models.DateTimeField(auto_now_add=True)
