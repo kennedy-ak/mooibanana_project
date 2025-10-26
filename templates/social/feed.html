@@ -9,128 +9,579 @@
 </li>
 {% endblock %}
 
+{% block quick_actions %}
+<a href="{% url 'profiles:discover' %}" class="btn btn-primary btn-sm" title="Discover Profiles">
+    <i class="fas fa-search"></i> Discover
+</a>
+<a href="{% url 'social:create_post' %}" class="btn btn-accent btn-sm" title="Create Post">
+    <i class="fas fa-plus"></i> Create Post
+</a>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-white mb-0">
-                    <i class="fas fa-stream me-2"></i>Your Feed
-                </h2>
-                <div>
-                    <span class="likes-balance me-2">
-                        <i class="fas fa-heart me-1"></i>
-                        <span id="likesBalance">{{ user_likes_balance }}</span> likes
-                    </span>
-                    <a href="{% url 'social:create_post' %}" class="btn btn-accent">
-                        <i class="fas fa-plus me-1"></i> Create Post
-                    </a>
+<style>
+    /* Remove bottom padding from main container */
+    body {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .container-fluid {
+        padding-bottom: 0 !important;
+        margin-bottom: 0 !important;
+    }
+    
+    /* Reduce padding and adjust layout for mobile devices */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 0.25rem !important;
+            padding-right: 0.25rem !important;
+        }
+        
+        /* Hide sidebars on mobile */
+        .left-sidebar,
+        .right-sidebar-spacer {
+            display: none !important;
+        }
+        
+        /* Adjust feed layout for mobile */
+        .feed-layout {
+            display: block !important;
+            height: auto !important;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+        
+        /* Make middle feed take full width */
+        .middle-feed {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+        
+        /* Reset height constraints */
+        .feed-layout,
+        .middle-feed {
+            height: auto !important;
+            min-height: 0 !important;
+        }
+    }
+
+    /* Three-column layout with fixed sidebars and scrollable center */
+    .feed-layout {
+        display: flex;
+        gap: 1.5rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        height: calc(100vh - 150px); /* Reduced bottom space */
+        margin-bottom: 0;
+        overflow: hidden;
+        position: relative;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    /* Left Sidebar - Scrollable to show all content */
+    .left-sidebar {
+        width: 280px;
+        flex-shrink: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: 100%;
+        position: sticky;
+        top: 0;
+    }
+
+    /* Middle Feed - Scrollable */
+    .middle-feed {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 10px;
+        height: 100%;
+    }
+
+    /* Hide right sidebar from layout since it's already fixed */
+    .right-sidebar-spacer {
+        width: 0;
+    }
+
+    /* Feed header - simple title only */
+    .feed-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .feed-header h2 {
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+
+    /* Custom scrollbar for middle feed */
+    .middle-feed::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .middle-feed::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .middle-feed::-webkit-scrollbar-thumb {
+        background: rgba(78, 84, 200, 0.5);
+        border-radius: 10px;
+    }
+
+    .middle-feed::-webkit-scrollbar-thumb:hover {
+        background: rgba(78, 84, 200, 0.8);
+    }
+
+    /* Styled scrollbar for left sidebar */
+    .left-sidebar::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .left-sidebar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .left-sidebar::-webkit-scrollbar-thumb {
+        background: rgba(78, 84, 200, 0.3);
+        border-radius: 10px;
+    }
+
+    .left-sidebar::-webkit-scrollbar-thumb:hover {
+        background: rgba(78, 84, 200, 0.5);
+    }
+
+    /* User Stats Card */
+    .user-stats-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-stats-card h6 {
+        color: #1a1a1a;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 0.75rem 0.5rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--primary);
+        display: block;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    /* Suggested Profiles Card */
+    .suggested-profiles-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .profile-suggestion {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .profile-suggestion:last-child {
+        border-bottom: none;
+    }
+
+    .profile-suggestion-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+    }
+
+    .profile-suggestion-info {
+        flex: 1;
+    }
+
+    .profile-suggestion-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #333;
+        text-decoration: none;
+        display: block;
+    }
+
+    .profile-suggestion-name:hover {
+        color: var(--primary);
+    }
+
+    .profile-suggestion-stats {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .btn-follow-sm {
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        border-radius: 20px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .left-sidebar {
+            width: 250px;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .feed-layout {
+            flex-direction: column;
+            height: auto;
+            overflow: visible;
+        }
+
+        .left-sidebar {
+            width: 100%;
+            overflow-y: visible;
+            overflow-x: visible;
+            margin-bottom: 1.5rem;
+            position: relative;
+            height: auto;
+        }
+
+        .middle-feed {
+            overflow-y: visible;
+            overflow-x: visible;
+            height: auto;
+        }
+
+        .user-stats-card {
+            margin-bottom: 1rem;
+        }
+
+        .feed-header {
+            position: relative;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stat-item {
+            padding: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 1.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+        }
+
+        .feed-header h2 {
+            font-size: 1.5rem;
+        }
+    }
+
+    /* Remove all bottom spacing */
+    .middle-feed > *:last-child {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* Adjust card spacing in feed */
+    .middle-feed .card:last-of-type {
+        margin-bottom: 0 !important;
+    }
+
+    /* Cleaner feed appearance */
+    .middle-feed {
+        padding-bottom: 1rem;
+    }
+
+    /* Button styling for navigation */
+    .btn-accent.btn-sm {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        font-weight: 500;
+    }
+
+    .btn-accent.btn-sm:hover {
+        background-color: #ff8800;
+        border-color: #ff8800;
+        color: white;
+    }
+</style>
+
+<div class="container-fluid px-3" style="padding-bottom: 0 !important;">
+    <div class="feed-layout">
+        <!-- Left Sidebar: User Stats & Suggested Profiles -->
+        <aside class="left-sidebar">
+            <!-- User Stats -->
+            <div class="user-stats-card">
+                <div class="text-center mb-3">
+                    {% if user.profile and user.profile.profile_picture %}
+                        <img src="{{ user.profile.profile_picture.url }}" class="rounded-circle mb-2" width="80" height="80" style="object-fit: cover;" alt="{{ user.username }}">
+                    {% else %}
+                        <div class="bg-secondary rounded-circle mb-2 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="fas fa-user text-white fa-2x"></i>
+                        </div>
+                    {% endif %}
+                    <h6 class="mb-1 fw-bold">{{ user.username }}</h6>
+                    {% if user.profile and user.profile.bio %}
+                        <small class="text-muted d-block" style="font-size: 0.75rem; line-height: 1.2;">{{ user.profile.bio|truncatewords:8 }}</small>
+                    {% endif %}
+                </div>
+
+                <div class="row g-0 mb-2">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.posts }}</span>
+                            <span class="stat-label">Posts</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.followers }}</span>
+                            <span class="stat-label">Followers</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ user_stats.following }}</span>
+                            <span class="stat-label">Following</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-0">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <span class="stat-number text-success">{{ user_stats.likes_received }}</span>
+                            <span class="stat-label">Received</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <span class="stat-number text-danger">{{ user_stats.likes_given }}</span>
+                            <span class="stat-label">Given</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-3 border-top">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <small class="text-muted"><i class="fas fa-heart text-danger"></i> Likes</small>
+                        <strong class="text-primary">{{ user.likes_balance }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><i class="fas fa-star text-warning"></i> Points</small>
+                        <strong class="text-primary">{{ user.points_balance }}</strong>
+                    </div>
                 </div>
             </div>
 
-            {% if posts %}
-                <div class="row">
-                    {% for post in posts %}
-                    {% if forloop.counter|divisibleby:5 and show_in_feed_ad %}
-                    <div class="col-12 mb-4">
-                        <div class="card">
-                            <div class="card-body text-center">
-                                <div style="background-color: #f0f0f0; padding: 20px; border-radius: 10px;">
-                                    <h5>Advertisement</h5>
-                                    <p>This is an ad placeholder.</p>
-                                </div>
+            <!-- Suggested Profiles -->
+            <div class="suggested-profiles-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold">
+                        <i class="fas fa-user-plus me-2"></i>Suggested For You
+                    </h6>
+                </div>
+
+                {% if suggested_profiles %}
+                    {% for profile_user in suggested_profiles %}
+                    {% if profile_user.profile %}
+                    <div class="profile-suggestion">
+                        {% if profile_user.profile.profile_picture %}
+                            <img src="{{ profile_user.profile.profile_picture.url }}" class="profile-suggestion-avatar" alt="{{ profile_user.username }}">
+                        {% else %}
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center profile-suggestion-avatar">
+                                <i class="fas fa-user text-white"></i>
+                            </div>
+                        {% endif %}
+
+                        <div class="profile-suggestion-info">
+                            <a href="{% url 'profiles:profile_detail' profile_user.profile.id %}" class="profile-suggestion-name">
+                                {{ profile_user.username }}
+                            </a>
+                            <div class="profile-suggestion-stats">
+                                <i class="fas fa-heart text-danger"></i> {{ profile_user.received_likes_count }} likes
                             </div>
                         </div>
+
+                        <button class="btn btn-primary btn-follow-sm follow-user-btn" data-user-id="{{ profile_user.id }}">
+                            <i class="fas fa-user-plus"></i> Follow
+                        </button>
                     </div>
                     {% endif %}
-                    <div class="col-12 mb-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <!-- Post Header -->
-                                <div class="d-flex align-items-center mb-3">
-                                    {% if post.author.profile.profile_picture %}
-                                        <img src="{{ post.author.profile.profile_picture.url }}" class="rounded-circle me-3" width="50" height="50" style="object-fit: cover;" alt="{{ post.author.username }}">
+                    {% endfor %}
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'profiles:discover' %}" class="btn btn-outline-primary btn-sm w-100">
+                            <i class="fas fa-search me-1"></i> See More
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-users fa-2x text-muted mb-2"></i>
+                        <p class="small text-muted mb-2">No suggestions yet</p>
+                        <a href="{% url 'profiles:discover' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-search me-1"></i> Discover People
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- Middle Feed: Posts (Scrollable) -->
+        <main class="middle-feed">
+            <div class="feed-header">
+                <h2>
+                    <i class="fas fa-stream me-2"></i>Your Feed
+                </h2>
+            </div>
+
+            {% if posts %}
+                {% for post in posts %}
+                {% if forloop.counter|divisibleby:5 and show_in_feed_ad and advertisements %}
+                <div class="mb-4">
+                    <div class="card">
+                        <div class="card-body text-center p-0">
+                            {% with ad=advertisements|random %}
+                            {% if ad.brand_url %}
+                            <a href="{{ ad.brand_url }}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                            {% endif %}
+                                <div style="position: relative; overflow: hidden; border-radius: 10px;">
+                                    {% if ad.flyer_image %}
+                                    <img src="{{ ad.flyer_image.url }}" class="img-fluid w-100" alt="{{ ad.brand_name }}" style="max-height: 400px; object-fit: cover;">
                                     {% else %}
-                                        <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                            <i class="fas fa-user text-white"></i>
-                                        </div>
+                                    <div style="background-color: #f0f0f0; padding: 40px;">
+                                        <h5 class="mb-2">{{ ad.brand_name }}</h5>
+                                        <p class="text-muted small mb-0">Advertisement</p>
+                                    </div>
                                     {% endif %}
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-0">
+                                    <div style="position: absolute; top: 8px; right: 8px;">
+                                        <span class="badge bg-light text-dark small">Sponsored</span>
+                                    </div>
+                                </div>
+                            {% if ad.brand_url %}
+                            </a>
+                            {% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <!-- Post Header -->
+                            <div class="d-flex align-items-center mb-3">
+                                {% if post.author.profile and post.author.profile.profile_picture %}
+                                    <img src="{{ post.author.profile.profile_picture.url }}" class="rounded-circle me-3" width="50" height="50" style="object-fit: cover;" alt="{{ post.author.username }}">
+                                {% else %}
+                                    <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">
+                                        {% if post.author.profile %}
                                             <a href="{% url 'profiles:profile_detail' post.author.profile.id %}" class="text-decoration-none text-dark fw-bold">
                                                 {{ post.author.username }}
                                             </a>
-                                        </h6>
-                                        <small class="text-muted">{{ post.created_at|timesince }} ago</small>
-                                    </div>
-                                    {% if post.author == user %}
-                                    <button class="btn btn-sm btn-outline-danger delete-post-btn" data-post-id="{{ post.id }}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                    {% endif %}
+                                        {% else %}
+                                            <span class="text-dark fw-bold">{{ post.author.username }}</span>
+                                        {% endif %}
+                                    </h6>
+                                    <small class="text-muted">{{ post.created_at|timesince }} ago</small>
                                 </div>
-
-                                <!-- Post Content -->
-                                <p class="mb-3">{{ post.content|linebreaks }}</p>
-
-                                <!-- Post Image -->
-                                {% if post.image %}
-                                <div class="mb-3">
-                                    <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 500px; width: auto; max-width: 100%;" alt="Post image">
-                                </div>
+                                {% if post.author == user %}
+                                <button class="btn btn-sm btn-outline-danger delete-post-btn" data-post-id="{{ post.id }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                                 {% endif %}
+                            </div>
 
-                                <!-- Post Stats -->
-                                <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
-                                    <div>
-                                        <i class="fas fa-heart text-danger"></i>
-                                        <span id="postLikes{{ post.id }}">{{ post.likes_count }}</span> likes
-                                    </div>
-                                    <div>
-                                        <i class="fas fa-comment text-primary"></i>
-                                        {{ post.comments_count }} comments
-                                    </div>
-                                </div>
+                            <!-- Post Content -->
+                            <p class="mb-3">{{ post.content|linebreaks }}</p>
 
-                                <!-- Post Actions -->
-                                <div class="d-flex gap-2 mb-3 border-top pt-3">
-                                    <button class="btn btn-sm btn-outline-danger flex-fill like-post-btn" data-post-id="{{ post.id }}">
-                                        <i class="fas fa-heart me-1"></i> Like
-                                    </button>
-                                    <a href="{% url 'social:post_detail' post.id %}" class="btn btn-sm btn-outline-primary flex-fill">
-                                        <i class="fas fa-comment me-1"></i> Comment
-                                    </a>
+                            <!-- Post Image -->
+                            {% if post.image %}
+                            <div class="mb-3">
+                                <img src="{{ post.image.url }}" class="img-fluid rounded" style="max-height: 500px; width: auto; max-width: 100%;" alt="Post image">
+                            </div>
+                            {% endif %}
+
+                            <!-- Post Stats -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 text-muted small">
+                                <div>
+                                    <i class="fas fa-heart text-danger"></i>
+                                    <span id="postLikes{{ post.id }}">{{ post.likes_count }}</span> likes
                                 </div>
+                                <div>
+                                    <i class="fas fa-comment text-primary"></i>
+                                    {{ post.comments_count }} comments
+                                </div>
+                            </div>
+
+                            <!-- Post Actions -->
+                            <div class="d-flex gap-2 mb-3 border-top pt-3">
+                                <button class="btn btn-sm btn-outline-danger flex-fill like-post-btn" data-post-id="{{ post.id }}">
+                                    <i class="fas fa-heart me-1"></i> Like
+                                </button>
+                                <a href="{% url 'social:post_detail' post.id %}" class="btn btn-sm btn-outline-primary flex-fill">
+                                    <i class="fas fa-comment me-1"></i> Comment
+                                </a>
                             </div>
                         </div>
                     </div>
-                    {% endfor %}
                 </div>
+                {% endfor %}
 
                 <!-- Pagination -->
                 {% if is_paginated %}
-                <div class="row">
-                    <div class="col-12">
-                        <nav aria-label="Feed pagination">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
-                                    </li>
-                                {% endif %}
-
-                                <li class="page-item active">
-                                    <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                <div class="mb-4">
+                    <nav aria-label="Feed pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
                                 </li>
+                            {% endif %}
 
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-                    </div>
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                            </li>
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
                 </div>
                 {% endif %}
 
@@ -146,7 +597,10 @@
                     </div>
                 </div>
             {% endif %}
-        </div>
+        </main>
+
+        <!-- Spacer for fixed right sidebar (updates) -->
+        <div class="right-sidebar-spacer"></div>
     </div>
 </div>
 {% endblock %}
@@ -197,8 +651,9 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     document.getElementById('postLikes' + postId).textContent = data.post_likes_count;
-                    document.getElementById('likesBalance').textContent = data.new_balance;
                     alert(data.message);
+                    // Reload page to update sidebar stats
+                    location.reload();
                 } else {
                     alert(data.error);
                 }
@@ -234,6 +689,41 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error:', error);
                 alert('Failed to delete post');
+            });
+        });
+    });
+
+    // Follow user functionality
+    document.querySelectorAll('.follow-user-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const button = this;
+
+            fetch(`/social/follow/${userId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrftoken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.innerHTML = '<i class="fas fa-check"></i> Following';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    button.disabled = true;
+
+                    // Optionally reload to update feed
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to follow user');
             });
         });
     });

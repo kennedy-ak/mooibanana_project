@@ -35,7 +35,9 @@ CSRF_TRUSTED_ORIGINS = [
     'https://mooibanana-project-*.run.app',  # Allow any revision
     'http://127.0.0.1:8000',
     'http://localhost:8000',
-    "https://mooibanana-project-1.onrender.com"
+    "https://mooibanana-project-1.onrender.com",
+    "https://draggy-unprecipitately-harper.ngrok-free.dev"
+    
 ]
 
 # CSRF Settings
@@ -274,6 +276,13 @@ CLOUDINARY_STORAGE = {
     'API_KEY': config('CLOUDINARY_API_KEY'),
     'API_SECRET': config('CLOUDINARY_API_SECRET'),
 }
+
+# Advertisement feature flags (can be controlled via environment)
+# Set these in your environment or .env file to enable specific placements
+SHOW_IN_FEED_AD = config('SHOW_IN_FEED_AD', default=False, cast=bool)
+SHOW_IN_GRID_AD = config('SHOW_IN_GRID_AD', default=False, cast=bool)
+SHOW_PROFILE_BANNER_AD = config('SHOW_PROFILE_BANNER_AD', default=False, cast=bool)
+SHOW_POST_BANNER_AD = config('SHOW_POST_BANNER_AD', default=False, cast=bool)
 
 # Use Cloudinary for media files (Django 4.2+ uses STORAGES)
 STORAGES = {

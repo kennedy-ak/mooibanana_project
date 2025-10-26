@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.db.models import Sum
 
 User = get_user_model()
 
@@ -53,8 +54,9 @@ class Post(models.Model):
         return f"Post by {self.author.username} at {self.created_at}"
 
     def update_likes_count(self):
-        """Update the denormalized likes count"""
-        self.likes_count = self.post_likes.count()
+        """Update the denormalized likes count - sum of all like amounts"""
+        total = self.post_likes.aggregate(total=Sum('amount'))['total']
+        self.likes_count = total if total is not None else 0
         self.save(update_fields=['likes_count'])
 
     def update_comments_count(self):
@@ -87,8 +89,9 @@ class Comment(models.Model):
         return f"Comment by {self.author.username} on post {self.post.id}"
 
     def update_likes_count(self):
-        """Update the denormalized likes count"""
-        self.likes_count = self.comment_likes.count()
+        """Update the denormalized likes count - sum of all like amounts"""
+        total = self.comment_likes.aggregate(total=Sum('amount'))['total']
+        self.likes_count = total if total is not None else 0
         self.save(update_fields=['likes_count'])
 
     def is_reply(self):

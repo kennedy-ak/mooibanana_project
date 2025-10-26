@@ -16,10 +16,18 @@ def get_daily_quiz(request):
         daily_quiz = DailyQuiz.objects.get(date=today)
         question = daily_quiz.question
     except DailyQuiz.DoesNotExist:
-        active_questions = Question.objects.filter(is_active=True)
+        # Get questions that haven't been used in DailyQuiz yet
+        used_question_ids = DailyQuiz.objects.values_list('question_id', flat=True)
+        active_questions = Question.objects.filter(
+            is_active=True
+        ).exclude(id__in=used_question_ids)
+
         if not active_questions.exists():
-            return JsonResponse({'error': 'No questions available'}, status=404)
-        
+            # If all questions have been used, reset and use any active question
+            active_questions = Question.objects.filter(is_active=True)
+            if not active_questions.exists():
+                return JsonResponse({'error': 'No questions available'}, status=404)
+
         question = active_questions.order_by('?').first()
         daily_quiz = DailyQuiz.objects.create(question=question, date=today)
     

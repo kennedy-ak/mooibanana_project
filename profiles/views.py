@@ -12,6 +12,7 @@ from django.utils.decorators import method_decorator
 from datetime import date, timedelta
 from .models import Profile, ProfilePhoto
 from .forms import ProfileForm, ProfileSearchForm, ProfilePhotoForm
+from django.conf import settings
 from likes.models import Like, Unlike
 from notifications.models import Notification
 from django.http import JsonResponse
@@ -275,6 +276,15 @@ class DiscoverView(LoginRequiredMixin, ListView):
         ).values_list('following_id', flat=True))
         context['following_ids'] = following_ids
 
+        # Advertisement flags controlled via settings or environment
+        context['show_in_grid_ad'] = getattr(settings, 'SHOW_IN_GRID_AD', False)
+        context['show_profile_banner_ad'] = getattr(settings, 'SHOW_PROFILE_BANNER_AD', False)
+
+        # Fetch active advertisements for grid display (cached)
+        if context['show_in_grid_ad']:
+            from advertisements.models import Advertisement
+            context['advertisements'] = Advertisement.get_active_ads(limit=3)
+
         return context
 
 class ProfileDetailView(LoginRequiredMixin, DetailView):
@@ -368,6 +378,15 @@ class ProfileDetailView(LoginRequiredMixin, DetailView):
         context['recent_posts'] = Post.objects.filter(
             author=self.object.user
         ).order_by('-created_at')[:5]
+
+        # Advertisement flag for profile banner
+        context['show_profile_banner_ad'] = getattr(settings, 'SHOW_PROFILE_BANNER_AD', False)
+
+        # Fetch active advertisements for profile banner (cached)
+        if context['show_profile_banner_ad']:
+            from advertisements.models import Advertisement
+            active_ads = Advertisement.get_active_ads(limit=1)
+            context['banner_ad'] = active_ads[0] if active_ads else None
 
         return context
 

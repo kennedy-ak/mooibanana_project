@@ -6,12 +6,13 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib import messages
-from django.db.models import Q, Exists, OuterRef, Count
+from django.db.models import Q, Exists, OuterRef, Count, Sum
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model
 
 from .models import Follow, Post, Comment, PostLike, CommentLike
 from .forms import PostForm, CommentForm, LikeAmountForm
+from django.conf import settings
 
 User = get_user_model()
 
@@ -97,6 +98,69 @@ class FeedView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['user_likes_balance'] = self.request.user.likes_balance
+        # Advertisement flag - controlled via settings or environment
+        context['show_in_feed_ad'] = getattr(settings, 'SHOW_IN_FEED_AD', False)
+
+        # Fetch active advertisements for in-feed display (cached)
+        if context['show_in_feed_ad']:
+            from advertisements.models import Advertisement
+            context['advertisements'] = Advertisement.get_active_ads(limit=3)
+
+        # Get user stats for left sidebar (cached)
+        from django.core.cache import cache
+        cache_key = f'user_stats_{self.request.user.id}'
+        user_stats = cache.get(cache_key)
+
+        if user_stats is None:
+            following_count = Follow.objects.filter(follower=self.request.user).count()
+            followers_count = Follow.objects.filter(following=self.request.user).count()
+            posts_count = Post.objects.filter(author=self.request.user).count()
+
+            # Get likes given and received
+            likes_received = self.request.user.received_likes_count
+            likes_given = PostLike.objects.filter(user=self.request.user).aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+            likes_given += CommentLike.objects.filter(user=self.request.user).aggregate(
+                total=Sum('amount')
+            )['total'] or 0
+
+            user_stats = {
+                'following': following_count,
+                'followers': followers_count,
+                'posts': posts_count,
+                'likes_received': likes_received,
+                'likes_given': likes_given,
+            }
+            # Cache for 5 minutes
+            cache.set(cache_key, user_stats, 60 * 5)
+
+        context['user_stats'] = user_stats
+
+        # Get suggested profiles (users not followed yet, excluding self)
+        cache_key_suggestions = f'suggested_profiles_{self.request.user.id}'
+        suggested_profiles = cache.get(cache_key_suggestions)
+
+        if suggested_profiles is None:
+            following_ids = Follow.objects.filter(
+                follower=self.request.user
+            ).values_list('following_id', flat=True)
+
+            # Only suggest users who have profiles - use pk ordering instead of random for performance
+            suggested_profiles = User.objects.exclude(
+                id__in=following_ids
+            ).exclude(
+                id=self.request.user.id
+            ).filter(
+                profile__isnull=False  # Ensure user has a profile
+            ).select_related('profile').order_by('-id')[:5]  # Latest users instead of random
+
+            suggested_profiles = list(suggested_profiles)
+            # Cache for 15 minutes
+            cache.set(cache_key_suggestions, suggested_profiles, 60 * 15)
+
+        context['suggested_profiles'] = suggested_profiles
+
         return context
 
 
@@ -123,6 +187,16 @@ class PostDetailView(LoginRequiredMixin, DetailView):
             follower=self.request.user,
             following=self.object.author
         ).exists()
+
+        # Advertisement flag for post detail page
+        from django.conf import settings as _settings
+        context['show_post_banner_ad'] = getattr(_settings, 'SHOW_POST_BANNER_AD', False)
+
+        # Fetch active advertisements for post detail banner (cached)
+        if context['show_post_banner_ad']:
+            from advertisements.models import Advertisement
+            active_ads = Advertisement.get_active_ads(limit=1)
+            context['banner_ad'] = active_ads[0] if active_ads else None
 
         return context
 
@@ -221,6 +295,10 @@ def like_post(request, post_id):
     """Like a post using likes from user's bank"""
     post = get_object_or_404(Post, id=post_id)
 
+    # Prevent users from liking their own posts
+    if post.author == request.user:
+        return JsonResponse({'success': False, 'error': 'Cannot like your own post'}, status=400)
+
     # Get the amount from the request
     amount = int(request.POST.get('amount', 1))
 
@@ -260,6 +338,10 @@ def like_post(request, post_id):
 def like_comment(request, comment_id):
     """Like a comment using likes from user's bank"""
     comment = get_object_or_404(Comment, id=comment_id)
+
+    # Prevent users from liking their own comments
+    if comment.author == request.user:
+        return JsonResponse({'success': False, 'error': 'Cannot like your own comment'}, status=400)
 
     # Get the amount from the request
     amount = int(request.POST.get('amount', 1))
