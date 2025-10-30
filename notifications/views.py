@@ -63,13 +63,13 @@ def respond_to_match_request(request, notification_id):
         action = request.POST.get('action')
 
         if action == 'accept':
-            match = notification.accept_match_request()
-            if match:
-                messages.success(request, f"It's a match! You can now chat with {notification.sender.username}.")
+            success = notification.accept_match_request()
+            if success:
+                messages.success(request, f"It's a match with {notification.sender.username}!")
                 return JsonResponse({
                     'success': True,
-                    'message': f"It's a match! You can now chat with {notification.sender.username}.",
-                    'redirect_url': f'/chat/room/{match.chat_room.id}/'
+                    'message': f"It's a match with {notification.sender.username}!",
+                    'redirect_url': f'/profiles/profile/{notification.sender.id}/'
                 })
         elif action == 'decline':
             notification.decline_match_request()
@@ -103,7 +103,8 @@ async def get_notifications(request):
                 'type': notification.notification_type,
                 'message': notification.message,
                 'created_at': notification.created_at.strftime('%Y-%m-%d %H:%M'),
-                'status': notification.status
+                'status': notification.status,
+                'is_read': notification.is_read
             })
         return notification_data
 

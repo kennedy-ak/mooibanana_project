@@ -303,7 +303,7 @@
                 <i class="fas fa-heart text-warning"></i>
                 Packages
             </h1>
-            <p class="lead mb-4">Get packages to give likes or dislikes to other students! All prices in Euros (€).</p>
+            <p class="lead mb-4">Get packages to give likes or dislikes to other students! All prices in Ghana Cedis (GH₵).</p>
             <p class="mb-0">
                 <i class="fas fa-gift me-2"></i>
                 Use your package for likes or dislikes - you choose when you buy!
@@ -338,7 +338,7 @@
             <div class="card package-card h-100 {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
                 <div class="package-header {% if 'Populair' in package.name or 'Popular' in package.name %}popular{% endif %}">
                     <h3 class="mb-0">{{ package.name }}</h3>
-                    <div class="package-price">€{{ package.price }}</div>
+                    <div class="package-price">{% if package.currency == 'GHS' %}GH₵{% else %}€{% endif %}{{ package.price }}</div>
                     {% if package.description %}
                         <p class="mb-0" style="opacity: 0.9;">{{ package.description }}</p>
                     {% endif %}

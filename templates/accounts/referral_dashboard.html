@@ -230,7 +230,7 @@ function shareWhatsApp() {
         return;
     }
     
-    const message = `Hey! Join me on Mooibanana, the student dating platform! Use my referral code {{ referral_code }} or click this link: ${currentReferralLink}`;
+    const message = `Hey! Join me on Mooibanana, the student social platform! Use my referral code {{ referral_code }} or click this link: ${currentReferralLink}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
 }

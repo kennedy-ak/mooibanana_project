@@ -15,7 +15,7 @@ class Package(models.Model):
 
     name = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='EUR')
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='GHS')
     likes_count = models.IntegerField(help_text="Number of likes included in this package")
     boosters = models.IntegerField(default=0)
     points_reward = models.IntegerField(default=0, help_text="Points awarded when this package is purchased")
@@ -24,7 +24,7 @@ class Package(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        currency_symbol = '€' if self.currency == 'EUR' else 'GH₵'
+        currency_symbol = 'GH₵' if self.currency == 'GHS' else '€'
         return f"{self.name} - {currency_symbol}{self.price}"
 
 # Keep old model names as aliases for backward compatibility during migration
@@ -62,7 +62,8 @@ class Purchase(models.Model):
 
     def __str__(self):
         package_name = self.package.name if self.package else "Unknown Package"
-        return f"{self.user.username} - {package_name} ({self.get_usage_type_display()}) - €{self.amount}"
+        currency_symbol = 'GH₵' if self.package and self.package.currency == 'GHS' else '€'
+        return f"{self.user.username} - {package_name} ({self.get_usage_type_display()}) - {currency_symbol}{self.amount}"
 
 # Disabled - likes are now handled in the payment views to support gift purchases
 # @receiver(post_save, sender=Purchase)

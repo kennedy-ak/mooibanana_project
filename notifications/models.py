@@ -51,7 +51,6 @@ class Notification(models.Model):
         """Accept a match request and create mutual likes"""
         if self.notification_type == 'match_request' and self.status == 'pending':
             from likes.models import Like
-            from chat.models import Match
 
             # Create mutual likes
             like1, created1 = Like.objects.get_or_create(
@@ -75,12 +74,6 @@ class Notification(models.Model):
                 from_user=self.receiver, to_user=self.sender
             ).update(is_mutual=True)
 
-            # Create match
-            match, created = Match.objects.get_or_create(
-                user1=min(self.sender, self.receiver, key=lambda u: u.id),
-                user2=max(self.sender, self.receiver, key=lambda u: u.id)
-            )
-
             # Update notification status
             self.status = 'accepted'
             self.save()
@@ -94,7 +87,7 @@ class Notification(models.Model):
                 status='read'
             )
 
-            return match
+            return True
         return None
 
     def decline_match_request(self):

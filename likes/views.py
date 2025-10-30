@@ -26,6 +26,12 @@ async def give_like(request, user_id):
             return get_object_or_404(User, id=user_id)
 
         @sync_to_async
+        def get_user_balance(user):
+            # Refresh from database to get latest balance
+            user.refresh_from_db()
+            return user.likes_balance
+
+        @sync_to_async
         def create_like_and_notification(from_user, target_user, amount):
             # Create the like with specified amount
             like = Like.objects.create(
@@ -55,9 +61,10 @@ async def give_like(request, user_id):
         except (ValueError, TypeError):
             amount = 1
 
-        # Check if user has enough likes
-        if request.user.likes_balance < amount:
-            messages.error(request, f'You need {amount} likes! You only have {request.user.likes_balance}. Buy more likes.')
+        # Check if user has enough likes (async database access)
+        user_balance = await get_user_balance(request.user)
+        if user_balance < amount:
+            messages.error(request, f'You need {amount} likes! You only have {user_balance}. Buy more likes.')
             return redirect('payments:packages')
 
         # Create like and notification concurrently
@@ -101,6 +108,12 @@ async def give_unlike(request, user_id):
         @sync_to_async
         def get_target_user(user_id):
             return get_object_or_404(User, id=user_id)
+
+        @sync_to_async
+        def get_user_balance(user):
+            # Refresh from database to get latest balance
+            user.refresh_from_db()
+            return user.likes_balance
 
         @sync_to_async
         def process_unlike(from_user, target_user, amount):
@@ -152,9 +165,10 @@ async def give_unlike(request, user_id):
         except (ValueError, TypeError):
             amount = 1
 
-        # Check if user has enough balance (unlikes now use likes_balance)
-        if request.user.likes_balance < amount:
-            messages.error(request, f'You need {amount} in your balance! You only have {request.user.likes_balance}. Buy more packages.')
+        # Check if user has enough balance (unlikes now use likes_balance) (async database access)
+        user_balance = await get_user_balance(request.user)
+        if user_balance < amount:
+            messages.error(request, f'You need {amount} in your balance! You only have {user_balance}. Buy more packages.')
             return redirect('payments:packages')
 
         # Process unlike and create notification concurrently

@@ -5,7 +5,7 @@
 
 {% block breadcrumbs %}
 <li class="breadcrumb-item active" aria-current="page">
-    <i class="fas fa-euro-sign"></i> Pricing
+    <i class="fas fa-money-bill"></i> Pricing
 </li>
 {% endblock %}
 
@@ -258,7 +258,7 @@
     <div class="pricing-hero">
         <div class="container">
             <h1 class="display-4 mb-4">
-                <i class="fas fa-euro-sign text-warning"></i>
+                <i class="fas fa-money-bill text-warning"></i>
                 Simple, Transparent Pricing
             </h1>
             <p class="lead mb-4">Choose the perfect package to boost your connections and find amazing people!</p>
@@ -277,7 +277,7 @@
                 <div class="pricing-header {% if 'Popular' in package.name %}featured{% endif %}">
                     <div class="package-name">{{ package.name }}</div>
                     <div class="price">
-                        €{{ package.price }}
+                        {% if package.currency == 'GHS' %}GH₵{% else %}€{% endif %}{{ package.price }}
                         <span class="price-period">one-time</span>
                     </div>
                     {% if package.description %}
@@ -373,7 +373,7 @@
                     <tr>
                         <td><strong>Price</strong></td>
                         {% for package in packages %}
-                        <td><strong>€{{ package.price }}</strong></td>
+                        <td><strong>{% if package.currency == 'GHS' %}GH₵{% else %}€{% endif %}{{ package.price }}</strong></td>
                         {% endfor %}
                     </tr>
                     <tr>
