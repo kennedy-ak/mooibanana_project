@@ -8,7 +8,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.contrib.auth.views import PasswordResetView
+from django.contrib.auth.views import PasswordResetView, LoginView
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -18,6 +18,15 @@ from .models import CustomUser, Referral
 from django.views.generic.edit import UpdateView
 
 logger = logging.getLogger(__name__)
+
+
+class CustomLoginView(LoginView):
+    """Custom login view that always redirects to discover page"""
+    template_name = 'accounts/login.html'
+
+    def get_success_url(self):
+        """Always redirect to discover page, ignoring 'next' parameter"""
+        return reverse_lazy('profiles:discover')
 
 class RegisterView(CreateView):
     model = CustomUser
