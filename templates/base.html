@@ -949,6 +949,11 @@
                         </li>
                         {% else %}
                         <li class="nav-item">
+                            <a class="nav-link text-dark" href="{% url 'social:feed' %}">
+                                <i class="fas fa-home"></i> Feed
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link text-dark" href="{% url 'profiles:discover' %}">Discover</a>
                         </li>
                         {% comment "MATCHES REMOVED FROM SYSTEM" %}
@@ -1142,6 +1147,11 @@
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         {% else %}
+                                        <li>
+                                            <a href="{% url 'social:feed' %}" class="dropdown-item">
+                                                <i class="fas fa-home me-2"></i>Feed
+                                            </a>
+                                        </li>
                                         <li>
                                             <a href="{% url 'profiles:discover' %}" class="dropdown-item">
                                                 <i class="fas fa-search me-2"></i>Discover Profiles

@@ -21,7 +21,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.http import HttpResponse
-from social.views import FeedView
 
 def health_check(request):
     return HttpResponse("OK", status=200)
@@ -30,7 +29,7 @@ urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('admin-dashboard/', include('admin_dashboard.urls')),
-    path('', FeedView.as_view(), name='home'),
+    path('', TemplateView.as_view(template_name='home.html'), name='home'),
     path('accounts/', include('accounts.urls')),
     path('profiles/', include('profiles.urls')),
     path('likes/', include('likes.urls')),
