@@ -15,7 +15,7 @@ from .models import TextUpdate
 from social.models import Follow
 import json
 
-class UpdatesFeedView(View):
+class UpdatesFeedView(LoginRequiredMixin, View):
     """API endpoint to fetch updates for the sliding feed"""
 
     def get(self, request):

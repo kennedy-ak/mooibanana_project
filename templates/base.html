@@ -70,17 +70,33 @@
         .likes-balance {
             background-color: var(--accent);
             color: white;
-            padding: 5px 15px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            display: inline-block;
         }
-        
+
         .points-balance {
             background-color: var(--primary);
             color: white;
-            padding: 5px 15px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-weight: bold;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            display: inline-block;
+        }
+
+        /* Navbar spacing improvements */
+        .navbar-nav .nav-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-nav.ms-auto {
+            gap: 0.5rem;
         }
         
         /* Bootstrap Override - Navigation improvements */
@@ -178,9 +194,20 @@
             }
 
             .likes-balance,
+            .points-balance,
+            .badge.bg-secondary {
+                padding: 4px 10px;
+                font-size: 0.85rem;
+            }
+
+            /* Hide text labels on mobile, show only icons and numbers */
+            .likes-balance,
             .points-balance {
-                padding: 4px 12px;
-                font-size: 0.9rem;
+                font-size: 0.8rem;
+            }
+
+            .navbar-nav {
+                gap: 0.25rem;
             }
         }
 
@@ -470,10 +497,15 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-left: 1px solid rgba(0, 0, 0, 0.1);
-            z-index: 1000;
+            z-index: 900;
             display: flex;
             flex-direction: column;
             box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Ensure navbar stays on top */
+        .navbar {
+            z-index: 2000 !important;
         }
         
         .main-content {
@@ -785,10 +817,21 @@
             }
             
             /* Balance display improvements */
-            .likes-balance, .points-balance {
+            .likes-balance,
+            .points-balance,
+            .badge.bg-secondary {
                 font-size: 0.85rem;
-                padding: 6px 12px;
+                padding: 5px 10px;
                 margin: 2px 0;
+            }
+
+            /* Navbar item spacing on tablet */
+            .navbar-nav {
+                gap: 0.4rem;
+            }
+
+            .navbar-nav .nav-item {
+                margin-right: 0 !important;
             }
             
             /* Navbar improvements for iPad */
@@ -932,7 +975,7 @@
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <!-- Pricing - visible to everyone -->
                     <li class="nav-item">
                         <a class="nav-link text-dark" href="{% url 'payments:pricing' %}">
@@ -1009,15 +1052,19 @@
 
                     {% if user.is_authenticated %}
                         {% if not user.is_superuser %}
-                        <li class="nav-item me-3">
+                        <li class="nav-item me-2">
                             <span class="likes-balance">
-                                <i class="fas fa-heart"></i> {{ user.likes_balance }} likes
-                                <i class="fas fa-times-circle text-danger ms-2"></i> {{ user.unlikes_balance }} unlikes
+                                <i class="fas fa-heart"></i> {{ user.likes_balance }}
                             </span>
                         </li>
-                        <li class="nav-item me-4">
+                        <li class="nav-item me-2">
+                            <span class="badge bg-secondary" style="padding: 5px 15px; border-radius: 20px; font-weight: bold;">
+                                <i class="fas fa-times-circle"></i> {{ user.unlikes_balance }}
+                            </span>
+                        </li>
+                        <li class="nav-item me-3">
                             <span class="points-balance">
-                                <i class="fas fa-star"></i> {{ user.points_balance }} points
+                                <i class="fas fa-star"></i> {{ user.points_balance }}
                             </span>
                         </li>
                         {% endif %}
