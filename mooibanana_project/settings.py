@@ -38,6 +38,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://mooibanana-project-1.onrender.com",
     "https://draggy-unprecipitately-harper.ngrok-free.dev",
     "https://www.mooibanana.site"
+    "https://mooibanana.digitalrepublic.space"
     
     
 ]
