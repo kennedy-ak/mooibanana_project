@@ -1,0 +1,116 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Edit Prize Announcement - Admin Dashboard{% endblock %}
+{% block page_title %}Edit Prize Announcement{% endblock %}
+{% block page_subtitle %}Update prize details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Edit Prize Announcement</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Prize Title*</label>
+                            <input type="text" class="form-control" name="title" value="{{ prize.title }}" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Description*</label>
+                        <textarea class="form-control" name="description" rows="3" required>{{ prize.description }}</textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Prize Value*</label>
+                            <input type="text" class="form-control" name="prize_value" value="{{ prize.prize_value }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Position*</label>
+                            <select class="form-select" name="position" required>
+                                {% for value, label in position_choices %}
+                                    <option value="{{ value }}" {% if prize.position == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">FontAwesome Icon*</label>
+                            <input type="text" class="form-control" name="icon" value="{{ prize.icon }}" required>
+                            <small class="form-text text-muted">
+                                Icon class from <a href="https://fontawesome.com/icons" target="_blank">FontAwesome</a>
+                            </small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Icon Color*</label>
+                            <input type="color" class="form-control form-control-color" name="background_color"
+                                   value="{{ prize.background_color }}">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Display Order*</label>
+                            <input type="number" class="form-control" name="display_order"
+                                   value="{{ prize.display_order }}">
+                            <small class="form-text text-muted">Lower numbers appear first in the slider</small>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Start Date (Optional)</label>
+                            <input type="datetime-local" class="form-control" name="start_date"
+                                   value="{{ prize.start_date|date:'Y-m-d\TH:i' }}">
+                            <small class="form-text text-muted">When to start showing this prize</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">End Date (Optional)</label>
+                            <input type="datetime-local" class="form-control" name="end_date"
+                                   value="{{ prize.end_date|date:'Y-m-d\TH:i' }}">
+                            <small class="form-text text-muted">When to stop showing this prize</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" name="is_active" id="is_active"
+                               {% if prize.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            <strong>Active</strong> (Show in banner slider)
+                        </label>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Current Status:</strong>
+                        {% if prize.is_active %}
+                            This prize is currently <strong class="text-success">active</strong> and visible in the banner slider.
+                        {% else %}
+                            This prize is currently <strong class="text-secondary">inactive</strong> and not shown.
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin_dashboard:prize_announcements' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-2"></i>Update Prize
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

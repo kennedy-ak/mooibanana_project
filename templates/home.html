@@ -72,6 +72,121 @@
     </div>
 </div>
 
+<!-- Money Rewards Showcase Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+            <div class="card-body text-center p-5 text-white">
+                <h2 class="display-5 mb-3 fw-bold">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    Turn Your Likes Into Real Money!
+                </h2>
+                <p class="lead mb-4">
+                    Post pictures, share blogs, receive likes from the community, and claim cash rewards!
+                </p>
+
+                <div class="row mt-5">
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-lg" style="background: rgba(255, 255, 255, 0.95); transform: scale(1.0); transition: transform 0.3s;">
+                            <div class="card-body text-center p-4">
+                                <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                                     style="width: 80px; height: 80px;">
+                                    <h3 class="mb-0 fw-bold">GHS 400</h3>
+                                </div>
+                                <h5 class="text-dark mb-3 fw-bold">Bronze Tier</h5>
+                                <div class="mb-3">
+                                    <i class="fas fa-heart text-danger"></i>
+                                    <span class="text-dark fw-bold">10,000 Likes</span>
+                                </div>
+                                <p class="text-muted small">
+                                    Start your journey! Get 10k likes and claim your first cash reward.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-lg" style="background: rgba(255, 255, 255, 0.95); transform: scale(1.05); transition: transform 0.3s;">
+                            <div class="card-body text-center p-4">
+                                <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                                     style="width: 80px; height: 80px;">
+                                    <h3 class="mb-0 fw-bold">GHS 790</h3>
+                                </div>
+                                <h5 class="text-dark mb-3 fw-bold">Silver Tier</h5>
+                                <div class="mb-3">
+                                    <i class="fas fa-heart text-danger"></i>
+                                    <span class="text-dark fw-bold">22,000 Likes</span>
+                                </div>
+                                <p class="text-muted small">
+                                    Level up! Reach 22k likes and double your earnings.
+                                </p>
+                                <span class="badge bg-warning text-dark">POPULAR</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-lg" style="background: rgba(255, 255, 255, 0.95); transform: scale(1.0); transition: transform 0.3s;">
+                            <div class="card-body text-center p-4">
+                                <div class="bg-danger text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                                     style="width: 80px; height: 80px;">
+                                    <h3 class="mb-0 fw-bold">GHS 1170</h3>
+                                </div>
+                                <h5 class="text-dark mb-3 fw-bold">Gold Tier</h5>
+                                <div class="mb-3">
+                                    <i class="fas fa-heart text-danger"></i>
+                                    <span class="text-dark fw-bold">32,000 Likes</span>
+                                </div>
+                                <p class="text-muted small">
+                                    Master level! Hit 32k likes and unlock the biggest reward.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5">
+                    <h4 class="mb-4 fw-bold">How to Earn Money:</h4>
+                    <div class="row justify-content-center">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-camera fa-2x mb-2"></i>
+                                <p class="mb-0 small fw-bold">Post Pictures</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-blog fa-2x mb-2"></i>
+                                <p class="mb-0 small fw-bold">Write Blogs</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-heart fa-2x mb-2"></i>
+                                <p class="mb-0 small fw-bold">Get Likes</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="p-3 rounded" style="background: rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
+                                <p class="mb-0 small fw-bold">Earn Cash</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if not user.is_authenticated %}
+                <div class="mt-5">
+                    <a href="{% url 'accounts:register' %}" class="btn btn-light btn-lg px-5 py-3 shadow-lg" style="font-weight: 600;">
+                        <i class="fas fa-rocket me-2"></i>Start Earning Now - It's Free!
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 {% if not user.is_authenticated %}
 <div class="row">
     <div class="col-12">

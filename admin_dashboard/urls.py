@@ -45,6 +45,13 @@ urlpatterns = [
     path('reward-claims/', views.reward_claims_management, name='reward_claims'),
     path('reward-claims/<int:claim_id>/update/', views.update_reward_claim_status, name='update_reward_claim_status'),
 
+    # Prize Announcements Management
+    path('prize-announcements/', views.prize_announcements_management, name='prize_announcements'),
+    path('prize-announcements/create/', views.create_prize_announcement, name='create_prize_announcement'),
+    path('prize-announcements/<int:prize_id>/edit/', views.edit_prize_announcement, name='edit_prize_announcement'),
+    path('prize-announcements/<int:prize_id>/delete/', views.delete_prize_announcement, name='delete_prize_announcement'),
+    path('prize-announcements/<int:prize_id>/toggle/', views.toggle_prize_status, name='toggle_prize_status'),
+
     # Advertisements Management
     path('advertisements/', views.advertisements_management, name='advertisements_management'),
     path('advertisements/create/', views.create_advertisement, name='create_advertisement'),

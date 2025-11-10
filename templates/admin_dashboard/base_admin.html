@@ -309,6 +309,11 @@
                                 <i class="fas fa-trophy"></i>
                                 Claims
                             </a>
+                            <a class="nav-link {% if 'prize' in request.resolver_match.url_name %}active{% endif %}"
+                               href="{% url 'admin_dashboard:prize_announcements' %}">
+                                <i class="fas fa-bullhorn"></i>
+                                Prize Slider
+                            </a>
                             <a class="nav-link {% if 'advertisement' in request.resolver_match.url_name %}active{% endif %}"
                                href="{% url 'admin_dashboard:advertisements_management' %}">
                                 <i class="fas fa-ad"></i>

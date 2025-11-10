@@ -1,0 +1,126 @@
+{% extends "admin_dashboard/base_admin.html" %}
+
+{% block title %}Prize Announcements - Admin Dashboard{% endblock %}
+{% block page_title %}Prize Announcements{% endblock %}
+{% block page_subtitle %}Manage prize slider banner{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-warning d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Prize Slider Banner</h5>
+        <a href="{% url 'admin_dashboard:create_prize_announcement' %}" class="btn btn-sm btn-dark">
+            <i class="fas fa-plus me-2"></i>Create New Prize
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Info:</strong> These prizes appear in the sliding banner at the top of the website.
+            Toggle "Active" to show/hide them. The slider only appears when at least one prize is active.
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Total Prizes</small>
+                    <h4 class="mb-0">{{ prizes.count }}</h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Active Prizes</small>
+                    <h4 class="mb-0 text-success">{{ active_count }}</h4>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card bg-light">
+                    <small class="text-muted">Inactive Prizes</small>
+                    <h4 class="mb-0 text-secondary">{{ inactive_count }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Icon</th>
+                        <th>Title</th>
+                        <th>Prize Value</th>
+                        <th>Position</th>
+                        <th>Display Order</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prize in prizes %}
+                    <tr>
+                        <td>
+                            <div style="width: 50px; height: 50px; background: {{ prize.background_color }}; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas {{ prize.icon }} fa-2x" style="color: white;"></i>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ prize.title }}</strong><br>
+                            <small class="text-muted">{{ prize.description|truncatewords:10 }}</small>
+                        </td>
+                        <td><strong class="text-warning">{{ prize.prize_value }}</strong></td>
+                        <td>
+                            <span class="badge bg-primary">{{ prize.get_position_display }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ prize.display_order }}</span>
+                        </td>
+                        <td>
+                            {% if prize.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                            <br>
+                            {% if prize.start_date %}
+                                <small class="text-muted">From: {{ prize.start_date|date:"M d, Y" }}</small><br>
+                            {% endif %}
+                            {% if prize.end_date %}
+                                <small class="text-muted">To: {{ prize.end_date|date:"M d, Y" }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'admin_dashboard:edit_prize_announcement' prize.id %}"
+                                   class="btn btn-sm btn-warning" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form method="post" action="{% url 'admin_dashboard:toggle_prize_status' prize.id %}"
+                                      style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-info"
+                                            title="Toggle Active/Inactive">
+                                        <i class="fas fa-toggle-{% if prize.is_active %}on{% else %}off{% endif %}"></i>
+                                    </button>
+                                </form>
+                                <form method="post" action="{% url 'admin_dashboard:delete_prize_announcement' prize.id %}"
+                                      style="display:inline;" onsubmit="return confirmDelete('Delete this prize announcement?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="fas fa-bullhorn fa-3x mb-3 d-block"></i>
+                            No prize announcements found. Create one to display in the banner slider!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -11,6 +11,9 @@
             <h2 class="text-white">Rewards Store</h2>
             <div class="text-white">
                 <i class="fas fa-star"></i> You have <strong>{{ user.points_balance }}</strong> points
+                <span class="ms-3" title="Available likes for rewards ({{ total_likes_received }} received - {{ likes_spent }} spent)">
+                    <i class="fas fa-heart"></i> <strong>{{ user_likes_count }}</strong> available likes
+                </span>
             </div>
         </div>
         
@@ -29,19 +32,36 @@
                         <h5 class="card-title">{{ reward.name }}</h5>
                         <p class="card-text">{{ reward.description|truncatewords:20 }}</p>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge bg-primary">{{ reward.points_cost }} punten</span>
-                            <small class="text-muted">{{ reward.stock_quantity }} beschikbaar</small>
+                            {% if reward.reward_type == 'money' and reward.likes_required > 0 %}
+                                <span class="badge bg-danger"><i class="fas fa-heart"></i> {{ reward.likes_required }} likes required</span>
+                                <span class="badge bg-success">GHS {{ reward.name|slice:"4:" }}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ reward.points_cost }} punten</span>
+                                <small class="text-muted">{{ reward.stock_quantity }} beschikbaar</small>
+                            {% endif %}
                         </div>
                     </div>
                     <div class="card-footer">
-                        {% if user.points_balance >= reward.points_cost %}
-                            <a href="{% url 'rewards:claim' reward.id %}" class="btn btn-success w-100">
-                                Claim Nu
-                            </a>
+                        {% if reward.reward_type == 'money' and reward.likes_required > 0 %}
+                            {% if user_likes_count >= reward.likes_required %}
+                                <a href="{% url 'rewards:claim' reward.id %}" class="btn btn-success w-100">
+                                    Claim Nu
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary w-100" disabled>
+                                    Niet genoeg likes
+                                </button>
+                            {% endif %}
                         {% else %}
-                            <button class="btn btn-secondary w-100" disabled>
-                                Niet genoeg punten
-                            </button>
+                            {% if user.points_balance >= reward.points_cost %}
+                                <a href="{% url 'rewards:claim' reward.id %}" class="btn btn-success w-100">
+                                    Claim Nu
+                                </a>
+                            {% else %}
+                                <button class="btn btn-secondary w-100" disabled>
+                                    Niet genoeg punten
+                                </button>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>

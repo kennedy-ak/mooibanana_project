@@ -1196,9 +1196,10 @@ def create_reward(request):
             reward = Reward.objects.create(
                 name=request.POST.get('name'),
                 description=request.POST.get('description'),
-                points_cost=request.POST.get('points_cost'),
+                points_cost=request.POST.get('points_cost', 0),
                 reward_type=request.POST.get('reward_type'),
                 stock_quantity=request.POST.get('stock_quantity', 0),
+                likes_required=request.POST.get('likes_required', 0),
                 is_active=request.POST.get('is_active') == 'on'
             )
 
@@ -1228,9 +1229,10 @@ def edit_reward(request, reward_id):
         try:
             reward.name = request.POST.get('name')
             reward.description = request.POST.get('description')
-            reward.points_cost = request.POST.get('points_cost')
+            reward.points_cost = request.POST.get('points_cost', 0)
             reward.reward_type = request.POST.get('reward_type')
             reward.stock_quantity = request.POST.get('stock_quantity', 0)
+            reward.likes_required = request.POST.get('likes_required', 0)
             reward.is_active = request.POST.get('is_active') == 'on'
 
             # Handle image upload
@@ -1323,6 +1325,134 @@ def update_reward_claim_status(request, claim_id):
         messages.success(request, f'Claim status updated to {new_status}!')
 
     return redirect('admin_dashboard:reward_claims')
+
+
+# ===== PRIZE ANNOUNCEMENTS MANAGEMENT =====
+
+@user_passes_test(is_superuser)
+def prize_announcements_management(request):
+    """Manage prize announcements for the banner slider"""
+    from rewards.models import PrizeAnnouncement
+
+    prizes = PrizeAnnouncement.objects.all().order_by('display_order', 'position')
+    active_count = prizes.filter(is_active=True).count()
+    inactive_count = prizes.filter(is_active=False).count()
+
+    context = {
+        'prizes': prizes,
+        'active_count': active_count,
+        'inactive_count': inactive_count
+    }
+    return render(request, 'admin_dashboard/prize_announcements_management.html', context)
+
+
+@user_passes_test(is_superuser)
+def create_prize_announcement(request):
+    """Create a new prize announcement"""
+    from rewards.models import PrizeAnnouncement
+
+    if request.method == 'POST':
+        try:
+            prize = PrizeAnnouncement.objects.create(
+                title=request.POST.get('title'),
+                description=request.POST.get('description'),
+                prize_value=request.POST.get('prize_value'),
+                position=request.POST.get('position'),
+                icon=request.POST.get('icon', 'fa-trophy'),
+                background_color=request.POST.get('background_color', '#FFD700'),
+                display_order=request.POST.get('display_order', 0),
+                is_active=request.POST.get('is_active') == 'on'
+            )
+
+            # Handle optional date fields
+            if request.POST.get('start_date'):
+                prize.start_date = request.POST.get('start_date')
+            if request.POST.get('end_date'):
+                prize.end_date = request.POST.get('end_date')
+
+            prize.save()
+            messages.success(request, 'Prize announcement created successfully!')
+        except Exception as e:
+            messages.error(request, f'Error creating prize announcement: {str(e)}')
+
+        return redirect('admin_dashboard:prize_announcements')
+
+    from rewards.models import PrizeAnnouncement
+    position_choices = PrizeAnnouncement.PRIZE_POSITIONS
+    return render(request, 'admin_dashboard/create_prize_announcement.html', {'position_choices': position_choices})
+
+
+@user_passes_test(is_superuser)
+def edit_prize_announcement(request, prize_id):
+    """Edit a prize announcement"""
+    from rewards.models import PrizeAnnouncement
+    prize = get_object_or_404(PrizeAnnouncement, id=prize_id)
+
+    if request.method == 'POST':
+        try:
+            prize.title = request.POST.get('title')
+            prize.description = request.POST.get('description')
+            prize.prize_value = request.POST.get('prize_value')
+            prize.position = request.POST.get('position')
+            prize.icon = request.POST.get('icon', 'fa-trophy')
+            prize.background_color = request.POST.get('background_color', '#FFD700')
+            prize.display_order = request.POST.get('display_order', 0)
+            prize.is_active = request.POST.get('is_active') == 'on'
+
+            # Handle optional date fields
+            if request.POST.get('start_date'):
+                prize.start_date = request.POST.get('start_date')
+            else:
+                prize.start_date = None
+
+            if request.POST.get('end_date'):
+                prize.end_date = request.POST.get('end_date')
+            else:
+                prize.end_date = None
+
+            prize.save()
+            messages.success(request, 'Prize announcement updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating prize announcement: {str(e)}')
+
+        return redirect('admin_dashboard:prize_announcements')
+
+    from rewards.models import PrizeAnnouncement
+    position_choices = PrizeAnnouncement.PRIZE_POSITIONS
+    return render(request, 'admin_dashboard/edit_prize_announcement.html', {'prize': prize, 'position_choices': position_choices})
+
+
+@user_passes_test(is_superuser)
+def delete_prize_announcement(request, prize_id):
+    """Delete a prize announcement"""
+    from rewards.models import PrizeAnnouncement
+    prize = get_object_or_404(PrizeAnnouncement, id=prize_id)
+
+    if request.method == 'POST':
+        prize.delete()
+        messages.success(request, 'Prize announcement deleted successfully!')
+        return redirect('admin_dashboard:prize_announcements')
+
+    return render(request, 'admin_dashboard/confirm_delete.html', {
+        'object': prize,
+        'object_type': 'prize announcement',
+        'cancel_url': 'admin_dashboard:prize_announcements'
+    })
+
+
+@user_passes_test(is_superuser)
+def toggle_prize_status(request, prize_id):
+    """Toggle prize announcement active status"""
+    from rewards.models import PrizeAnnouncement
+    prize = get_object_or_404(PrizeAnnouncement, id=prize_id)
+
+    if request.method == 'POST':
+        prize.is_active = not prize.is_active
+        prize.save()
+        status = 'activated' if prize.is_active else 'deactivated'
+        messages.success(request, f'Prize announcement {status}!')
+
+    return redirect('admin_dashboard:prize_announcements')
 
 
 # ===== ADVERTISEMENTS MANAGEMENT =====

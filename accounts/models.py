@@ -58,6 +58,9 @@ class CustomUser(AbstractUser):
     received_likes_count = models.IntegerField(default=0)
     received_unlikes_count = models.IntegerField(default=0)
 
+    # Likes spent on money rewards
+    likes_spent_on_rewards = models.IntegerField(default=0)
+
     points_balance = models.IntegerField(default=0)
 
     # Referral system fields

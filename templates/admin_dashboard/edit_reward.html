@@ -33,8 +33,14 @@
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Points Cost*</label>
-                            <input type="number" class="form-control" name="points_cost" value="{{ reward.points_cost }}" required>
+                            <label class="form-label">Points Cost</label>
+                            <input type="number" class="form-control" name="points_cost" value="{{ reward.points_cost }}">
+                            <small class="form-text text-muted">Leave as 0 for like-based rewards</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Likes Required</label>
+                            <input type="number" class="form-control" name="likes_required" value="{{ reward.likes_required|default:0 }}">
+                            <small class="form-text text-muted">For money rewards based on likes</small>
                         </div>
                     </div>
 
