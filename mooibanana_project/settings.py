@@ -300,3 +300,203 @@ STORAGES = {
 
 # Fallback for older Django versions
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# AWS CloudWatch Configuration (Optional)
+AWS_CLOUDWATCH_ENABLED = config('AWS_CLOUDWATCH_ENABLED', default=False, cast=bool)
+AWS_REGION_NAME = config('AWS_REGION_NAME', default='us-east-1')
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', default='')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', default='')
+CLOUDWATCH_LOG_GROUP = config('CLOUDWATCH_LOG_GROUP', default='mooibanana-app')
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {name} {message}',
+            'style': '{',
+        },
+        'detailed': {
+            'format': '{levelname} {asctime} {name} {module} {funcName} {lineno:d} {message}',
+            'style': '{',
+        },
+        'cloudwatch': {
+            'format': '{levelname} {name} {module} {funcName} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'app.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 10,
+            'formatter': 'verbose'
+        },
+        'payments_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'payments.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 10,
+            'formatter': 'detailed'
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 10,
+            'formatter': 'detailed'
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'errors.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10MB
+            'backupCount': 10,
+            'formatter': 'detailed'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['error_file', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'payments': {
+            'handlers': ['console', 'payments_file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'accounts': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'likes': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'rewards': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'notifications': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'chat': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'profiles': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    }
+}
+
+# Conditionally add CloudWatch handlers if enabled
+if AWS_CLOUDWATCH_ENABLED and AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY:
+    try:
+        import boto3
+        import watchtower
+
+        # Create CloudWatch handlers
+        cloudwatch_handler_config = {
+            'level': 'INFO',
+            'class': 'watchtower.CloudWatchLogHandler',
+            'boto3_client': boto3.client(
+                'logs',
+                region_name=AWS_REGION_NAME,
+                aws_access_key_id=AWS_ACCESS_KEY_ID,
+                aws_secret_access_key=AWS_SECRET_ACCESS_KEY
+            ),
+            'log_group_name': CLOUDWATCH_LOG_GROUP,
+            'formatter': 'cloudwatch',
+        }
+
+        # Add CloudWatch handlers for different log streams
+        LOGGING['handlers']['cloudwatch_general'] = {
+            **cloudwatch_handler_config,
+            'log_stream_name': 'general-{strftime:%Y-%m-%d}',
+        }
+
+        LOGGING['handlers']['cloudwatch_payments'] = {
+            **cloudwatch_handler_config,
+            'level': 'DEBUG',
+            'log_stream_name': 'payments-{strftime:%Y-%m-%d}',
+        }
+
+        LOGGING['handlers']['cloudwatch_errors'] = {
+            **cloudwatch_handler_config,
+            'level': 'ERROR',
+            'log_stream_name': 'errors-{strftime:%Y-%m-%d}',
+        }
+
+        LOGGING['handlers']['cloudwatch_security'] = {
+            **cloudwatch_handler_config,
+            'level': 'WARNING',
+            'log_stream_name': 'security-{strftime:%Y-%m-%d}',
+        }
+
+        # Add CloudWatch handlers to existing loggers
+        LOGGING['loggers']['django']['handlers'].append('cloudwatch_general')
+        LOGGING['loggers']['django.request']['handlers'].append('cloudwatch_errors')
+        LOGGING['loggers']['django.security']['handlers'].append('cloudwatch_security')
+        LOGGING['loggers']['payments']['handlers'].append('cloudwatch_payments')
+        LOGGING['loggers']['payments']['handlers'].append('cloudwatch_errors')
+        LOGGING['loggers']['accounts']['handlers'].append('cloudwatch_general')
+        LOGGING['loggers']['likes']['handlers'].append('cloudwatch_general')
+        LOGGING['loggers']['rewards']['handlers'].append('cloudwatch_general')
+        LOGGING['loggers']['notifications']['handlers'].append('cloudwatch_general')
+        LOGGING['loggers']['security']['handlers'].append('cloudwatch_security')
+
+        print(f"✓ CloudWatch logging enabled - Log Group: {CLOUDWATCH_LOG_GROUP}, Region: {AWS_REGION_NAME}")
+    except ImportError:
+        print("⚠ CloudWatch logging enabled but watchtower/boto3 not installed. Run: pip install watchtower boto3")
+    except Exception as e:
+        print(f"⚠ CloudWatch logging configuration failed: {str(e)}")
+else:
+    if AWS_CLOUDWATCH_ENABLED:
+        print("⚠ CloudWatch enabled but AWS credentials not configured")

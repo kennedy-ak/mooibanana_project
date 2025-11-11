@@ -5,9 +5,12 @@ from django.core.validators import EmailValidator
 import uuid
 import string
 import random
+import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from datetime import datetime
+
+logger = logging.getLogger('accounts')
 
 
 class CustomUser(AbstractUser):
@@ -116,6 +119,8 @@ class Referral(models.Model):
 def award_referral_points(sender, instance, created, **kwargs):
     """Award points to referrer when referred user completes their profile"""
     if instance.is_complete and instance.user.referred_by:
+        logger.info(f"Processing referral points award - ReferredUser: {instance.user.id}, Referrer: {instance.user.referred_by.id}")
+
         # Check if referral record exists and is still pending
         try:
             referral = Referral.objects.get(
@@ -126,9 +131,14 @@ def award_referral_points(sender, instance, created, **kwargs):
 
             # Award points to referrer
             points_to_award = 15  # 15 points for successful referral
+            old_balance = referral.referrer.points_balance
+            old_referral_points = referral.referrer.referral_points_earned
+
             referral.referrer.points_balance += points_to_award
             referral.referrer.referral_points_earned += points_to_award
             referral.referrer.save()
+
+            logger.info(f"Referral points awarded - Referrer: {referral.referrer.id}, Points: {points_to_award}, OldBalance: {old_balance}, NewBalance: {referral.referrer.points_balance}, OldReferralPoints: {old_referral_points}, NewReferralPoints: {referral.referrer.referral_points_earned}")
 
             # Update referral record
             referral.points_awarded = points_to_award
@@ -136,21 +146,32 @@ def award_referral_points(sender, instance, created, **kwargs):
             referral.completed_at = datetime.now()
             referral.save()
 
+            logger.info(f"Referral record completed - ReferralID: {referral.id}, Referrer: {referral.referrer.id}, ReferredUser: {instance.user.id}")
+
         except Referral.DoesNotExist:
             # Create referral record if it doesn't exist
             if instance.user.referred_by:
+                logger.info(f"Creating new referral record - Referrer: {instance.user.referred_by.id}, ReferredUser: {instance.user.id}")
+
                 points_to_award = 15
+                old_balance = instance.user.referred_by.points_balance
+                old_referral_points = instance.user.referred_by.referral_points_earned
+
                 instance.user.referred_by.points_balance += points_to_award
                 instance.user.referred_by.referral_points_earned += points_to_award
                 instance.user.referred_by.save()
 
-                Referral.objects.create(
+                logger.info(f"Referral points awarded (new record) - Referrer: {instance.user.referred_by.id}, Points: {points_to_award}, OldBalance: {old_balance}, NewBalance: {instance.user.referred_by.points_balance}")
+
+                referral = Referral.objects.create(
                     referrer=instance.user.referred_by,
                     referred_user=instance.user,
                     points_awarded=points_to_award,
                     status='completed',
                     completed_at=datetime.now()
                 )
+
+                logger.info(f"Referral record created - ReferralID: {referral.id}, Referrer: {instance.user.referred_by.id}, ReferredUser: {instance.user.id}")
     
     def clean(self):
         super().clean()

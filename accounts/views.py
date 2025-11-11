@@ -17,7 +17,7 @@ from .forms import CustomUserCreationForm, CustomPasswordResetForm, UserSettings
 from .models import CustomUser, Referral
 from django.views.generic.edit import UpdateView
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('accounts')
 
 
 class CustomLoginView(LoginView):
@@ -27,6 +27,18 @@ class CustomLoginView(LoginView):
     def get_success_url(self):
         """Always redirect to discover page, ignoring 'next' parameter"""
         return reverse_lazy('profiles:discover')
+
+    def form_valid(self, form):
+        """Log successful login"""
+        response = super().form_valid(form)
+        logger.info(f"User logged in successfully - UserID: {self.request.user.id}, Username: {self.request.user.username}")
+        return response
+
+    def form_invalid(self, form):
+        """Log failed login attempts"""
+        username = form.data.get('username', 'unknown')
+        logger.warning(f"Failed login attempt - Username: {username}")
+        return super().form_invalid(form)
 
 class RegisterView(CreateView):
     model = CustomUser
@@ -46,8 +58,12 @@ class RegisterView(CreateView):
         response = super().form_valid(form)
         login(self.request, self.object)
 
+        # Log user registration
+        logger.info(f"New user registered - UserID: {self.object.id}, Username: {self.object.username}, Email: {self.object.email}")
+
         # Check if user was referred
         if self.object.referred_by:
+            logger.info(f"User registered with referral - UserID: {self.object.id}, ReferredBy: {self.object.referred_by.id}, ReferralCode: {form.cleaned_data.get('referral_code')}")
             messages.success(
                 self.request,
                 f'Account created successfully! You were referred by {self.object.referred_by.username}. '
@@ -86,12 +102,15 @@ def generate_referral_link(request):
         base_url = request.build_absolute_uri('/accounts/register/')
         referral_link = f"{base_url}?ref={referral_code}"
 
+        logger.info(f"Referral link generated - UserID: {request.user.id}, ReferralCode: {referral_code}")
+
         return JsonResponse({
             'success': True,
             'referral_link': referral_link,
             'referral_code': referral_code
         })
 
+    logger.warning(f"Invalid referral link generation attempt - UserID: {request.user.id}, Method: {request.method}")
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
@@ -106,12 +125,17 @@ class CustomPasswordResetView(PasswordResetView):
     
     def form_valid(self, form):
         """Override to add better error handling and console fallback"""
+        email = form.cleaned_data.get('email', 'unknown')
+        logger.info(f"Password reset requested - Email: {email}")
+
         try:
             # Try to send email normally
-            return super().form_valid(form)
+            response = super().form_valid(form)
+            logger.info(f"Password reset email sent successfully - Email: {email}")
+            return response
         except Exception as e:
-            logger.error(f"Failed to send password reset email: {str(e)}")
-            
+            logger.exception(f"Failed to send password reset email - Email: {email}, Error: {str(e)}")
+
             # If SMTP fails, try to provide helpful message
             if 'console' not in settings.EMAIL_BACKEND:
                 messages.warning(
@@ -120,24 +144,15 @@ class CustomPasswordResetView(PasswordResetView):
                     'configuration or contact the administrator. '
                     'For testing, the system is using console output for emails.'
                 )
-                
+
                 # Fall back to console output for testing
-                email = form.cleaned_data['email']
                 reset_url = self.request.build_absolute_uri(
-                    reverse_lazy('accounts:password_reset_confirm', 
+                    reverse_lazy('accounts:password_reset_confirm',
                                kwargs={'uidb64': 'test', 'token': 'test'})
                 )
-                
-                print(f"\n{'='*50}")
-                print("PASSWORD RESET EMAIL (Console Output)")
-                print(f"{'='*50}")
-                print(f"To: {email}")
-                print(f"Subject: Password reset for your Mooibanana account")
-                print(f"\nHello,")
-                print(f"You requested a password reset for your Mooibanana account.")
-                print(f"Reset URL: {reset_url}")
-                print(f"{'='*50}\n")
-            
+
+                logger.debug(f"Password reset fallback - Email: {email}, ResetURL: {reset_url}")
+
             return redirect(self.success_url)
 
 
@@ -152,5 +167,12 @@ class UserSettingsView(LoginRequiredMixin, UpdateView):
         return self.request.user
 
     def form_valid(self, form):
+        # Log what changed
+        changed_data = form.changed_data
+        if changed_data:
+            logger.info(f"User settings updated - UserID: {self.request.user.id}, ChangedFields: {', '.join(changed_data)}")
+            if 'country' in changed_data:
+                logger.info(f"User country changed - UserID: {self.request.user.id}, NewCountry: {form.cleaned_data.get('country')}")
+
         messages.success(self.request, 'Your settings have been updated successfully!')
         return super().form_valid(form)

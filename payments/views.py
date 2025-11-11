@@ -2,6 +2,7 @@
 import requests
 import json
 import stripe
+import logging
 from django.conf import settings
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
@@ -16,6 +17,9 @@ from django.urls import reverse
 from .models import Package, Purchase
 import hashlib
 import hmac
+
+# Initialize logger
+logger = logging.getLogger('payments')
 
 User = get_user_model()
 
@@ -128,6 +132,8 @@ def purchase_package(request, package_id):
 @login_required
 def purchase_package_paystack(request, package, usage_type='likes'):
     """Handle Paystack payment for packages"""
+    logger.info(f"Paystack purchase initiated - User: {request.user.id}, Package: {package.id}, Usage: {usage_type}")
+
     try:
         # Create purchase record
         purchase = Purchase.objects.create(
@@ -138,6 +144,7 @@ def purchase_package_paystack(request, package, usage_type='likes'):
             status='pending',
             usage_type=usage_type
         )
+        logger.info(f"Purchase record created - ID: {purchase.id}, User: {request.user.id}, Amount: {package.price} {package.currency}")
 
         # Initialize Paystack transaction
         paystack_data = {
@@ -160,8 +167,7 @@ def purchase_package_paystack(request, package, usage_type='likes'):
             'Content-Type': 'application/json',
         }
 
-        print(f"Paystack data: {paystack_data}")  # Debug print
-        print(f"Headers: {headers}")  # Debug print
+        logger.debug(f"Paystack API request - Reference: {paystack_data['reference']}, Amount: {paystack_data['amount']}, Currency: {paystack_data['currency']}")
 
         response = requests.post(
             'https://api.paystack.co/transaction/initialize',
@@ -169,8 +175,7 @@ def purchase_package_paystack(request, package, usage_type='likes'):
             data=json.dumps(paystack_data)
         )
 
-        print(f"Response status: {response.status_code}")  # Debug print
-        print(f"Response content: {response.text}")  # Debug print
+        logger.debug(f"Paystack API response - Status: {response.status_code}, Purchase: {purchase.id}")
 
         if response.status_code == 200:
             paystack_response = response.json()
@@ -179,26 +184,32 @@ def purchase_package_paystack(request, package, usage_type='likes'):
                 purchase.paystack_reference = paystack_data['reference']
                 purchase.save()
 
+                logger.info(f"Paystack transaction initialized successfully - Purchase: {purchase.id}, Reference: {paystack_data['reference']}")
+
                 # Redirect to Paystack payment page
                 return redirect(paystack_response['data']['authorization_url'])
             else:
                 error_msg = paystack_response.get('message', 'Payment initialization failed')
+                logger.error(f"Paystack initialization failed - Purchase: {purchase.id}, Error: {error_msg}")
                 messages.error(request, f'Payment failed: {error_msg}')
                 purchase.delete()
                 return redirect('payments:packages')
         else:
+            logger.error(f"Paystack API error - Status: {response.status_code}, Purchase: {purchase.id}, Response: {response.text}")
             messages.error(request, f'Payment service error: {response.status_code}')
             purchase.delete()
             return redirect('payments:packages')
 
     except Exception as e:
+        logger.exception(f"Exception in Paystack purchase - User: {request.user.id}, Package: {package.id}, Error: {str(e)}")
         messages.error(request, f'Payment error: {str(e)}')
-        print(f"Exception: {e}")  # Debug print
         return redirect('payments:packages')
 
 @login_required
 def purchase_package_stripe(request, package, usage_type='likes'):
     """Handle Stripe payment for packages"""
+    logger.info(f"Stripe purchase initiated - User: {request.user.id}, Package: {package.id}, Usage: {usage_type}")
+
     try:
         # Create purchase record
         purchase = Purchase.objects.create(
@@ -209,6 +220,7 @@ def purchase_package_stripe(request, package, usage_type='likes'):
             status='pending',
             usage_type=usage_type
         )
+        logger.info(f"Purchase record created - ID: {purchase.id}, User: {request.user.id}, Amount: {package.price} {package.currency}")
 
         # Create Stripe Checkout Session
         checkout_session = stripe.checkout.Session.create(
@@ -242,17 +254,21 @@ def purchase_package_stripe(request, package, usage_type='likes'):
         purchase.stripe_session_id = checkout_session.id
         purchase.save()
 
+        logger.info(f"Stripe checkout session created - Purchase: {purchase.id}, Session: {checkout_session.id}")
+
         # Redirect to Stripe Checkout
         return redirect(checkout_session.url)
 
     except Exception as e:
+        logger.exception(f"Exception in Stripe purchase - User: {request.user.id}, Package: {package.id}, Error: {str(e)}")
         messages.error(request, f'Payment error: {str(e)}')
-        print(f"Stripe Exception: {e}")  # Debug print
         return redirect('payments:packages')
 
 @login_required
 def purchase_package_viva(request, package, usage_type='likes'):
     """Handle Viva Wallet payment for packages"""
+    logger.info(f"Viva Wallet purchase initiated - User: {request.user.id}, Package: {package.id}, Usage: {usage_type}")
+
     try:
         # Create purchase record
         purchase = Purchase.objects.create(
@@ -263,9 +279,11 @@ def purchase_package_viva(request, package, usage_type='likes'):
             status='pending',
             usage_type=usage_type
         )
+        logger.info(f"Purchase record created - ID: {purchase.id}, User: {request.user.id}, Amount: {package.price} {package.currency}")
 
         # Get Viva Wallet API base URL based on environment
         api_base = 'https://api.vivapayments.com' if settings.VIVA_ENVIRONMENT == 'production' else 'https://demo-api.vivapayments.com'
+        logger.debug(f"Using Viva Wallet environment: {settings.VIVA_ENVIRONMENT}, API base: {api_base}")
 
         # Prepare order data for Viva Wallet
         order_data = {
@@ -305,12 +323,16 @@ def purchase_package_viva(request, package, usage_type='likes'):
             'Content-Type': 'application/json',
         }
 
+        logger.debug(f"Viva Wallet API request - Purchase: {purchase.id}, Amount: {order_data['amount']}")
+
         response = requests.post(
             f'{api_base}/checkout/v2/orders',
             json=order_data,
             headers=headers,
             auth=(settings.VIVA_MERCHANT_ID, settings.VIVA_API_KEY)
         )
+
+        logger.debug(f"Viva Wallet API response - Status: {response.status_code}, Purchase: {purchase.id}")
 
         if response.status_code == 200:
             viva_response = response.json()
@@ -321,24 +343,28 @@ def purchase_package_viva(request, package, usage_type='likes'):
                 purchase.viva_order_code = order_code
                 purchase.save()
 
+                logger.info(f"Viva Wallet order created successfully - Purchase: {purchase.id}, OrderCode: {order_code}")
+
                 # Construct checkout URL
                 checkout_url = f'https://www.vivapayments.com/web/checkout?ref={order_code}' if settings.VIVA_ENVIRONMENT == 'production' else f'https://demo.vivapayments.com/web/checkout?ref={order_code}'
 
                 # Redirect to Viva Wallet checkout page
                 return redirect(checkout_url)
             else:
+                logger.error(f"Viva Wallet order creation failed - No order code returned, Purchase: {purchase.id}")
                 messages.error(request, 'Payment initialization failed')
                 purchase.delete()
                 return redirect('payments:packages')
         else:
             error_msg = response.json().get('message', 'Payment initialization failed')
+            logger.error(f"Viva Wallet API error - Status: {response.status_code}, Purchase: {purchase.id}, Error: {error_msg}, Response: {response.text}")
             messages.error(request, f'Payment failed: {error_msg}')
             purchase.delete()
             return redirect('payments:packages')
 
     except Exception as e:
+        logger.exception(f"Exception in Viva Wallet purchase - User: {request.user.id}, Package: {package.id}, Error: {str(e)}")
         messages.error(request, f'Payment error: {str(e)}')
-        print(f"Viva Wallet Exception: {e}")  # Debug print
         return redirect('payments:packages')
 
 # Deleted functions: purchase_dislike_package, purchase_dislike_package_paystack, purchase_dislike_package_stripe
@@ -420,8 +446,10 @@ def gift_package(request, package_id, recipient_id):
 def paystack_callback(request):
     """Handle Paystack payment callback"""
     reference = request.GET.get('reference')
+    logger.info(f"Paystack callback received - Reference: {reference}, User: {request.user.id}")
 
     if not reference:
+        logger.warning(f"Paystack callback without reference - User: {request.user.id}")
         messages.error(request, 'Invalid payment reference')
         return redirect('payments:packages')
 
@@ -432,10 +460,14 @@ def paystack_callback(request):
             'Content-Type': 'application/json',
         }
 
+        logger.debug(f"Verifying Paystack transaction - Reference: {reference}")
+
         response = requests.get(
             f'https://api.paystack.co/transaction/verify/{reference}',
             headers=headers
         )
+
+        logger.debug(f"Paystack verification response - Status: {response.status_code}, Reference: {reference}")
 
         if response.status_code == 200:
             paystack_data = response.json()
@@ -455,7 +487,7 @@ def paystack_callback(request):
                         purchase_type = metadata.get('purchase_type', 'self')
                         usage_type = metadata.get('usage_type', 'likes')
 
-                        print(f"DEBUG: Processing payment - purchase_type: {purchase_type}, usage_type: {usage_type}, metadata: {metadata}")  # Debug line
+                        logger.info(f"Processing Paystack payment - Purchase: {purchase.id}, Type: {purchase_type}, Usage: {usage_type}, Amount: {purchase.amount}")
 
                         if purchase_type == 'gift' and 'recipient_id' in metadata:
                             # Gift purchase - give likes to recipient
@@ -464,13 +496,17 @@ def paystack_callback(request):
                                 package = purchase.package
 
                                 # Give likes to recipient (all packages now use likes_balance)
+                                old_balance = recipient.likes_balance
                                 recipient.likes_balance += package.likes_count
                                 recipient.save()
+                                logger.info(f"Gift likes credited - Recipient: {recipient.id}, Amount: {package.likes_count}, OldBalance: {old_balance}, NewBalance: {recipient.likes_balance}")
 
                                 # Award points to buyer (not recipient)
                                 if package.points_reward > 0:
+                                    old_points = purchase.user.points_balance
                                     purchase.user.points_balance += package.points_reward
                                     purchase.user.save()
+                                    logger.info(f"Points awarded to buyer - User: {purchase.user.id}, Points: {package.points_reward}, OldPoints: {old_points}, NewPoints: {purchase.user.points_balance}")
 
                                 # Create notification
                                 if Notification:
@@ -486,22 +522,30 @@ def paystack_callback(request):
                                 recipient_name = metadata.get("recipient_name", "unknown")
                                 messages.success(request, f'Gift sent successfully! {package.likes_count} likes to {recipient_name}!')
 
+                                logger.info(f"Gift transaction completed - Purchase: {purchase.id}, From: {purchase.user.id}, To: {recipient.id}")
                                 # Redirect back to the recipient's profile for gift purchases
                                 return redirect('profiles:profile_detail', pk=recipient.id)
                             except User.DoesNotExist:
+                                logger.error(f"Gift recipient not found - Purchase: {purchase.id}, RecipientID: {metadata.get('recipient_id')}")
                                 messages.error(request, 'Recipient not found')
                                 return redirect('payments:success')
                         else:
                             # Regular purchase - add to buyer (all packages now add to likes_balance)
                             package = purchase.package
 
+                            old_balance = purchase.user.likes_balance
                             purchase.user.likes_balance += package.likes_count
 
                             # Award points to buyer
                             if package.points_reward > 0:
+                                old_points = purchase.user.points_balance
                                 purchase.user.points_balance += package.points_reward
+                                logger.info(f"Points awarded - User: {purchase.user.id}, Points: {package.points_reward}, OldPoints: {old_points}, NewPoints: {purchase.user.points_balance}")
 
                             purchase.user.save()
+
+                            logger.info(f"Likes balance updated - User: {purchase.user.id}, Amount: {package.likes_count}, OldBalance: {old_balance}, NewBalance: {purchase.user.likes_balance}")
+                            logger.info(f"Purchase transaction completed - Purchase: {purchase.id}, User: {purchase.user.id}, Package: {package.id}")
 
                             # Create success message
                             points_msg = f' and {package.points_reward} points' if package.points_reward > 0 else ''
@@ -510,16 +554,20 @@ def paystack_callback(request):
                             # Redirect to success page for regular purchases
                             return redirect('payments:success')
                 except Purchase.DoesNotExist:
+                    logger.error(f"Purchase not found for Paystack reference: {reference}")
                     messages.error(request, 'Purchase not found')
                     return redirect('payments:packages')
             else:
+                logger.warning(f"Paystack payment verification failed - Reference: {reference}, Status: {paystack_data.get('data', {}).get('status')}")
                 messages.error(request, 'Payment verification failed')
                 return redirect('payments:cancel')
         else:
+            logger.error(f"Paystack verification API error - Status: {response.status_code}, Reference: {reference}")
             messages.error(request, 'Payment verification failed')
             return redirect('payments:cancel')
 
     except Exception as e:
+        logger.exception(f"Exception in Paystack callback - Reference: {reference}, User: {request.user.id}, Error: {str(e)}")
         messages.error(request, f'Payment verification error: {str(e)}')
         return redirect('payments:cancel')
 
@@ -527,14 +575,19 @@ def paystack_callback(request):
 def stripe_success(request):
     """Handle Stripe payment success callback"""
     session_id = request.GET.get('session_id')
+    logger.info(f"Stripe success callback received - SessionID: {session_id}, User: {request.user.id}")
 
     if not session_id:
+        logger.warning(f"Stripe callback without session_id - User: {request.user.id}")
         messages.error(request, 'Invalid payment session')
         return redirect('payments:packages')
 
     try:
         # Retrieve the Stripe session
+        logger.debug(f"Retrieving Stripe session - SessionID: {session_id}")
         session = stripe.checkout.Session.retrieve(session_id)
+
+        logger.debug(f"Stripe session retrieved - SessionID: {session_id}, PaymentStatus: {session.payment_status}")
 
         if session.payment_status == 'paid':
             # Find purchase by session ID
@@ -551,6 +604,8 @@ def stripe_success(request):
                     purchase_type = metadata.get('purchase_type', 'self')
                     usage_type = metadata.get('usage_type', 'likes')
 
+                    logger.info(f"Processing Stripe payment - Purchase: {purchase.id}, Type: {purchase_type}, Usage: {usage_type}, Amount: {purchase.amount}")
+
                     if purchase_type == 'gift' and 'recipient_id' in metadata:
                         # Gift purchase - give likes to recipient
                         try:
@@ -558,13 +613,17 @@ def stripe_success(request):
                             package = purchase.package
 
                             # Give likes to recipient (all packages now use likes_balance)
+                            old_balance = recipient.likes_balance
                             recipient.likes_balance += package.likes_count
                             recipient.save()
+                            logger.info(f"Stripe gift likes credited - Recipient: {recipient.id}, Amount: {package.likes_count}, OldBalance: {old_balance}, NewBalance: {recipient.likes_balance}")
 
                             # Award points to buyer (not recipient)
                             if package.points_reward > 0:
+                                old_points = purchase.user.points_balance
                                 purchase.user.points_balance += package.points_reward
                                 purchase.user.save()
+                                logger.info(f"Points awarded to buyer - User: {purchase.user.id}, Points: {package.points_reward}, OldPoints: {old_points}, NewPoints: {purchase.user.points_balance}")
 
                             if Notification:
                                 notification = Notification.objects.create(
@@ -579,34 +638,45 @@ def stripe_success(request):
                             recipient_name = metadata.get("recipient_name", "unknown")
                             messages.success(request, f'Gift sent successfully! {package.likes_count} likes to {recipient_name}!')
 
+                            logger.info(f"Stripe gift transaction completed - Purchase: {purchase.id}, From: {purchase.user.id}, To: {recipient.id}")
                             return redirect('profiles:profile_detail', pk=recipient.id)
                         except User.DoesNotExist:
+                            logger.error(f"Stripe gift recipient not found - Purchase: {purchase.id}, RecipientID: {metadata.get('recipient_id')}")
                             messages.error(request, 'Recipient not found')
                             return redirect('payments:success')
                     else:
                         # Regular purchase - add to buyer (all packages now add to likes_balance)
                         package = purchase.package
 
+                        old_balance = purchase.user.likes_balance
                         purchase.user.likes_balance += package.likes_count
 
                         # Award points to buyer
                         if package.points_reward > 0:
+                            old_points = purchase.user.points_balance
                             purchase.user.points_balance += package.points_reward
+                            logger.info(f"Points awarded - User: {purchase.user.id}, Points: {package.points_reward}, OldPoints: {old_points}, NewPoints: {purchase.user.points_balance}")
 
                         purchase.user.save()
+
+                        logger.info(f"Stripe likes balance updated - User: {purchase.user.id}, Amount: {package.likes_count}, OldBalance: {old_balance}, NewBalance: {purchase.user.likes_balance}")
+                        logger.info(f"Stripe purchase transaction completed - Purchase: {purchase.id}, User: {purchase.user.id}, Package: {package.id}")
 
                         points_msg = f' and {package.points_reward} points' if package.points_reward > 0 else ''
                         messages.success(request, f'Payment successful! You received {package.likes_count} likes for {usage_type}{points_msg}.')
 
                         return redirect('payments:success')
             except Purchase.DoesNotExist:
+                logger.error(f"Purchase not found for Stripe session: {session_id}")
                 messages.error(request, 'Purchase not found')
                 return redirect('payments:packages')
         else:
+            logger.warning(f"Stripe payment not completed - SessionID: {session_id}, Status: {session.payment_status}")
             messages.error(request, 'Payment not completed')
             return redirect('payments:cancel')
 
     except Exception as e:
+        logger.exception(f"Exception in Stripe success callback - SessionID: {session_id}, User: {request.user.id}, Error: {str(e)}")
         messages.error(request, f'Payment verification error: {str(e)}')
         return redirect('payments:cancel')
 
@@ -619,11 +689,14 @@ class PaymentCancelView(LoginRequiredMixin, TemplateView):
 @csrf_exempt
 def paystack_webhook(request):
     """Handle Paystack webhook notifications"""
+    logger.info("Paystack webhook received")
+
     # Verify webhook signature
     signature = request.META.get('HTTP_X_PAYSTACK_SIGNATURE')
     payload = request.body
 
     if not signature:
+        logger.warning("Paystack webhook rejected - Missing signature")
         return HttpResponse(status=400)
 
     # Compute expected signature
@@ -634,14 +707,18 @@ def paystack_webhook(request):
     ).hexdigest()
 
     if not hmac.compare_digest(signature, expected_signature):
+        logger.error("Paystack webhook rejected - Invalid signature")
         return HttpResponse(status=400)
 
     try:
         event = json.loads(payload.decode('utf-8'))
+        event_type = event.get('event')
+        logger.info(f"Paystack webhook event - Type: {event_type}")
 
         if event['event'] == 'charge.success':
             data = event['data']
             reference = data['reference']
+            logger.info(f"Processing Paystack webhook charge.success - Reference: {reference}")
 
             try:
                 purchase = Purchase.objects.get(paystack_reference=reference)
@@ -656,19 +733,25 @@ def paystack_webhook(request):
                     purchase_type = metadata.get('purchase_type', 'self')
                     usage_type = metadata.get('usage_type', 'likes')
 
+                    logger.info(f"Paystack webhook processing - Purchase: {purchase.id}, Type: {purchase_type}, Usage: {usage_type}")
+
                     if purchase_type == 'gift' and 'recipient_id' in metadata:
                         # Gift purchase - likes to recipient
                         try:
                             recipient = User.objects.get(id=metadata['recipient_id'])
 
                             # Give likes to recipient (all packages now use likes_balance)
+                            old_balance = recipient.likes_balance
                             recipient.likes_balance += purchase.package.likes_count
                             recipient.save()
+                            logger.info(f"Webhook gift likes credited - Recipient: {recipient.id}, Amount: {purchase.package.likes_count}, OldBalance: {old_balance}, NewBalance: {recipient.likes_balance}")
 
                             # Award points to buyer (not recipient)
                             if purchase.package.points_reward > 0:
+                                old_points = purchase.user.points_balance
                                 purchase.user.points_balance += purchase.package.points_reward
                                 purchase.user.save()
+                                logger.info(f"Webhook points awarded to buyer - User: {purchase.user.id}, Points: {purchase.package.points_reward}")
 
                             # Create notification for recipient about the gift
                             if Notification:
@@ -678,22 +761,32 @@ def paystack_webhook(request):
                                     notification_type='gift_received',
                                     message=f'You received a gift: {purchase.package.likes_count} likes from {purchase.user.first_name or purchase.user.username}!'
                                 )
+                            logger.info(f"Webhook gift transaction completed - Purchase: {purchase.id}, From: {purchase.user.id}, To: {recipient.id}")
                         except User.DoesNotExist:
-                            pass
+                            logger.error(f"Webhook gift recipient not found - Purchase: {purchase.id}, RecipientID: {metadata.get('recipient_id')}")
                     else:
                         # Regular purchase - all packages now add to likes_balance
+                        old_balance = purchase.user.likes_balance
                         purchase.user.likes_balance += purchase.package.likes_count
 
                         # Award points to buyer
                         if purchase.package.points_reward > 0:
+                            old_points = purchase.user.points_balance
                             purchase.user.points_balance += purchase.package.points_reward
+                            logger.info(f"Webhook points awarded - User: {purchase.user.id}, Points: {purchase.package.points_reward}")
 
                         purchase.user.save()
 
-            except Purchase.DoesNotExist:
-                pass
+                        logger.info(f"Webhook likes balance updated - User: {purchase.user.id}, Amount: {purchase.package.likes_count}, OldBalance: {old_balance}, NewBalance: {purchase.user.likes_balance}")
+                        logger.info(f"Webhook purchase transaction completed - Purchase: {purchase.id}")
+                else:
+                    logger.info(f"Paystack webhook - Purchase already completed: {purchase.id}")
 
-    except (json.JSONDecodeError, KeyError):
+            except Purchase.DoesNotExist:
+                logger.error(f"Paystack webhook - Purchase not found for reference: {reference}")
+
+    except (json.JSONDecodeError, KeyError) as e:
+        logger.exception(f"Paystack webhook parsing error: {str(e)}")
         return HttpResponse(status=400)
 
     return HttpResponse(status=200)

@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python manage.py makemigrations:*)"
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
