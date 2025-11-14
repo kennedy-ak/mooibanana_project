@@ -291,23 +291,11 @@
                             <i class="fas fa-heart"></i>
                         </div>
                         <div class="feature-text">
-                            <div class="feature-title">{{ package.regular_likes }} Regular Likes</div>
-                            <div class="feature-desc">Connect with other students</div>
+                            <div class="feature-title">{{ package.likes_count }} Likes</div>
+                            <div class="feature-desc">Use for likes or dislikes</div>
                         </div>
                     </div>
-                    
-                    {% if package.super_likes > 0 %}
-                    <div class="feature">
-                        <div class="feature-icon super-likes-icon">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="feature-text">
-                            <div class="feature-title">{{ package.super_likes }} Super Likes</div>
-                            <div class="feature-desc">Stand out from the crowd</div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    
+
                     {% if package.boosters > 0 %}
                     <div class="feature">
                         <div class="feature-icon boosters-icon">
@@ -319,7 +307,7 @@
                         </div>
                     </div>
                     {% endif %}
-                    
+
                     <div class="feature">
                         <div class="feature-icon bonus-icon">
                             <i class="fas fa-gift"></i>
@@ -377,15 +365,9 @@
                         {% endfor %}
                     </tr>
                     <tr>
-                        <td>Regular Likes</td>
+                        <td>Likes Count</td>
                         {% for package in packages %}
-                        <td>{{ package.regular_likes }}</td>
-                        {% endfor %}
-                    </tr>
-                    <tr>
-                        <td>Super Likes</td>
-                        {% for package in packages %}
-                        <td>{% if package.super_likes > 0 %}{{ package.super_likes }}{% else %}<i class="fas fa-times cross-icon"></i>{% endif %}</td>
+                        <td>{{ package.likes_count }}</td>
                         {% endfor %}
                     </tr>
                     <tr>
@@ -400,12 +382,7 @@
                         <td><i class="fas fa-check check-icon"></i></td>
                         {% endfor %}
                     </tr>
-                    <tr>
-                        <td>Money-back Guarantee</td>
-                        {% for package in packages %}
-                        <td><i class="fas fa-check check-icon"></i></td>
-                        {% endfor %}
-                    </tr>
+                   
                 </tbody>
             </table>
         </div>

@@ -2,16 +2,16 @@
 
 {% block title %}Packages Management - Admin Dashboard{% endblock %}
 {% block page_title %}Packages Management{% endblock %}
-{% block page_subtitle %}Manage Like & Dislike Packages{% endblock %}
+{% block page_subtitle %}Manage Packages{% endblock %}
 
 {% block content %}
 <div class="row">
-    <!-- Like Packages Section -->
-    <div class="col-lg-6 mb-4">
+    <!-- All Packages Section -->
+    <div class="col-lg-12 mb-4">
         <div class="card shadow-sm">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-heart me-2"></i>Like Packages</h5>
-                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#createLikePackageModal">
+                <h5 class="mb-0"><i class="fas fa-box me-2"></i>All Packages</h5>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#createPackageModal">
                     <i class="fas fa-plus"></i> Add New
                 </button>
             </div>
@@ -23,19 +23,20 @@
                                 <th>Name</th>
                                 <th>Price</th>
                                 <th>Likes</th>
+                                <th>Boosters</th>
+                                <th>Currency</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for package in like_packages %}
+                            {% for package in packages %}
                             <tr>
                                 <td><strong>{{ package.name }}</strong></td>
-                                <td>€{{ package.price }}</td>
-                                <td>
-                                    {{ package.regular_likes }} Regular
-                                    {% if package.super_likes > 0 %}<br>+ {{ package.super_likes }} Super{% endif %}
-                                </td>
+                                <td>{% if package.currency == 'GHS' %}GH₵{% else %}€{% endif %}{{ package.price }}</td>
+                                <td>{{ package.likes_count }}</td>
+                                <td>{{ package.boosters }}</td>
+                                <td>{{ package.get_currency_display }}</td>
                                 <td>
                                     {% if package.is_active %}
                                         <span class="badge bg-success">Active</span>
@@ -59,67 +60,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center text-muted">No like packages found.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dislike Packages Section -->
-    <div class="col-lg-6 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-times-circle me-2"></i>Dislike Packages</h5>
-                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#createDislikePackageModal">
-                    <i class="fas fa-plus"></i> Add New
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Price</th>
-                                <th>Unlikes</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for package in dislike_packages %}
-                            <tr>
-                                <td><strong>{{ package.name }}</strong></td>
-                                <td>€{{ package.price }}</td>
-                                <td>{{ package.unlikes }}</td>
-                                <td>
-                                    {% if package.is_active %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Inactive</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{% url 'admin_dashboard:edit_package' package.id %}"
-                                       class="btn btn-sm btn-warning">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form method="post" action="{% url 'admin_dashboard:delete_package' package.id %}"
-                                          style="display:inline;" onsubmit="return confirmDelete('Delete this package?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted">No dislike packages found.</td>
+                                <td colspan="7" class="text-center text-muted">No packages found.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -130,14 +71,14 @@
     </div>
 </div>
 
-<!-- Create Like Package Modal -->
-<div class="modal fade" id="createLikePackageModal" tabindex="-1">
+<!-- Create Package Modal -->
+<div class="modal fade" id="createPackageModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="post" action="{% url 'admin_dashboard:create_package' %}">
                 {% csrf_token %}
                 <div class="modal-header">
-                    <h5 class="modal-title">Create Like Package</h5>
+                    <h5 class="modal-title">Create Package</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -146,16 +87,20 @@
                         <input type="text" class="form-control" name="name" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Price (€)*</label>
+                        <label class="form-label">Price*</label>
                         <input type="number" step="0.01" class="form-control" name="price" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Regular Likes*</label>
-                        <input type="number" class="form-control" name="regular_likes" required>
+                        <label class="form-label">Currency*</label>
+                        <select class="form-control" name="currency" required>
+                            <option value="GHS">Ghana Cedis (GH₵)</option>
+                            <option value="EUR">Euro (€)</option>
+                        </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Super Likes</label>
-                        <input type="number" class="form-control" name="super_likes" value="0">
+                        <label class="form-label">Likes Count*</label>
+                        <input type="number" class="form-control" name="likes_count" required>
+                        <small class="text-muted">Can be used for likes or dislikes</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Boosters</label>
@@ -166,54 +111,13 @@
                         <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
                     <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" name="is_active" id="likeActive" checked>
-                        <label class="form-check-label" for="likeActive">Active</label>
+                        <input type="checkbox" class="form-check-input" name="is_active" id="packageActive" checked>
+                        <label class="form-check-label" for="packageActive">Active</label>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Package</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Create Dislike Package Modal -->
-<div class="modal fade" id="createDislikePackageModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="post" action="{% url 'admin_dashboard:create_package' %}">
-                {% csrf_token %}
-                <div class="modal-header">
-                    <h5 class="modal-title">Create Dislike Package</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Package Name*</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Price (€)*</label>
-                        <input type="number" step="0.01" class="form-control" name="price" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Unlikes*</label>
-                        <input type="number" class="form-control" name="unlikes" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" name="is_active" id="dislikeActive" checked>
-                        <label class="form-check-label" for="dislikeActive">Active</label>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Create Package</button>
                 </div>
             </form>
         </div>

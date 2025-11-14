@@ -41,21 +41,26 @@ class PricingView(ListView):
     context_object_name = 'packages'
 
     def get_queryset(self):
-        # Show both EUR and GHS packages on public page, or filter if user is logged in
+        # Show packages based on user's country if authenticated
         if self.request.user.is_authenticated and self.request.user.country:
             currency = 'GHS' if self.request.user.country == 'GH' else 'EUR'
             return Package.objects.filter(is_active=True, currency=currency).order_by('price')
-        # Default to EUR packages for anonymous users
-        return Package.objects.filter(is_active=True, currency='EUR').order_by('price')
+        # Show all active packages for anonymous users or users without country set
+        return Package.objects.filter(is_active=True).order_by('currency', 'price')
 
 class PackagesView(LoginRequiredMixin, TemplateView):
     template_name = 'payments/packages.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Filter packages based on user's country
-        currency = 'GHS' if self.request.user.country == 'GH' else 'EUR'
-        context['packages'] = Package.objects.filter(is_active=True, currency=currency).order_by('price')
+        # Filter packages based on user's country if set
+        if self.request.user.country:
+            currency = 'GHS' if self.request.user.country == 'GH' else 'EUR'
+            context['packages'] = Package.objects.filter(is_active=True, currency=currency).order_by('price')
+        else:
+            # Show all active packages if country not set
+            context['packages'] = Package.objects.filter(is_active=True).order_by('currency', 'price')
+            currency = 'GHS'  # Default currency display
         context['page_title'] = 'Packages'
         context['currency'] = currency
         return context
@@ -63,9 +68,13 @@ class PackagesView(LoginRequiredMixin, TemplateView):
 @login_required
 def packages_api(request):
     """API endpoint to return packages as JSON"""
-    # Filter packages based on user's country
-    currency = 'GHS' if request.user.country == 'GH' else 'EUR'
-    packages = Package.objects.filter(is_active=True, currency=currency)
+    # Filter packages based on user's country if set
+    if request.user.country:
+        currency = 'GHS' if request.user.country == 'GH' else 'EUR'
+        packages = Package.objects.filter(is_active=True, currency=currency)
+    else:
+        # Show all active packages if country not set
+        packages = Package.objects.filter(is_active=True)
     data = {
         'packages': [{
             'id': package.id,

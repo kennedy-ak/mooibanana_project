@@ -1048,6 +1048,7 @@ def create_package(request):
             Package.objects.create(
                 name=request.POST.get('name'),
                 price=request.POST.get('price'),
+                currency=request.POST.get('currency', 'GHS'),
                 likes_count=request.POST.get('likes_count'),
                 boosters=request.POST.get('boosters', 0),
                 description=request.POST.get('description', ''),
@@ -1070,6 +1071,7 @@ def edit_package(request, package_id):
         try:
             package.name = request.POST.get('name')
             package.price = request.POST.get('price')
+            package.currency = request.POST.get('currency', 'GHS')
             package.likes_count = request.POST.get('likes_count')
             package.boosters = request.POST.get('boosters', 0)
             package.description = request.POST.get('description', '')
