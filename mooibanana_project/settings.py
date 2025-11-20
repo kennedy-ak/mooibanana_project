@@ -37,10 +37,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     "https://mooibanana-project-1.onrender.com",
     "https://draggy-unprecipitately-harper.ngrok-free.dev",
-    "https://www.mooibanana.site"
+    "https://www.mooibanana.site",
     "https://mooibanana.digitalrepublic.space"
-    
-    
 ]
 
 # CSRF Settings
