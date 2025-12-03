@@ -460,7 +460,7 @@
             {% endif %}
             
             <!-- Warning for unverified users -->
-            {% if not profile.is_verified %}
+            {% if not profile.user.is_verified %}
                 <div class="alert alert-warning" role="alert">
                     <i class="fas fa-exclamation-triangle"></i>
                     This profile has not yet been verified. Please be careful when sharing personal information.

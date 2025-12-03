@@ -79,14 +79,20 @@ class Profile(models.Model):
             except (NotImplementedError, AttributeError):
                 # Cloudinary storage doesn't support .path, skip resize
                 pass
-        
+
         # Check if profile is complete
+        old_is_complete = Profile.objects.filter(pk=self.pk).values_list('is_complete', flat=True).first() if self.pk else False
         self.is_complete = bool(
-            self.bio and self.study_field and self.study_year and 
+            self.bio and self.study_field and self.study_year and
             self.interests and self.profile_picture
         )
-        if self.is_complete != Profile.objects.filter(pk=self.pk).first().is_complete:
+        if self.is_complete != old_is_complete:
             Profile.objects.filter(pk=self.pk).update(is_complete=self.is_complete)
+
+            # Auto-verify user when profile becomes complete
+            if self.is_complete and not self.user.is_verified:
+                self.user.is_verified = True
+                self.user.save()
     
     def get_interests_list(self):
         return [interest.strip() for interest in self.interests.split(',') if interest.strip()]
