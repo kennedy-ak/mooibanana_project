@@ -122,6 +122,8 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            z-index: 2000;
         }
 
         /* Touch-friendly improvements */
@@ -683,7 +685,7 @@
             /* Fix nav-helper-bar positioning on mobile */
             .nav-helper-bar {
                 position: relative;
-                z-index: 1000;
+                z-index: 2000;
             }
             
             /* Ensure search forms don't overlap mobile navigation */
