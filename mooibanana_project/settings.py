@@ -27,8 +27,12 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = ["mooibanana-project-1.onrender.com","*","mooibanana.site"]
+ALLOWED_HOSTS = ["mooibanana-project-1.onrender.com","*","mooibanana.site","www.mooibanana.site"]
 #config('ALLOWED_HOSTS', default='').split(',')
+
+# Site Configuration for SEO
+SITE_URL = config('SITE_URL', default='https://mooibanana.site')
+SITE_DOMAIN = 'mooibanana.site'
 
 CSRF_TRUSTED_ORIGINS = [
     'https://mooibanana-project-295618807617.europe-west1.run.app',
@@ -53,8 +57,16 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',  # Must be before staticfiles
     'django.contrib.staticfiles',
+    # NOTE: staticfiles is listed BEFORE cloudinary_storage on purpose.
+    # cloudinary_storage ships its own `collectstatic` command whose `copy_file`
+    # is a no-op unless static files are stored on Cloudinary. This project uses
+    # WhiteNoise (CompressedManifestStaticFilesStorage) for static files and only
+    # Cloudinary for media. Django resolves duplicate management commands by the
+    # app that appears FIRST in INSTALLED_APPS, so staticfiles must precede
+    # cloudinary_storage to keep Django's real collectstatic (which actually
+    # copies files into STATIC_ROOT for WhiteNoise to hash/serve).
+    'cloudinary_storage',
     'cloudinary',  # Cloudinary
     'channels',  # WebSocket support
     'crispy_forms',
