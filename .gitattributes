@@ -1,0 +1,5 @@
+# Shell scripts must keep LF endings or they break on Linux
+# (CRLF shebang -> "/bin/bash^M: bad interpreter").
+*.sh text eol=lf
+start.sh text eol=lf
+deploy/*.service text eol=lf
