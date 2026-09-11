@@ -1,0 +1,33 @@
+[Unit]
+Description=MooiBanana Django (Gunicorn)
+After=network.target
+# If Postgres runs on the same box, uncomment:
+# After=network.target postgresql.service
+# Wants=postgresql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/mooibanana_project
+
+# Put the virtualenv on PATH so `python` / `gunicorn` inside start.sh resolve
+# to the project venv (the VPS venv lives at /root/mooibanana_project/env).
+Environment=PATH=/root/mooibanana_project/env/bin:/usr/local/bin:/usr/bin:/bin
+# Optional: override worker count without editing start.sh
+# Environment=WEB_CONCURRENCY=3
+Environment=PORT=8080
+
+ExecStart=/root/mooibanana_project/start.sh
+
+# Keep it alive: restart on crash, and start on boot (see [Install]).
+Restart=always
+RestartSec=3
+# Graceful stop: let Gunicorn drain, then SIGKILL if it overruns.
+KillMode=mixed
+TimeoutStopSec=35
+
+# Basic hardening (loosen if a path needs writing beyond the project dir)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
